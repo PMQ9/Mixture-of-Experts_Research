@@ -92,6 +92,34 @@ class Block(nn.Module):
         return x
 """
 
+def load_balancing_loss(router_probs, num_experts, top_k):
+    """
+    router_probs: [batch_size, seq_len, num_experts] (softmax probs)
+    """
+    # Compute fraction of tokens assigned to each expert
+    expert_mask = torch.zeros_like(router_probs)
+    topk_probs, topk_indices = torch.topk(router_probs, top_k, dim=-1)
+    expert_mask.scatter_(-1, topk_indices, 1)
+    
+    # Compute load balancing loss
+    density = expert_mask.float().mean(dim=[0, 1])
+    aux_loss = torch.var(density)
+    return aux_loss
+
+def diversity_loss(expert_outputs):
+    """
+    expert_outputs: [batch_size, seq_len, num_experts, hidden_dim]
+    """
+    # Compute pairwise cosine similarity between experts
+    expert_outputs = expert_outputs.mean(dim=[0, 1])  # [E, D]
+    norm = torch.norm(expert_outputs, dim=1, keepdim=True)
+    normalized = expert_outputs / norm
+    similarity = torch.mm(normalized, normalized.T)  # [E, E]
+    
+    # Penalize high similarity (encourage orthogonality)
+    aux_loss = torch.triu(similarity, diagonal=1).mean()  # Upper triangle
+    return aux_loss
+
 class MoEBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
