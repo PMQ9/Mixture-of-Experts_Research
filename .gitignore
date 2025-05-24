@@ -1,2 +1,3 @@
 src/Visison_Tranformer_Pytorch/.data/
 src/Visison_Tranformer_Pytorch/__pycache__/
+src/Visison_Tranformer_Pytorch/vit_cifer10_best.pth

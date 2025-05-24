@@ -6,6 +6,7 @@ from torchvision import datasets, transforms
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import time
+import os
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -14,6 +15,9 @@ BATCH_SIZE = 128
 EPOCHS = 200
 LEARNING_RATE = 3e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# DevOps Params
+OUTPUT_DIR = "artifacts"
 
 def train(model, loader, optimizer, criterion, device):
     model.train()
@@ -60,6 +64,9 @@ def test(model, loader, optimizer, criterion, device):
     return avg_loss, accuracy
 
 def plot_metrics(train_losses, test_losses, train_accs, test_accs):
+    # Make an output directory if not exist
+    os.makedirs("OUTPUT_DIR", exist_ok=True)
+    
     plt.figure(figsize=(12, 10))
     
     # Plot losses
@@ -83,7 +90,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs):
     plt.grid(True)
     
     plt.tight_layout()
-    plt.savefig('training_metrics.png')
+    plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
     plt.close()
 
 def main():
@@ -141,7 +148,7 @@ def main():
 
         if test_acc > best_acc:
             best_acc = test_acc
-            torch.save(model.state_dict(), 'vit_cifer10_best.pth')
+            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_cifar10_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
