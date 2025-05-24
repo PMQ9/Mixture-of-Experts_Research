@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
+import time
 
 from vision_transformer import VisionTransformer, VisionTransformerConfig
 
@@ -83,14 +84,21 @@ def main():
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
     best_acc = 0
+    total_training_time = 0
+    
     for epoch in range(EPOCHS):
+        start_time = time.time()
         train_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE)
         test_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
         scheduler.step()
+        
+        epoch_time = time.time() - start_time  # Calculate time taken for this epoch
+        total_training_time += epoch_time  # Add to total training time
 
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
         print(f"Test loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc > best_acc:
             best_acc = test_acc
@@ -99,6 +107,8 @@ def main():
         print()
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
+    print(f"Total training time: {total_training_time:.2f} seconds")
+    print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support

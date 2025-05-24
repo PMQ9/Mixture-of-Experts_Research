@@ -77,7 +77,6 @@ class MLP(nn.Module):
         x = self.drop(x)
         return x
 
-"""
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -90,7 +89,6 @@ class Block(nn.Module):
         x = x + self.attn(self.norm1(x))
         x = x + self.mlp(self.norm2(x))
         return x
-"""
 
 class MoEBlock(nn.Module):
     def __init__(self, config):
