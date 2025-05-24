@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -57,6 +58,33 @@ def test(model, loader, optimizer, criterion, device):
     accuracy = correct / total
     return avg_loss, accuracy
 
+def plot_metrics(train_losses, test_losses, train_accs, test_accs):
+    plt.figure(figsize=(12, 10))
+    
+    # Plot losses
+    plt.subplot(2, 1, 1)
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(test_losses, label='Test Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Test Loss')
+    plt.legend()
+    plt.grid(True)
+    
+    # Plot accuracies
+    plt.subplot(2, 1, 2)
+    plt.plot(train_accs, label='Train Accuracy')
+    plt.plot(test_accs, label='Test Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Training and Test Accuracy')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig('training_metrics.png')
+    plt.close()
+
 def main():
     config = VisionTransformerConfig
 
@@ -82,11 +110,22 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
+    train_losses = []
+    test_losses = []
+    train_accs = []
+    test_accs = []
+
     best_acc = 0
     for epoch in range(EPOCHS):
         train_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE)
         test_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
         scheduler.step()
+
+        # Store metrics for plotting
+        train_losses.append(train_loss)
+        test_losses.append(test_loss)
+        train_accs.append(train_acc)
+        test_accs.append(test_acc)
 
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
@@ -97,6 +136,10 @@ def main():
             torch.save(model.state_dict(), 'vit_cifer10_best.pth')
             print(f"New best accuracy: {best_acc:.4f}")
         print()
+
+        # Plot metrics every 10 epochs
+        if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
+            plot_metrics(train_losses, test_losses, train_accs, test_accs)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
 
