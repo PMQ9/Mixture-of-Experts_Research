@@ -77,41 +77,38 @@ def test(model, loader, optimizer, criterion, device):
     return avg_loss, avg_balance_loss, accuracy
 
 def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses):
-    plt.figure(figsize=(12, 15))
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15), sharex=True)
     
     # Plot losses
-    plt.subplot(2, 1, 1)
-    plt.plot(train_losses, label='Train Loss')
-    plt.plot(test_losses, label='Test Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Test Loss')
-    plt.legend()
-    plt.grid(True)
+    ax1.plot(train_losses, label='Train Loss')
+    ax1.plot(test_losses, label='Test Loss')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.set_title('Training and Test Classification Loss')
+    ax1.legend()
+    ax1.grid(True)
     
     # Plot accuracies
-    plt.subplot(2, 1, 2)
-    plt.plot(train_accs, label='Train Accuracy')
-    plt.plot(test_accs, label='Test Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.title('Training and Test Accuracy')
-    plt.legend()
-    plt.grid(True)
+    ax2.plot(train_accs, label='Train Accuracy')
+    ax2.plot(test_accs, label='Test Accuracy')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Accuracy')
+    ax2.set_title('Training and Test Accuracy')
+    ax2.legend()
+    ax2.grid(True)
     
     # Plot balance losses
-    plt.subplot(3, 1, 3)
-    plt.plot(train_balance_losses, label='Train Balance Loss')
-    plt.plot(test_balance_losses, label='Test Balance Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Balance Loss')
-    plt.title('Training and Test Balance Loss')
-    plt.legend()
-    plt.grid(True)
+    ax3.plot(train_balance_losses, label='Train Balance Loss')
+    ax3.plot(test_balance_losses, label='Test Balance Loss')
+    ax3.set_xlabel('Epoch')
+    ax3.set_ylabel('Balance Loss')
+    ax3.set_title('Training and Test Balance Loss')
+    ax3.legend()
+    ax3.grid(True)
     
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
-    plt.close()
+    plt.close(fig)
 
 def main():
     config = VisionTransformerConfig
@@ -178,8 +175,8 @@ def main():
         print()
 
         # Plot metrics every 5 epochs
-        if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
-            plot_metrics(train_losses, test_losses, train_accs, test_accs)
+        if (epoch + 1) % 2 == 0 or epoch == EPOCHS - 1:
+            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
