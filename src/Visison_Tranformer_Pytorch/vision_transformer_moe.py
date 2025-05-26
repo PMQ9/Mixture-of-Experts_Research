@@ -15,11 +15,11 @@ class VisionTransformerConfig:
     num_heads: int = 12
     mlp_ratio: float = 2.0
     qkv_bias: bool = True
-    drop_rate: float = 0.1
-    attn_drop_rate: float = 0.0
-    num_experts: int = 4    # number or experts
-    top_k: int = 2
-    balance_loss_weight: float = 0.01  # Weight for load balancing loss
+    drop_rate: float = 0.2
+    attn_drop_rate: float = 0.1
+    num_experts: int = 7    # number or experts
+    top_k: int = 3
+    balance_loss_weight: float = 0.1  # Weight for load balancing loss
 
     
 class PatchEmbed(nn.Module):

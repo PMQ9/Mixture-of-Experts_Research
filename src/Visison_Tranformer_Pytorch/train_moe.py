@@ -19,7 +19,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # DevOps Params
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
-def train(model, loader, optimizer, criterion, device, balance_loss_weight=0.01):
+def train(model, loader, optimizer, criterion, device, balance_loss_weight=0.1):
     model.train()
     total_loss = 0
     total_balance_loss = 0
@@ -128,12 +128,12 @@ def main():
     train_dataset = datasets.CIFAR10(root='.data', train=True, download=True, transform=transform_train)
     test_dataset = datasets.CIFAR10(root='.data', train=False, download=True, transform=transform_test)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True)
 
     model = VisionTransformer(config).to(DEVICE)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
+    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.1)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
     train_losses = []
