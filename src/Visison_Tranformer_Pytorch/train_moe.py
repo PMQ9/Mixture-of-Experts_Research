@@ -19,53 +19,65 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # DevOps Params
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
-def train(model, loader, optimizer, criterion, device):
+def train(model, loader, optimizer, criterion, device, balance_loss_weight=0.01):
     model.train()
     total_loss = 0
+    total_balance_loss = 0
     correct = 0
     total = 0
     
     for batch_idx, (data, target) in enumerate(tqdm(loader)):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        output = model(data)
-        loss = criterion(output, target)
-        loss.backward()
+        output, balance_losses = model(data)
+        cls_loss = criterion(output, target)
+        
+        # Aggregate balance loss across all MoE blocks
+        balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
+        total_loss_combined = cls_loss + balance_loss_weight * balance_loss
+        
+        total_loss_combined.backward()
         optimizer.step()
         
-        total_loss += loss.item()
+        total_loss += cls_loss.item()
+        total_balance_loss += balance_loss.item()
         _, predicted = output.max(1)
         total += target.size(0)
         correct += predicted.eq(target).sum().item()
         
     avg_loss = total_loss / len(loader)
+    avg_balance_loss = total_balance_loss / len(loader)
     accuracy = correct / total
-    return avg_loss, accuracy
+    return avg_loss, avg_balance_loss, accuracy
 
 def test(model, loader, optimizer, criterion, device):
     model.eval()
     total_loss = 0
+    total_balance_loss = 0
     correct = 0
     total = 0
     
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(tqdm(loader)):
             data, target = data.to(device), target.to(device)
-            output = model(data)
+            output, balance_losses = model(data)
             loss = criterion(output, target)
 
+            balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
+
             total_loss += loss.item()
+            total_balance_loss += balance_loss.item()
             _, predicted = output.max(1)
             total += target.size(0)
             correct += predicted.eq(target).sum().item()
         
     avg_loss = total_loss / len(loader)
+    avg_balance_loss = total_balance_loss / len(loader)
     accuracy = correct / total
-    return avg_loss, accuracy
+    return avg_loss, avg_balance_loss, accuracy
 
-def plot_metrics(train_losses, test_losses, train_accs, test_accs):
-    
-    plt.figure(figsize=(12, 10))
+def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses):
+    plt.figure(figsize=(12, 15))
     
     # Plot losses
     plt.subplot(2, 1, 1)
@@ -84,6 +96,16 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.title('Training and Test Accuracy')
+    plt.legend()
+    plt.grid(True)
+    
+    # Plot balance losses
+    plt.subplot(3, 1, 3)
+    plt.plot(train_balance_losses, label='Train Balance Loss')
+    plt.plot(test_balance_losses, label='Test Balance Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Balance Loss')
+    plt.title('Training and Test Balance Loss')
     plt.legend()
     plt.grid(True)
     
@@ -121,14 +143,16 @@ def main():
     test_losses = []
     train_accs = []
     test_accs = []
+    train_balance_losses = []
+    test_balance_losses = []
 
     best_acc = 0
     total_training_time = 0
         
     for epoch in range(EPOCHS):
         start_time = time.time()
-        train_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE)
-        test_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
+        train_loss, train_balance_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE, balance_loss_weight=config.balance_loss_weight)
+        test_loss, test_balance_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
         scheduler.step()
 
         epoch_time = time.time() - start_time
@@ -139,10 +163,12 @@ def main():
         test_losses.append(test_loss)
         train_accs.append(train_acc)
         test_accs.append(test_acc)
+        train_balance_losses.append(train_balance_loss)
+        test_balance_losses.append(test_balance_loss)
 
         print(f"Epoch {epoch+1}/{EPOCHS}:")
-        print(f"Train loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
-        print(f"Test loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Acc: {train_acc:.4f}")
+        print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc > best_acc:
@@ -151,8 +177,8 @@ def main():
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
-        # Plot metrics every 10 epochs
-        if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
+        # Plot metrics every 5 epochs
+        if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
             plot_metrics(train_losses, test_losses, train_accs, test_accs)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")

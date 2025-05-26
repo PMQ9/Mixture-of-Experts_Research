@@ -19,6 +19,7 @@ class VisionTransformerConfig:
     attn_drop_rate: float = 0.0
     num_experts: int = 4    # number or experts
     top_k: int = 2
+    balance_loss_weight: float = 0.01  # Weight for load balancing loss
 
     
 class PatchEmbed(nn.Module):
@@ -117,7 +118,20 @@ class MoEBlock(nn.Module):
         selected_outputs = torch.gather(expert_outputs, 2, top_k_indices)
         combine_output = (selected_outputs * top_k_probs.unsqueeze(-1)).sum(dim = 2)
 
-        return combine_output
+        # Compute load balancing loss
+        # f_i: Fraction of tokens assigned to each expert
+        expert_counts = torch.zeros(self.num_experts, device=x.device)
+        for k in range(self.top_k):
+            expert_counts += torch.bincount(top_k_indices[:, :, k].flatten(), minlength=self.num_experts)
+        f_i = expert_counts / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
+
+        # P_i: Mean routing probability for each expert
+        P_i = router_probs.mean(dim=[0, 1])  # Shape: [num_experts]
+
+        # Load balancing loss
+        balance_loss = self.num_experts * torch.sum(f_i * P_i)
+
+        return combine_output, balance_loss
 
 class VisionTransformer(nn.Module):
     def __init__(self, config):
@@ -133,7 +147,6 @@ class VisionTransformer(nn.Module):
         #self.blocks = nn.ModuleList([Block(config) for _ in range(config.depth)])
         self.blocks = nn.ModuleList([MoEBlock(config) for _ in range(config.depth)])
 
-
         self.norm = nn.LayerNorm(config.embed_dim)
         self.head = nn.Linear(config.embed_dim, config.num_class)
         
@@ -147,11 +160,13 @@ class VisionTransformer(nn.Module):
         x = x + self.pos_embed
         x = self.pos_drop(x)
         
+        balance_losses = []
         for block in self.blocks:
-            x = block(x)
+            x, block_balance_loss = block(x)
+            balance_losses.append(block_balance_loss)
         
         x = self.norm(x)
         x = x[:, 0]
         x = self.head(x)
-        return x
+        return x, balance_losses
            
