@@ -4,6 +4,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import time
+import os
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -12,6 +15,9 @@ BATCH_SIZE = 128
 EPOCHS = 200
 LEARNING_RATE = 3e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# DevOps Params
+OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
 def train(model, loader, optimizer, criterion, device):
     model.train()
@@ -57,8 +63,37 @@ def test(model, loader, optimizer, criterion, device):
     accuracy = correct / total
     return avg_loss, accuracy
 
+def plot_metrics(train_losses, test_losses, train_accs, test_accs):
+    
+    plt.figure(figsize=(12, 10))
+    
+    # Plot losses
+    plt.subplot(2, 1, 1)
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(test_losses, label='Test Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Test Loss')
+    plt.legend()
+    plt.grid(True)
+    
+    # Plot accuracies
+    plt.subplot(2, 1, 2)
+    plt.plot(train_accs, label='Train Accuracy')
+    plt.plot(test_accs, label='Test Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Training and Test Accuracy')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
+    plt.close()
+
 def main():
     config = VisionTransformerConfig
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     transform_train = transforms.Compose([
         transforms.RandomHorizontalFlip(),
@@ -82,23 +117,47 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
+    train_losses = []
+    test_losses = []
+    train_accs = []
+    test_accs = []
+
     best_acc = 0
+    total_training_time = 0
+        
     for epoch in range(EPOCHS):
+        start_time = time.time()
         train_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE)
         test_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
         scheduler.step()
 
+        epoch_time = time.time() - start_time
+        total_training_time += epoch_time
+        
+        # Store metrics for plotting
+        train_losses.append(train_loss)
+        test_losses.append(test_loss)
+        train_accs.append(train_acc)
+        test_accs.append(test_acc)
+
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
         print(f"Test loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc > best_acc:
             best_acc = test_acc
-            torch.save(model.state_dict(), 'vit_cifer10_best.pth')
+            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_cifar10_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
+        # Plot metrics every 10 epochs
+        if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
+            plot_metrics(train_losses, test_losses, train_accs, test_accs)
+
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
+    print(f"Total training time: {total_training_time:.2f} seconds")
+    print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
