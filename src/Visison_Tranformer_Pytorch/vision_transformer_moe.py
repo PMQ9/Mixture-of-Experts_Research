@@ -20,7 +20,24 @@ class VisionTransformerConfig:
     num_experts: int = 7    # number or experts
     top_k: int = 3
     balance_loss_weight: float = 0.1  # Weight for load balancing loss
+    drop_path_rate: float = 0.1 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    router_weight_reg: float = 0.01 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        if self.drop_prob == 0. or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # Work with batched inputs
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()  # Binarize to 0 or 1
+        output = x.div(keep_prob) * random_tensor  # Scale to maintain expected value
+        return output
     
 class PatchEmbed(nn.Module):
     def __init__(self, config):
@@ -98,6 +115,8 @@ class MoEBlock(nn.Module):
         self.embed_dim = config.embed_dim
         self.num_experts = config.num_experts
         self.top_k = config.top_k
+        self.drop_path = DropPath(config.drop_path_rate) if config.drop_path_rate > 0.0 else nn.Identity()
+        self.router_weight_reg = config.router_weight_reg
 
         # Router
         self.router = nn.Linear(self.embed_dim, self.num_experts)
@@ -118,6 +137,9 @@ class MoEBlock(nn.Module):
         selected_outputs = torch.gather(expert_outputs, 2, top_k_indices)
         combine_output = (selected_outputs * top_k_probs.unsqueeze(-1)).sum(dim = 2)
 
+        # Apply DropPath
+        combine_output = self.drop_path(combine_output)
+        
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
         expert_counts = torch.zeros(self.num_experts, device=x.device)
@@ -130,6 +152,9 @@ class MoEBlock(nn.Module):
 
         # Load balancing loss
         balance_loss = self.num_experts * torch.sum(f_i * P_i)
+        balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
+        
+        #print(f"Expert utilization (f_i): {f_i.tolist()}") # If some experts have near-zero utilization (values are close to 1/7 ≈ 0.143). If skewed, increase balance_loss_weight or router_weight_reg
 
         return combine_output, balance_loss
 

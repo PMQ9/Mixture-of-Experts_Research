@@ -115,9 +115,13 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.RandomRotation(15),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+        transforms.RandomErasing(p=0.5, scale=(0.02, 0.2)),
     ])
 
     transform_test = transforms.Compose([
