@@ -1,0 +1,28 @@
+include:
+  - '.gitlab/.config.yml'
+
+stages:
+  - test_gpu
+  - train
+
+test_gpu:
+  stage: test_gpu
+  script:
+    - echo "Checking GPU..."
+    - nvidia-smi  # Verify GPU is visible
+    - python -c "import torch; print(f'PyTorch CUDA available: {torch.cuda.is_available()}')"
+  tags:
+    - local  # Custom tag for local runs
+
+train:
+  stage: train
+  script:
+    - echo "Starting training..."
+    - python src/Visison_Transformer_Pytorch/train_moe.py # typo here, remember to fix
+  dependencies:
+    - test_gpu
+  tags:
+    - local
+  only:
+    - schedules  # Only run in CI; skip locally
+  timeout: 10h

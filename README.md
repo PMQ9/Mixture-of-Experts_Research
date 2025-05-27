@@ -3,8 +3,8 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 # To do list
 # DevOps
-- Python automation test - In progress
-- Jenkins/GitLab pipeline - Not started
-- Fine tune training params - Not started
+- Python automation test - Done
+- Jenkins/GitLab pipeline - In progress
+- Fine tune training params - In progress
 # Performance
 - Add Loss Balancing - In progress
