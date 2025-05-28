@@ -1,8 +1,11 @@
 include:
   - '.gitlab/config.yml'
 
+variables:
+
 stages:
   - test_gpu
+  - prepare
   - train
 
 test_gpu:
@@ -14,10 +17,25 @@ test_gpu:
   script:
     - echo "Checking GPU..."
     - nvidia-smi  # Verify GPU is visible
-    #- |
-    #  python -c 'import torch; print(f"PyTorch CUDA available: {torch.cuda.is_available()}")'
   tags:
     - Gem12Server
+
+prepare:
+  stage: prepare
+  tags:
+    - Gem12Server
+  script:
+    - echo "Cloning repository into CI_PROJECT_DIR subdirectory..."
+    - |
+      if (Test-Path "${CI_PROJECT_DIR}/CICD_test") {
+          Remove-Item -Recurse -Force "${CI_PROJECT_DIR}/CICD_test"
+      }
+    - git clone https://github.com/PMQ9/Mixture-of-Experts_Research.git ${CI_PROJECT_DIR}/CICD_test
+    - cd ${CI_PROJECT_DIR}/CICD_test
+    - git checkout ${CI_COMMIT_REF_NAME}
+    - git reset --hard origin/${CI_COMMIT_REF_NAME}
+    - echo "Repository cloned to ${CI_PROJECT_DIR}"
+  timeout: 30m
 
 train:
   stage: train
@@ -26,12 +44,14 @@ train:
     - web
     #- schedules # for nightly, not yet implemented
   script:
+    - cd ${CI_PROJECT_DIR}
     - echo "Starting training..."
     - mkdir -Force artifacts
-    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Vision_Transformer_Pytorch/train_moe.py' *> 'artifacts/training_log.txt'"
+    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Visison_Tranformer_Pytorch/train_moe.py' *> 'artifacts/pipeline_log.txt'" # 2 typos
     - echo "Training complete!"
   dependencies:
     - test_gpu
+    - prepare
   artifacts:
     paths:
       - artifacts/training_log.txt 
