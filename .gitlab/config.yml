@@ -1,0 +1,39 @@
+variables:
+  ARTIFACT_DIR: "${CI_PROJECT_DIR}/artifacts"
+  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+  PIP_REQUIREMENTS: "${CI_PROJECT_DIR}/.gitlab/requirements.txt"
+  TRAINING_SCRIPT: "src/train_moe.py"
+#  BATCH_SIZE: "200"
+#  EPOCHS: "200"
+
+# Reusable job templates
+.training_config:
+  image: pytorch/pytorch:2.5.1-cuda12.1-cudnn8-runtime
+  tags:
+    - nvidia 
+  cache:
+    key: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - ${PIP_CACHE_DIR}
+      - .data/
+  before_script:
+    - python --version
+    - nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv
+    - python -m pip install --upgrade pip
+    - pip install -r ${PIP_REQUIREMENTS}
+
+.artifacts_config:
+  artifacts:
+    paths:
+      - ${ARTIFACT_DIR}/
+    reports:
+      dotenv: "${ARTIFACT_DIR}/training_metrics.env"  # Optional: Store metrics
+    expire_in: 2 weeks
+
+# Shared rules
+.schedule_rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_MERGE_REQUEST_ID'
+      when: never  # Skip for merge requests

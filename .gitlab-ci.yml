@@ -1,0 +1,77 @@
+include:
+  - '.gitlab/config.yml'
+
+variables:
+  SERVER_TAG: "Gem12Server"
+
+stages:
+  - test_gpu
+  - prepare
+  - train
+
+test_gpu:
+  stage: test_gpu
+  only:
+    - web
+    #- schedules # for nightly, not yet implemented
+  script:
+    - echo "Checking GPU..."
+    - nvidia-smi
+  tags:
+    - $SERVER_TAG
+
+prepare:
+  stage: prepare
+  tags:
+    - $SERVER_TAG
+  script:
+    - echo "Preparing repository..."
+    - |
+      if (Test-Path "${CI_PROJECT_DIR}/.git") {
+          # Repository exists - update it
+          echo "Repository already exists, updating..."
+          cd ${CI_PROJECT_DIR}
+          git fetch origin
+          git checkout ${CI_COMMIT_REF_NAME}
+          git reset --hard origin/${CI_COMMIT_REF_NAME}
+          echo "Repository updated"
+      } else {
+          # Repository doesn't exist - clone it
+          echo "Cloning fresh repository..."
+          git clone https://github.com/PMQ9/Mixture-of-Experts_Research.git ${CI_PROJECT_DIR}
+          cd ${CI_PROJECT_DIR}
+          git checkout ${CI_COMMIT_REF_NAME}
+          git reset --hard origin/${CI_COMMIT_REF_NAME}
+          echo "Repository cloned"
+      }
+    - echo "Repository ready at ${CI_PROJECT_DIR}"
+  timeout: 30m
+
+train:
+  stage: train
+  only:
+    - web
+    #- schedules # for nightly, not yet implemented
+  script:
+    - echo "Starting training..."
+    - cd ${CI_PROJECT_DIR}
+    - mkdir -Force artifacts
+    #- "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Visison_Tranformer_Pytorch/train_moe.py' *> 'artifacts/pipeline_log.txt'" # 2 typos
+    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Visison_Tranformer_Pytorch/train_moe.py' | Tee-Object -FilePath 'artifacts/pipeline_log.txt'"    
+    - echo "Training complete!"
+  dependencies:
+    - test_gpu
+    - prepare
+  artifacts:
+    paths:
+      - artifacts/training_log.txt 
+      - artifacts/pipeline_log.png
+      - artifacts/training_metrics.png
+      - artifacts/vit_cifar10_best.pth
+    when: always
+    expire_in: 1 week
+  tags:
+    - $SERVER_TAG
+  #only:
+    #- schedules
+  timeout: 10h
