@@ -14,7 +14,7 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
 # Training Params
 BATCH_SIZE = 128
-EPOCHS = 200
+EPOCHS = 20
 LEARNING_RATE = 3e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
