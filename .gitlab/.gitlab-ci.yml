@@ -7,22 +7,37 @@ stages:
 
 test_gpu:
   stage: test_gpu
+  only:
+    - /^test-.*$/
+    - web
+    #- schedules # for nightly, not yet implemented
   script:
     - echo "Checking GPU..."
     - nvidia-smi  # Verify GPU is visible
     - python -c "import torch; print(f'PyTorch CUDA available: {torch.cuda.is_available()}')"
   tags:
-    - local  # Custom tag for local runs
+    - Gem12Server
 
 train:
   stage: train
+  only:
+    - /^test-.*$/
+    - web
+    #- schedules # for nightly, not yet implemented
   script:
     - echo "Starting training..."
-    - python src/Visison_Transformer_Pytorch/train_moe.py # typo here, remember to fix
+    - python src/Visison_Transformer_Pytorch/train_moe.py | tee training.log # typo here, remember to fix
+    - echo "Training complete!"
   dependencies:
     - test_gpu
+  artifacts:
+    paths:
+      - artifacts/training_log.txt 
+      - artifacts/training_metrics.png
+    when: always
+    expire_in: 1 week
   tags:
-    - local
+    - Gem12Server
   only:
     - schedules  # Only run in CI; skip locally
   timeout: 10h

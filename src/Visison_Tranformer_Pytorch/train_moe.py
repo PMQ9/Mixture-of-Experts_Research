@@ -7,6 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import time
 import os
+from datetime import datetime
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -18,6 +19,12 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # DevOps Params
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
+
+def setup_logging():
+    log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
+    sys.stdout = sys.stderr = open(log_file, 'w', buffering=1)
+    print(f"Training started at {datetime.now()}\n")
+    print(f"Logging to: {log_file}")
 
 def train(model, loader, optimizer, criterion, device):
     model.train()
@@ -94,6 +101,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs):
 def main():
     config = VisionTransformerConfig
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    setup_logging()
 
     transform_train = transforms.Compose([
         transforms.RandomHorizontalFlip(),
@@ -140,6 +148,7 @@ def main():
         train_accs.append(train_acc)
         test_accs.append(test_acc)
 
+        print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
         print(f"Test loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
