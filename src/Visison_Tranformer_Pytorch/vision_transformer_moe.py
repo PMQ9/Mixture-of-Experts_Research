@@ -18,10 +18,10 @@ class VisionTransformerConfig:
     drop_rate: float = 0.2
     attn_drop_rate: float = 0.1
     num_experts: int = 7    # number or experts
-    top_k: int = 3
-    balance_loss_weight: float = 0.1  # Weight for load balancing loss
-    drop_path_rate: float = 0.1 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
-    router_weight_reg: float = 0.01 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
+    top_k: int = 2
+    balance_loss_weight: float = 0.05  # Weight for load balancing loss
+    drop_path_rate: float = 0.05 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    router_weight_reg: float = 0.005 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""

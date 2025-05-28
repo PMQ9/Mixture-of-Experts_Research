@@ -12,8 +12,8 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
 # Training Params
 BATCH_SIZE = 128
-EPOCHS = 200
-LEARNING_RATE = 3e-4
+EPOCHS = 150
+LEARNING_RATE = 5e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # DevOps Params
@@ -117,11 +117,11 @@ def main():
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
-        transforms.RandomErasing(p=0.5, scale=(0.02, 0.2)),
+        transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
     ])
 
     transform_test = transforms.Compose([
@@ -137,7 +137,7 @@ def main():
 
     model = VisionTransformer(config).to(DEVICE)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.1)
+    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
     train_losses = []
