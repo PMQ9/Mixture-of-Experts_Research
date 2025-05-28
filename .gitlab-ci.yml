@@ -2,12 +2,12 @@ include:
   - '.gitlab/config.yml'
 
 variables:
+  SERVER_TAG: "Gem12Server"
 
 stages:
   - test_gpu
   - prepare
   - train
-  #- cleanup
 
 test_gpu:
   stage: test_gpu
@@ -18,12 +18,12 @@ test_gpu:
     - echo "Checking GPU..."
     - nvidia-smi
   tags:
-    - Gem12Server
+    - $SERVER_TAG
 
 prepare:
   stage: prepare
   tags:
-    - Gem12Server
+    - $SERVER_TAG
   script:
     - echo "Preparing repository..."
     - |
@@ -71,27 +71,7 @@ train:
     when: always
     expire_in: 1 week
   tags:
-    - Gem12Server
+    - $SERVER_TAG
   #only:
     #- schedules
   timeout: 10h
-
-#cleanup:
-#  stage: cleanup
-#  dependencies:
-#    - train
-#  tags:
-#    - Gem12Server
-#  script:
-#    - echo "Cleaning up working directory..."
-#    - |
-#      if (Test-Path "${CI_PROJECT_DIR}/CICD") {
-#          if (Test-Path "${CI_PROJECT_DIR}/CICD/artifacts") {
-#              Move-Item -Path "${CI_PROJECT_DIR}/CICD/artifacts" -Destination "${CI_PROJECT_DIR}/" -Force
-#          }
-#          Remove-Item -Recurse -Force "${CI_PROJECT_DIR}/CICD"
-#          echo "Cleanup complete - removed ${CI_PROJECT_DIR}/CICD"
-#      } else {
-#          echo "Nothing to clean up - ${CI_PROJECT_DIR}/CICD doesn't exist"
-#      }
-#  when: always
