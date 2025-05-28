@@ -1,5 +1,5 @@
 include:
-  - '.gitlab/.config.yml'
+  - '.gitlab/config.yml'
 
 stages:
   - test_gpu
@@ -8,25 +8,27 @@ stages:
 test_gpu:
   stage: test_gpu
   only:
-    - /^test-.*$/
+    #- /^test-.*$/
     - web
     #- schedules # for nightly, not yet implemented
   script:
     - echo "Checking GPU..."
     - nvidia-smi  # Verify GPU is visible
-    - python -c "import torch; print(f'PyTorch CUDA available: {torch.cuda.is_available()}')"
+    #- |
+    #  python -c 'import torch; print(f"PyTorch CUDA available: {torch.cuda.is_available()}")'
   tags:
     - Gem12Server
 
 train:
   stage: train
   only:
-    - /^test-.*$/
+    #- /^test-.*$/
     - web
     #- schedules # for nightly, not yet implemented
   script:
     - echo "Starting training..."
-    - python src/Visison_Transformer_Pytorch/train_moe.py | tee training.log # typo here, remember to fix
+    - mkdir -Force artifacts
+    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Vision_Transformer_Pytorch/train_moe.py' *> 'artifacts/training_log.txt'"
     - echo "Training complete!"
   dependencies:
     - test_gpu
@@ -38,6 +40,6 @@ train:
     expire_in: 1 week
   tags:
     - Gem12Server
-  only:
-    - schedules  # Only run in CI; skip locally
+  #only:
+    #- schedules  # Only run in CI; skip locally
   timeout: 10h
