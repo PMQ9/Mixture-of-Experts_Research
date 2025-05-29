@@ -10,18 +10,18 @@ class VisionTransformerConfig:
     patch_size: int = 4
     in_chans : int =3
     num_class: int = 10     #number of classes for classification
-    embed_dim: int = 192
+    embed_dim: int = 192 # consider increase to 256 or 384
     depth: int = 9
     num_heads: int = 12
     mlp_ratio: float = 2.0
     qkv_bias: bool = True
-    drop_rate: float = 0.2
+    drop_rate: float = 0.15
     attn_drop_rate: float = 0.1
     num_experts: int = 7    # number or experts
     top_k: int = 2
-    balance_loss_weight: float = 0.05  # Weight for load balancing loss
-    drop_path_rate: float = 0.05 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
-    router_weight_reg: float = 0.005 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
+    balance_loss_weight: float = 5.0  # high balance loss indicates not utilizing all experts
+    drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    router_weight_reg: float = 0.01 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
@@ -120,7 +120,10 @@ class MoEBlock(nn.Module):
 
         # Router
         self.router = nn.Linear(self.embed_dim, self.num_experts)
-
+        nn.init.xavier_uniform_(self.router.weight)  # Add initialization
+        if self.router.bias is not None:
+            nn.init.zeros_(self.router.bias)
+            
         # Experts
         self.experts = nn.ModuleList([Block(config) for _ in range (self.num_experts)])
 
@@ -128,6 +131,8 @@ class MoEBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
 
         router_logits = self.router(x)
+        noise = torch.rand_like(router_logits) * 0.1
+        router_logits = router_logits + noise
         router_probs = F.softmax(router_logits, dim = -1)
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
@@ -139,13 +144,23 @@ class MoEBlock(nn.Module):
 
         # Apply DropPath
         combine_output = self.drop_path(combine_output)
-        
+    
+        # Validate indices
+        if top_k_indices.min() < 0 or top_k_indices.max() >= self.num_experts:
+            raise ValueError(f"Invalid expert indices: {top_k_indices.min()} to {top_k_indices.max()}")
+            
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
-        expert_counts = torch.zeros(self.num_experts, device=x.device)
+        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
         for k in range(self.top_k):
-            expert_counts += torch.bincount(top_k_indices[:, :, k].flatten(), minlength=self.num_experts)
-        f_i = expert_counts / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
+            indices = top_k_indices[:, :, k].flatten()
+            expert_counts += torch.bincount(indices, minlength=self.num_experts)
+        total_assignments = batch_size * seq_len * self.top_k
+        
+        if expert_counts.sum() != total_assignments:
+            print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
+            
+        f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
 
         # P_i: Mean routing probability for each expert
         P_i = router_probs.mean(dim=[0, 1])  # Shape: [num_experts]
@@ -154,8 +169,14 @@ class MoEBlock(nn.Module):
         balance_loss = self.num_experts * torch.sum(f_i * P_i)
         balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
         
-        #print(f"Expert utilization (f_i): {f_i.tolist()}") # If some experts have near-zero utilization (values are close to 1/7 ≈ 0.143). If skewed, increase balance_loss_weight or router_weight_reg
-
+        print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
+        print(f"Expert Counts: {expert_counts.tolist()}")
+        print(f"Total Assignments: {total_assignments}")
+        print(f"Expert Utilization (f_i): {f_i.tolist()}")
+        print(f"Sum of f_i: {f_i.sum().item()}")
+        print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
+        print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
+        
         return combine_output, balance_loss
 
 class VisionTransformer(nn.Module):

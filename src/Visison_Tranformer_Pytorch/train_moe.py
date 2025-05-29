@@ -13,13 +13,13 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 # Training Params
 BATCH_SIZE = 128
 EPOCHS = 150
-LEARNING_RATE = 5e-4
+LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # DevOps Params
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
-def train(model, loader, optimizer, criterion, device, balance_loss_weight=0.1):
+def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     model.train()
     total_loss = 0
     total_balance_loss = 0
@@ -138,7 +138,7 @@ def main():
     model = VisionTransformer(config).to(DEVICE)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
     train_losses = []
     test_losses = []
