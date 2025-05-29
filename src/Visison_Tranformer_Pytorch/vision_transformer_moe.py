@@ -18,10 +18,10 @@ class VisionTransformerConfig:
     drop_rate: float = 0.15
     attn_drop_rate: float = 0.1
     num_experts: int = 7    # number or experts
-    top_k: int = 2
-    balance_loss_weight: float = 5.0  # high balance loss indicates not utilizing all experts
+    top_k: int = 3
+    balance_loss_weight: float = 20.0  # high balance loss indicates not utilizing all experts
     drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
-    router_weight_reg: float = 0.01 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
+    router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
@@ -131,9 +131,12 @@ class MoEBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
 
         router_logits = self.router(x)
-        noise = torch.rand_like(router_logits) * 0.1
+        noise = torch.rand_like(router_logits) * 0.75
         router_logits = router_logits + noise
-        router_probs = F.softmax(router_logits, dim = -1)
+        router_logits = torch.clamp(router_logits, -10, 10)
+        
+        temperature = 1.0
+        router_probs = F.softmax(router_logits / temperature, dim=-1)
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
