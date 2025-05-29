@@ -137,6 +137,9 @@ class MoEBlock(nn.Module):
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
+        
+        top_k_indices_original = top_k_indices
+        
         expert_outputs = torch.stack([expert(x) for expert in self.experts], dim = 2)
         top_k_indices = top_k_indices.unsqueeze(-1).expand(-1, -1, -1, self.embed_dim)
         selected_outputs = torch.gather(expert_outputs, 2, top_k_indices)
@@ -146,19 +149,21 @@ class MoEBlock(nn.Module):
         combine_output = self.drop_path(combine_output)
     
         # Validate indices
-        if top_k_indices.min() < 0 or top_k_indices.max() >= self.num_experts:
-            raise ValueError(f"Invalid expert indices: {top_k_indices.min()} to {top_k_indices.max()}")
+        if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
+            raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
             
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
         expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
         for k in range(self.top_k):
-            indices = top_k_indices[:, :, k].flatten()
+            indices = top_k_indices_original[:, :, k].flatten().long()
             expert_counts += torch.bincount(indices, minlength=self.num_experts)
         total_assignments = batch_size * seq_len * self.top_k
         
         if expert_counts.sum() != total_assignments:
             print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
+        else:
+            print("Expert counts match expected total!")
             
         f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
 
