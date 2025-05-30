@@ -19,6 +19,14 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # DevOps Params
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
+# **************** DevOps Functions ****************
+def setup_logging():
+    log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
+    sys.stdout = sys.stderr = open(log_file, 'w', buffering=1)
+    print(f"Training started at {datetime.now()}\n")
+    print(f"Logging to: {log_file}")
+
+# **************** DevOps Functions ****************
 def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     model.train()
     total_loss = 0
