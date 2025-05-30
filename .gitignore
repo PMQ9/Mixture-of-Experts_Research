@@ -1,3 +1,3 @@
-src/Visison_Tranformer_Pytorch/.data/
-src/Visison_Tranformer_Pytorch/__pycache__/
-src/Visison_Tranformer_Pytorch/vit_cifer10_best.pth
+src/Vision_Transformer_Pytorch/.data/
+src/Vision_Transformer_Pytorch/__pycache__/
+src/Vision_Transformer_Pytorch/vit_cifer10_best.pth

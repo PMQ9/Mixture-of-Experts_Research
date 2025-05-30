@@ -56,8 +56,8 @@ train:
     - echo "Starting training..."
     - cd ${CI_PROJECT_DIR}
     - mkdir -Force artifacts
-    #- "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Visison_Tranformer_Pytorch/train_moe.py' *> 'artifacts/pipeline_log.txt'" # 2 typos
-    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Visison_Tranformer_Pytorch/train_moe.py' | Tee-Object -FilePath 'artifacts/pipeline_log.txt'"    
+    #- "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Vision_Transformer_Pytorch/train_moe.py' *> 'artifacts/pipeline_log.txt'" # 2 typos
+    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 'src/Vision_Transformer_Pytorch/train_moe.py' | Tee-Object -FilePath 'artifacts/pipeline_log.txt'"    
     - echo "Training complete!"
   dependencies:
     - test_gpu
