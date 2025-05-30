@@ -9,6 +9,7 @@ import time
 import os
 import sys
 from datetime import datetime
+import numpy as np
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -17,6 +18,8 @@ BATCH_SIZE = 128
 EPOCHS = int(os.getenv('CICD_EPOCH', 150))
 LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+CUTMIX_ALPHA = 1.0
+CUTMIX_PROB = 0.5
 
 # **************** DevOps Params ****************
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
@@ -44,7 +47,40 @@ def setup_logging():
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
 
-# **************** DevOps Functions ****************
+# **************** CutMix Function ****************
+def cutmix(data, targets, alpha):
+    indices = torch.randperm(data.size(0))
+    shuffled_data = data[indices]
+    shuffled_targets = targets[indices]
+
+    lam = np.random.beta(alpha, alpha)
+    
+    bbx1, bby1, bbx2, bby2 = rand_bbox(data.size(), lam)
+    data[:, :, bbx1:bbx2, bby1:bby2] = shuffled_data[:, :, bbx1:bbx2, bby1:bby2]
+    
+    # Adjust lambda to exactly match the pixel ratio
+    lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (data.size(-1) * data.size(-2)))
+    
+    return data, targets, shuffled_targets, lam
+
+def rand_bbox(size, lam):
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = int(W * cut_rat)
+    cut_h = int(H * cut_rat)
+
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+    return bbx1, bby1, bbx2, bby2
+
+# **************** Training Functions ****************
 def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     model.train()
     total_loss = 0
@@ -55,8 +91,16 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     for batch_idx, (data, target) in enumerate(tqdm(loader)):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        output, balance_losses = model(data)
-        cls_loss = criterion(output, target)
+        #output, balance_losses = model(data)
+        #cls_loss = criterion(output, target)
+        
+        if np.random.rand() < CUTMIX_PROB:
+            data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
+            output, balance_losses = model(data)
+            cls_loss = lam * criterion(output, target_a) + (1 - lam) * criterion(output, target_b)
+        else:
+            output, balance_losses = model(data)
+            cls_loss = criterion(output, target)
         
         # Aggregate balance loss across all MoE blocks
         balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
@@ -69,7 +113,11 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
         total_balance_loss += balance_loss.item()
         _, predicted = output.max(1)
         total += target.size(0)
-        correct += predicted.eq(target).sum().item()
+        #correct += predicted.eq(target).sum().item()
+        if np.random.rand() < CUTMIX_PROB:
+            correct += lam * predicted.eq(target_a).sum().item() + (1 - lam) * predicted.eq(target_b).sum().item()
+        else:
+            correct += predicted.eq(target).sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader)
@@ -136,10 +184,12 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
     plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
     plt.close(fig)
 
+# **************** Main Functions ****************
 def main():
     config = VisionTransformerConfig
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
+    # print(f"CutMix Parameters: Alpha={CUTMIX_ALPHA}, Probability={CUTMIX_PROB}") 
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -206,7 +256,7 @@ def main():
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
-        # Plot metrics every 5 epochs
+        # Plot metrics every 2 epochs
         if (epoch + 1) % 2 == 0 or epoch == EPOCHS - 1:
             plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses)
 
