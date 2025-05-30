@@ -8,6 +8,7 @@ stages:
   - test_gpu
   - prepare
   - train
+  - clean_up
 
 test_gpu:
   stage: test_gpu
@@ -75,3 +76,12 @@ train:
   #only:
     #- schedules
   timeout: 10h
+
+clean_up  :
+  stage: clean_up
+  only:
+    - web
+  script:
+    - echo "Cleaning Up..." # Not yet implemented
+  tags:
+    - $SERVER_TAG
