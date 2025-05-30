@@ -75,7 +75,7 @@ train:
     - $SERVER_TAG
   #only:
     #- schedules
-  timeout: 10h
+  timeout: 36h
 
 clean_up  :
   stage: clean_up
