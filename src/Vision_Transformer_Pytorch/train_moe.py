@@ -14,7 +14,7 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
-EPOCHS = 150
+EPOCHS = int(os.getenv('CICD_EPOCH', 150))
 LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -24,7 +24,23 @@ OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',
 # **************** DevOps Functions ****************
 def setup_logging():
     log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
+    class DualOutput:
+        def __init__(self, file, terminal):
+            self.file = file
+            self.terminal = terminal
+
+        def write(self, message):
+            self.file.write(message)
+            self.terminal.write(message)
+            self.file.flush()  # Ensure immediate write to file
+
+        def flush(self):
+            self.file.flush()
+            self.terminal.flush()
+            
+    log_file_handle = open(log_file, 'w', buffering=1)
     sys.stdout = sys.stderr = open(log_file, 'w', buffering=1)
+    sys.stderr = DualOutput(log_file_handle, sys.__stderr__)
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
 
