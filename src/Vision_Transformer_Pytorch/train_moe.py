@@ -33,13 +33,15 @@ def setup_logging():
             self.file.write(message)
             self.terminal.write(message)
             self.file.flush()  # Ensure immediate write to file
+            self.terminal.flush()
 
         def flush(self):
             self.file.flush()
             self.terminal.flush()
-            
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)        
     log_file_handle = open(log_file, 'w', buffering=1)
-    sys.stdout = sys.stderr = open(log_file, 'w', buffering=1)
+    sys.stdout = DualOutput(log_file_handle, sys.__stdout__)
     sys.stderr = DualOutput(log_file_handle, sys.__stderr__)
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
@@ -52,7 +54,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     correct = 0
     total = 0
     
-    for batch_idx, (data, target) in enumerate(tqdm(loader)):
+    for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Training")):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output, balance_losses = model(data)
@@ -84,7 +86,7 @@ def test(model, loader, optimizer, criterion, device):
     total = 0
     
     with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(tqdm(loader)):
+        for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Testing")):
             data, target = data.to(device), target.to(device)
             output, balance_losses = model(data)
             loss = criterion(output, target)
