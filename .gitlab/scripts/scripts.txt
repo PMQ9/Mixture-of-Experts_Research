@@ -1,0 +1,2 @@
+Install GitLab Runner
+choco install gitlab-runner

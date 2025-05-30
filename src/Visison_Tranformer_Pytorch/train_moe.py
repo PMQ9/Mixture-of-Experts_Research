@@ -7,16 +7,18 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import time
 import os
+import sys
+from datetime import datetime
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
-# Training Params
+# **************** Training Params ****************
 BATCH_SIZE = 128
 EPOCHS = 150
 LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# DevOps Params
+# **************** DevOps Params ****************
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
 # **************** DevOps Functions ****************
@@ -121,6 +123,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 def main():
     config = VisionTransformerConfig
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    setup_logging()
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -175,6 +178,7 @@ def main():
         train_balance_losses.append(train_balance_loss)
         test_balance_losses.append(test_balance_loss)
 
+        print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Acc: {train_acc:.4f}")
         print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
