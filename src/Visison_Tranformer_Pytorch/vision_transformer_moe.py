@@ -10,16 +10,34 @@ class VisionTransformerConfig:
     patch_size: int = 4
     in_chans : int =3
     num_class: int = 10     #number of classes for classification
-    embed_dim: int = 192
+    embed_dim: int = 192 # consider increase to 256 or 384
     depth: int = 9
     num_heads: int = 12
     mlp_ratio: float = 2.0
     qkv_bias: bool = True
-    drop_rate: float = 0.1
-    attn_drop_rate: float = 0.0
-    num_experts: int = 4    # number or experts
-    top_k: int = 2
+    drop_rate: float = 0.15
+    attn_drop_rate: float = 0.1
+    num_experts: int = 7    # number or experts
+    top_k: int = 3
+    balance_loss_weight: float = 20.0  # high balance loss indicates not utilizing all experts
+    drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        if self.drop_prob == 0. or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # Work with batched inputs
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()  # Binarize to 0 or 1
+        output = x.div(keep_prob) * random_tensor  # Scale to maintain expected value
+        return output
     
 class PatchEmbed(nn.Module):
     def __init__(self, config):
@@ -97,10 +115,15 @@ class MoEBlock(nn.Module):
         self.embed_dim = config.embed_dim
         self.num_experts = config.num_experts
         self.top_k = config.top_k
+        self.drop_path = DropPath(config.drop_path_rate) if config.drop_path_rate > 0.0 else nn.Identity()
+        self.router_weight_reg = config.router_weight_reg
 
         # Router
         self.router = nn.Linear(self.embed_dim, self.num_experts)
-
+        nn.init.xavier_uniform_(self.router.weight)  # Add initialization
+        if self.router.bias is not None:
+            nn.init.zeros_(self.router.bias)
+            
         # Experts
         self.experts = nn.ModuleList([Block(config) for _ in range (self.num_experts)])
 
@@ -108,16 +131,61 @@ class MoEBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
 
         router_logits = self.router(x)
-        router_probs = F.softmax(router_logits, dim = -1)
+        noise = torch.rand_like(router_logits) * 0.75
+        router_logits = router_logits + noise
+        router_logits = torch.clamp(router_logits, -10, 10)
+        
+        temperature = 1.0
+        router_probs = F.softmax(router_logits / temperature, dim=-1)
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
+        
+        top_k_indices_original = top_k_indices
+        
         expert_outputs = torch.stack([expert(x) for expert in self.experts], dim = 2)
         top_k_indices = top_k_indices.unsqueeze(-1).expand(-1, -1, -1, self.embed_dim)
         selected_outputs = torch.gather(expert_outputs, 2, top_k_indices)
         combine_output = (selected_outputs * top_k_probs.unsqueeze(-1)).sum(dim = 2)
 
-        return combine_output
+        # Apply DropPath
+        combine_output = self.drop_path(combine_output)
+    
+        # Validate indices
+        if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
+            raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
+            
+        # Compute load balancing loss
+        # f_i: Fraction of tokens assigned to each expert
+        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
+        for k in range(self.top_k):
+            indices = top_k_indices_original[:, :, k].flatten().long()
+            expert_counts += torch.bincount(indices, minlength=self.num_experts)
+        total_assignments = batch_size * seq_len * self.top_k
+        
+        if expert_counts.sum() != total_assignments:
+            print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
+        else:
+            print("Expert counts match expected total!")
+            
+        f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
+
+        # P_i: Mean routing probability for each expert
+        P_i = router_probs.mean(dim=[0, 1])  # Shape: [num_experts]
+
+        # Load balancing loss
+        balance_loss = self.num_experts * torch.sum(f_i * P_i)
+        balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
+        
+        print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
+        print(f"Expert Counts: {expert_counts.tolist()}")
+        print(f"Total Assignments: {total_assignments}")
+        print(f"Expert Utilization (f_i): {f_i.tolist()}")
+        print(f"Sum of f_i: {f_i.sum().item()}")
+        print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
+        print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
+        
+        return combine_output, balance_loss
 
 class VisionTransformer(nn.Module):
     def __init__(self, config):
@@ -133,7 +201,6 @@ class VisionTransformer(nn.Module):
         #self.blocks = nn.ModuleList([Block(config) for _ in range(config.depth)])
         self.blocks = nn.ModuleList([MoEBlock(config) for _ in range(config.depth)])
 
-
         self.norm = nn.LayerNorm(config.embed_dim)
         self.head = nn.Linear(config.embed_dim, config.num_class)
         
@@ -147,11 +214,13 @@ class VisionTransformer(nn.Module):
         x = x + self.pos_embed
         x = self.pos_drop(x)
         
+        balance_losses = []
         for block in self.blocks:
-            x = block(x)
+            x, block_balance_loss = block(x)
+            balance_losses.append(block_balance_loss)
         
         x = self.norm(x)
         x = x[:, 0]
         x = self.head(x)
-        return x
+        return x, balance_losses
            
