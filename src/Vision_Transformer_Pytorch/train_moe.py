@@ -94,7 +94,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
         #output, balance_losses = model(data)
         #cls_loss = criterion(output, target)
         
-        if np.random.rand() < CUTMIX_PROB:
+        if data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB:
             data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
             output, balance_losses = model(data)
             cls_loss = lam * criterion(output, target_a) + (1 - lam) * criterion(output, target_b)
@@ -114,7 +114,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
         _, predicted = output.max(1)
         total += target.size(0)
         #correct += predicted.eq(target).sum().item()
-        if np.random.rand() < CUTMIX_PROB:
+        if data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB:
             correct += lam * predicted.eq(target_a).sum().item() + (1 - lam) * predicted.eq(target_b).sum().item()
         else:
             correct += predicted.eq(target).sum().item()
