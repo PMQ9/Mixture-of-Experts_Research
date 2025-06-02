@@ -20,7 +20,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 # Performance
 
-| Creteria                | Result  | Note   |
+| Criteria                | Result  | Note   |
 |-------------------------|---------|--------|
 | Best training accuracy  | 0.7056  |        |
 | Best testing accuracy   | 0.7543  |        |
@@ -35,5 +35,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 *Why do you a CI/CD pipeline for this? -> Yes👍*
 
 <img src="utils/doc/cicd_pipeline.png" alt="Alt Text" width="75%"/>
+
+Note: Pipeline training log file can be heavy, use this command to view quickly: ` get-content C:\your-path-here\training_log.txt -tail 10`
 
 One of the benefit of a CI/CD pipeline is freeing up your machine from building/testing/compiling. You can make changes on your slim and light laptop, push changes to be compiled/built/test on your server or more powerful home PC and don't have to worry about lugging around a clunky and power hungry workstation.
