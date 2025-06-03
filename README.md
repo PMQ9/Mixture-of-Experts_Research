@@ -20,14 +20,14 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 # Performance
 
-| Criteria                | Result  | Note   |
-|-------------------------|---------|--------|
-| Best training accuracy  | 0.7056  |        |
-| Best testing accuracy   | 0.7543  |        |
-| Best training loss      | 0.7975  |        |
-| Best testing loss       | 0.7461  |        |
-| Train balance loss      | 1.0004  |        |
-| Test balance loss       | 1.0004  |        |
+| Criteria                  | Result    | Note   |
+|---------------------------|-----------|--------|
+| Best training accuracy    | 0.7056    |        |
+| **Best testing accuracy** | **0.7821**|        |
+| Best training loss        | 0.7975    |        |
+| Best testing loss         | 0.7461    |        |
+| Train balance loss        | 1.0004    |        |
+| Test balance loss         | 1.0004    |        |
 
 <img src="utils/doc/training_metrics.png" alt="Alt Text" width="75%"/>
 
