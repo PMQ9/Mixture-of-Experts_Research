@@ -15,7 +15,7 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
-EPOCHS = int(os.getenv('CICD_EPOCH', 150))
+EPOCHS = int(os.getenv('CICD_EPOCH', 350))
 LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CUTMIX_ALPHA = 1.0
