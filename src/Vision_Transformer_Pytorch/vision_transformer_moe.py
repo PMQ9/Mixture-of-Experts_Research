@@ -178,12 +178,12 @@ class MoEBlock(nn.Module):
         balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
         
         print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
-        print(f"Expert Counts: {expert_counts.tolist()}")
-        print(f"Total Assignments: {total_assignments}")
-        print(f"Expert Utilization (f_i): {f_i.tolist()}")
+        #print(f"Expert Counts: {expert_counts.tolist()}")
+        #print(f"Total Assignments: {total_assignments}")
+        #print(f"Expert Utilization (f_i): {f_i.tolist()}")
         print(f"Sum of f_i: {f_i.sum().item()}")
-        print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
-        print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
+        #print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
+        #print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
         
         return combine_output, balance_loss
 
