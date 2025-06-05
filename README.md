@@ -49,6 +49,35 @@ Content: 50,000 images for 43 dfferent traffc sign classes, vary in size and inc
 
 Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-traffic-sign/data
 
+Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/published-archive.html
+
+- Training Set: GTSRB-Training_fixed.zip
+
+- Test Images: GTSRB_Final_Test_Images.zip
+
+- Test Annotations: GTSRB_Final_Test_GT.zip
+
+Standard folder structure: 
+
+./src/Vision_Transformer_Pytorch/data/
+  └── GTSRB/
+      ├── Training/
+      │   ├── 00000/
+      │   │   ├── 00000_00000.ppm
+      │   │   ├── 00000_00001.ppm
+      │   │   └── GT-00000.csv
+      │   ├── 00001/
+      │   │   ├── 00001_00000.ppm
+      │   │   ├── 00001_00001.ppm
+      │   │   └── GT-00001.csv
+      │   └── ... (up to 00042)
+      ├── Test/
+      │   ├── Images/
+      │   │   ├── 00000.ppm
+      │   │   ├── 00001.ppm
+      │   │   └── ...
+      │   └── GT-final_test.csv
+
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
 | Best training accuracy    |           |                       |
@@ -64,6 +93,7 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 <img src="utils/doc/cicd_pipeline.png" alt="Alt Text" width="75%"/>
 
-Note: Pipeline training log file can be heavy, use this command to view quickly: ` get-content C:\your-path-here\training_log.txt -tail 10`
+Benefit of a CI/CD pipeline is freeing up your machine from building/testing/compiling. You can make changes on your slim and light laptop, push changes to be compiled/built/test on your server or more powerful home PC and don't have to worry about lugging around a clunky and power hungry workstation. 
 
-One of the benefit of a CI/CD pipeline is freeing up your machine from building/testing/compiling. You can make changes on your slim and light laptop, push changes to be compiled/built/test on your server or more powerful home PC and don't have to worry about lugging around a clunky and power hungry workstation.
+One method to do this is to remotely connect to your PC over the internet. This poses some security risks, since you are exposing your PC to the entire internet to find. Using GitLab Runner or Jenkins Agent is safer (knock on wood).
+

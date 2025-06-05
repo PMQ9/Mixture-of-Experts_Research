@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -18,12 +18,16 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 # **************** Dataset class for GTSRB ****************
 class GTSRBTestDataset(Dataset):
     def __init__(self, root, csv_file, transform=None):
+        if not os.path.exists(csv_file):
+            raise FileNotFoundError(f"CSV file not found at {csv_file}")
+        if not os.path.exists(root):
+            raise FileNotFoundError(f"Test dataset directory not found at {root}")
         self.root = root
         self.transform = transform
         self.images = []
         self.labels = []
         with open(csv_file, 'r') as f:
-            reader = csv.DictReader(f)
+            reader = csv.DictReader(f, delimiter=';')
             for row in reader:
                 self.images.append(row['Filename'])
                 self.labels.append(int(row['ClassId']))
@@ -32,7 +36,9 @@ class GTSRBTestDataset(Dataset):
         return len(self.images)
     
     def __getitem__(self, idx):
-        img_path = os.path.join(self.root, self.images[idx])
+        img_path = os.path.join(self.root, "Images", self.images[idx])
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"Image not found at {img_path}")
         image = Image.open(img_path).convert('RGB')
         label = self.labels[idx]
         if self.transform:
@@ -233,9 +239,19 @@ def main():
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),  # adapt this for GTSRB
     ])
 
-    # GTSRB dataset is manually downloaded to ./data/GTSRB/Traing and /Test
-    train_dataset = datasets.ImageFolder(root='./data/GTSRB/Training', transform=transform_train)
-    test_dataset = GTSRBTestDataset(root='./data/GTSRB/Test', csv_file='./data/GTSRB/Test/GT-final_test.csv', transform=transform_test)
+    # Verify dataset paths
+    train_dir = './data/GTSRB/Training'
+    test_dir = './data/GTSRB/Test'
+    csv_file = './data/GTSRB/Test/GT-final_test.csv'
+    if not os.path.exists(train_dir):
+        raise FileNotFoundError(f"Training directory not found at {train_dir}")
+    if not os.path.exists(test_dir):
+        raise FileNotFoundError(f"Test directory not found at {test_dir}")
+    if not os.path.exists(csv_file):
+        raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
+    
+    train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
+    test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True)
