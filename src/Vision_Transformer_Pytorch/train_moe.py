@@ -235,6 +235,7 @@ def main():
 
     transform_test = transforms.Compose([
         transforms.Resize(32),
+        transforms.CenterCrop(32),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),  # adapt this for GTSRB
     ])
