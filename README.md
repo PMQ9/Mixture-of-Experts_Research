@@ -59,24 +59,24 @@ Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152ae
 
 Standard folder structure: 
 
-./src/Vision_Transformer_Pytorch/data/
-  └── GTSRB/
-      ├── Training/
-      │   ├── 00000/
-      │   │   ├── 00000_00000.ppm
-      │   │   ├── 00000_00001.ppm
-      │   │   └── GT-00000.csv
-      │   ├── 00001/
-      │   │   ├── 00001_00000.ppm
-      │   │   ├── 00001_00001.ppm
-      │   │   └── GT-00001.csv
-      │   └── ... (up to 00042)
-      ├── Test/
-      │   ├── Images/
-      │   │   ├── 00000.ppm
-      │   │   ├── 00001.ppm
-      │   │   └── ...
-      │   └── GT-final_test.csv
+    ./src/Vision_Transformer_Pytorch/data/
+    └── GTSRB/
+        ├── Training/
+        │   ├── 00000/
+        │   │   ├── 00000_00000.ppm
+        │   │   ├── 00000_00001.ppm
+        │   │   └── GT-00000.csv
+        │   ├── 00001/
+        │   │   ├── 00001_00000.ppm
+        │   │   ├── 00001_00001.ppm
+        │   │   └── GT-00001.csv
+        │   └── ... (up to 00042)
+        ├── Test/
+        │   ├── Images/
+        │   │   ├── 00000.ppm
+        │   │   ├── 00001.ppm
+        │   │   └── ...
+        │   └── GT-final_test.csv
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
