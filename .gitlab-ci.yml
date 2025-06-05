@@ -69,6 +69,7 @@ train:
       - artifacts/pipeline_log.png
       - artifacts/training_metrics.png
       - artifacts/vit_cifar10_best.pth
+      - artifacts/vit_gtsrb_best.pth
     when: always
     expire_in: 1 week
   tags:
