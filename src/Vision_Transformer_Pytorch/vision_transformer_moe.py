@@ -163,10 +163,10 @@ class MoEBlock(nn.Module):
             expert_counts += torch.bincount(indices, minlength=self.num_experts)
         total_assignments = batch_size * seq_len * self.top_k
         
-        if expert_counts.sum() != total_assignments:
-            print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
-        else:
-            print("Expert counts match expected total!")
+        #if expert_counts.sum() != total_assignments:
+        #    print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
+        #else:
+        #    print("Expert counts match expected total!")
             
         f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
 
@@ -177,11 +177,11 @@ class MoEBlock(nn.Module):
         balance_loss = self.num_experts * torch.sum(f_i * P_i)
         balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
         
-        print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
+        #print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
         #print(f"Expert Counts: {expert_counts.tolist()}")
         #print(f"Total Assignments: {total_assignments}")
         #print(f"Expert Utilization (f_i): {f_i.tolist()}")
-        print(f"Sum of f_i: {f_i.sum().item()}")
+        #print(f"Sum of f_i: {f_i.sum().item()}")
         #print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
         #print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
         

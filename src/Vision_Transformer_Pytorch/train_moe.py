@@ -10,6 +10,7 @@ import os
 import sys
 from datetime import datetime
 import numpy as np
+from torch.cuda.amp import autocast, GradScaler
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -20,6 +21,8 @@ LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CUTMIX_ALPHA = 1.0
 CUTMIX_PROB = 0.5
+TEST_START_EPOCH = 100
+TEST_FREQUENCY = 2
 
 # **************** DevOps Params ****************
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
@@ -192,7 +195,6 @@ def main():
     config = VisionTransformerConfig
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
-    # print(f"CutMix Parameters: Alpha={CUTMIX_ALPHA}, Probability={CUTMIX_PROB}") 
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -233,34 +235,44 @@ def main():
     for epoch in range(EPOCHS):
         start_time = time.time()
         train_loss, train_balance_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE, balance_loss_weight=config.balance_loss_weight)
-        test_loss, test_balance_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
+        
+        # Perform testing only after TEST_START_EPOCH and every TEST_FREQUENCY epochs
+        test_loss, test_balance_loss, test_acc = None, None, None
+        if epoch >= TEST_START_EPOCH:
+            if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
+                test_loss, test_balance_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
+    
         scheduler.step()
 
         epoch_time = time.time() - start_time
         total_training_time += epoch_time
         
-        # Store metrics for plotting
+        # Store training metrics
         train_losses.append(train_loss)
-        test_losses.append(test_loss)
         train_accs.append(train_acc)
-        test_accs.append(test_acc)
         train_balance_losses.append(train_balance_loss)
-        test_balance_losses.append(test_balance_loss)
+
+        # Store testing metrics
+        if test_loss is not None:
+            test_losses.append(test_loss)
+            test_accs.append(test_acc)
+            test_balance_losses.append(test_balance_loss)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Acc: {train_acc:.4f}")
-        print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
+        if test_loss is not None:
+            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
-        if test_acc > best_acc:
+        if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
             torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_cifar10_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
-        # Plot metrics every 2 epochs
-        if (epoch + 1) % 2 == 0 or epoch == EPOCHS - 1:
+        # Plot metrics every 10 epochs
+        if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
             plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
