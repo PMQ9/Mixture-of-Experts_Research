@@ -163,10 +163,10 @@ class MoEBlock(nn.Module):
             expert_counts += torch.bincount(indices, minlength=self.num_experts)
         total_assignments = batch_size * seq_len * self.top_k
         
-        if expert_counts.sum() != total_assignments:
-            print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
-        else:
-            print("Expert counts match expected total!")
+        #if expert_counts.sum() != total_assignments:
+        #    print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
+        #else:
+        #    print("Expert counts match expected total!")
             
         f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
 
