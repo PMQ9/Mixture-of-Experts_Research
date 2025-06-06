@@ -11,6 +11,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [x] Add Stiochastic Depth
 - [x] Add L2 Regularization
 - [x] Add CutMix
+- [x] Start testing after N epochs, once every M epochs.
 - [ ] Add Attention mechanism for Router improvement
 - [ ] Add RandAugment
 - [ ] Add Label Smoothing 
