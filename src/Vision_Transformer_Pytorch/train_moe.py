@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -10,9 +10,41 @@ import os
 import sys
 from datetime import datetime
 import numpy as np
+import csv
+from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
+
+# **************** Dataset class for GTSRB ****************
+class GTSRBTestDataset(Dataset):
+    def __init__(self, root, csv_file, transform=None):
+        if not os.path.exists(csv_file):
+            raise FileNotFoundError(f"CSV file not found at {csv_file}")
+        if not os.path.exists(root):
+            raise FileNotFoundError(f"Test dataset directory not found at {root}")
+        self.root = root
+        self.transform = transform
+        self.images = []
+        self.labels = []
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            for row in reader:
+                self.images.append(row['Filename'])
+                self.labels.append(int(row['ClassId']))
+    
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.root, "Images", self.images[idx])
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"Image not found at {img_path}")
+        image = Image.open(img_path).convert('RGB')
+        label = self.labels[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, label
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
@@ -95,8 +127,6 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Training")):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        #output, balance_losses = model(data)
-        #cls_loss = criterion(output, target)
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
@@ -119,7 +149,6 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
         total_balance_loss += balance_loss.item()
         _, predicted = output.max(1)
         total += target.size(0)
-        #correct += predicted.eq(target).sum().item()
         if apply_cutmix:
             correct += lam * predicted.eq(target_a).sum().item() + (1 - lam) * predicted.eq(target_b).sum().item()
         else:
@@ -192,27 +221,41 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 
 # **************** Main Functions ****************
 def main():
-    config = VisionTransformerConfig
+    config = VisionTransformerConfig(num_class = 43)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
 
     transform_train = transforms.Compose([
+        transforms.Resize(32), 
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)), # adapt this for GTSRB
         transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
     ])
 
     transform_test = transforms.Compose([
+        transforms.Resize(32),
+        transforms.CenterCrop(32),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),  # adapt this for GTSRB
     ])
 
-    train_dataset = datasets.CIFAR10(root='.data', train=True, download=True, transform=transform_train)
-    test_dataset = datasets.CIFAR10(root='.data', train=False, download=True, transform=transform_test)
+    # Verify dataset paths
+    train_dir = './data/GTSRB/Training'
+    test_dir = './data/GTSRB/Test'
+    csv_file = './data/GTSRB/Test/GT-final_test.csv'
+    if not os.path.exists(train_dir):
+        raise FileNotFoundError(f"Training directory not found at {train_dir}")
+    if not os.path.exists(test_dir):
+        raise FileNotFoundError(f"Test directory not found at {test_dir}")
+    if not os.path.exists(csv_file):
+        raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
+    
+    train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
+    test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True)
@@ -267,12 +310,14 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_cifar10_best.pth"))
+            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
-        # Plot metrics every 10 epochs
-        if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
+
+        # Plot metrics every 5 epochs
+        if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
+
             plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
