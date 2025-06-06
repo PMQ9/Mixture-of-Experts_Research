@@ -195,7 +195,6 @@ def main():
     config = VisionTransformerConfig
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
-    # print(f"CutMix Parameters: Alpha={CUTMIX_ALPHA}, Probability={CUTMIX_PROB}") 
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
