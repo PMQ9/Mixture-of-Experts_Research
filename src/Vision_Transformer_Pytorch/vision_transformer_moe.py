@@ -77,7 +77,18 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-    
+
+class AttentionRouter(nn.Module):
+    def __init__(self, embed_dim, num_experts):
+        super().__init__()
+        self.expert_tokens = nn.Parameter(torch.empty(num_experts, embed_dim))
+        nn.init.xavier_uniform_(self.expert_tokens)
+        self.embed_dim = embed_dim
+
+    def forward(self, x):
+        router_logits = torch.einsum('bse,ne->bsn', x, self.expert_tokens) / (self.embed_dim ** 0.5)
+        return router_logits
+
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -119,10 +130,11 @@ class MoEBlock(nn.Module):
         self.router_weight_reg = config.router_weight_reg
 
         # Router
-        self.router = nn.Linear(self.embed_dim, self.num_experts)
-        nn.init.xavier_uniform_(self.router.weight)  # Add initialization
-        if self.router.bias is not None:
-            nn.init.zeros_(self.router.bias)
+        #self.router = nn.Linear(self.embed_dim, self.num_experts)
+        #nn.init.xavier_uniform_(self.router.weight)  # Add initialization
+        #if self.router.bias is not None:
+        #    nn.init.zeros_(self.router.bias)
+        self.router = AttentionRouter(self.embed_dim, self.num_experts)
             
         # Experts
         self.experts = nn.ModuleList([Block(config) for _ in range (self.num_experts)])
@@ -169,13 +181,13 @@ class MoEBlock(nn.Module):
         #    print("Expert counts match expected total!")
             
         f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
-
-        # P_i: Mean routing probability for each expert
         P_i = router_probs.mean(dim=[0, 1])  # Shape: [num_experts]
 
         # Load balancing loss
         balance_loss = self.num_experts * torch.sum(f_i * P_i)
-        balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
+        router_weight_norm = torch.norm(self.router.expert_tokens, p=2)
+
+        balance_loss += self.router_weight_reg * router_weight_norm
         
         #print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
         #print(f"Expert Counts: {expert_counts.tolist()}")
