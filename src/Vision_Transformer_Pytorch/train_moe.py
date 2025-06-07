@@ -186,36 +186,65 @@ def test(model, loader, optimizer, criterion, device):
     return avg_loss, avg_balance_loss, accuracy
 
 def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses):
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15), sharex=True)
-    
-    # Plot losses
-    ax1.plot(train_losses, label='Train Loss')
-    ax1.plot(test_losses, label='Test Loss')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Loss')
-    ax1.set_title('Training and Test Classification Loss')
-    ax1.legend()
-    ax1.grid(True)
-    
-    # Plot accuracies
-    ax2.plot(train_accs, label='Train Accuracy')
-    ax2.plot(test_accs, label='Test Accuracy')
-    ax2.set_xlabel('Epoch')
-    ax2.set_ylabel('Accuracy')
-    ax2.set_title('Training and Test Accuracy')
-    ax2.legend()
-    ax2.grid(True)
-    
-    # Plot balance losses
-    ax3.plot(train_balance_losses, label='Train Balance Loss')
-    ax3.plot(test_balance_losses, label='Test Balance Loss')
-    ax3.set_xlabel('Epoch')
-    ax3.set_ylabel('Balance Loss')
-    ax3.set_title('Training and Test Balance Loss')
-    ax3.legend()
-    ax3.grid(True)
-    
-    plt.tight_layout()
+    # Create epochs range for training (0 to EPOCHS-1)
+    train_epochs = list(range(EPOCHS))
+    # Create epochs range for testing (TEST_START_EPOCH to EPOCHS-1, every TEST_FREQUENCY)
+    test_epochs = list(range(TEST_START_EPOCH, EPOCHS, TEST_FREQUENCY))
+
+    # Create a figure with 3 rows and 2 columns
+    fig, axes = plt.subplots(3, 2, figsize=(15, 18))
+    fig.suptitle('Training and Testing Metrics', fontsize=16)
+
+    # Plot 1: Training Classification Loss
+    axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
+    axes[0, 0].set_xlabel('Epoch')
+    axes[0, 0].set_ylabel('Loss')
+    axes[0, 0].set_title('Training Classification Loss')
+    axes[0, 0].legend()
+    axes[0, 0].grid(True)
+
+    # Plot 2: Test Classification Loss
+    axes[0, 1].plot(test_epochs[:len(test_losses)], test_losses, label='Test Loss')
+    axes[0, 1].set_xlabel('Epoch')
+    axes[0, 1].set_ylabel('Loss')
+    axes[0, 1].set_title(f'Test Classification Loss (Starting from Epoch {TEST_START_EPOCH})')
+    axes[0, 1].legend()
+    axes[0, 1].grid(True)
+
+    # Plot 3: Training Accuracy
+    axes[1, 0].plot(train_epochs[:len(train_accs)], train_accs, label='Train Accuracy')
+    axes[1, 0].set_xlabel('Epoch')
+    axes[1, 0].set_ylabel('Accuracy')
+    axes[1, 0].set_title('Training Accuracy')
+    axes[1, 0].legend()
+    axes[1, 0].grid(True)
+
+    # Plot 4: Test Accuracy
+    axes[1, 1].plot(test_epochs[:len(test_accs)], test_accs, label='Test Accuracy')
+    axes[1, 1].set_xlabel('Epoch')
+    axes[1, 1].set_ylabel('Accuracy')
+    axes[1, 1].set_title(f'Test Accuracy (Starting from Epoch {TEST_START_EPOCH})')
+    axes[1, 1].legend()
+    axes[1, 1].grid(True)
+
+    # Plot 5: Training Balance Loss
+    axes[2, 0].plot(train_epochs[:len(train_balance_losses)], train_balance_losses, label='Train Balance Loss')
+    axes[2, 0].set_xlabel('Epoch')
+    axes[2, 0].set_ylabel('Balance Loss')
+    axes[2, 0].set_title('Training Balance Loss')
+    axes[2, 0].legend()
+    axes[2, 0].grid(True)
+
+    # Plot 6: Test Balance Loss
+    axes[2, 1].plot(test_epochs[:len(test_balance_losses)], test_balance_losses, label='Test Balance Loss')
+    axes[2, 1].set_xlabel('Epoch')
+    axes[2, 1].set_ylabel('Balance Loss')
+    axes[2, 1].set_title(f'Test Balance Loss (Starting from Epoch {TEST_START_EPOCH})')
+    axes[2, 1].legend()
+    axes[2, 1].grid(True)
+
+    # Adjust layout and save the figure
+    plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust for suptitle
     plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
     plt.close(fig)
 
