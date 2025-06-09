@@ -152,6 +152,12 @@ class MoEBlock(nn.Module):
         router_probs = F.softmax(router_logits / temperature, dim=-1)
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
+
+        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
+        for k in range(self.top_k):
+            indices = top_k_indices[:, :, k].flatten().long() # remember to check this
+            expert_counts += torch.bincount(indices, minlength=self.num_experts)
+
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
         
         #top_k_indices_original = top_k_indices
@@ -171,10 +177,7 @@ class MoEBlock(nn.Module):
             
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
-        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
-        for k in range(self.top_k):
-            indices = top_k_indices[:, :, k].flatten().long() # remember to check this
-            expert_counts += torch.bincount(indices, minlength=self.num_experts)
+
         #total_assignments = batch_size * seq_len * self.top_k
         
         #if expert_counts.sum() != total_assignments:
