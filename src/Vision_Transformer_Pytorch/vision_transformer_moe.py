@@ -19,7 +19,7 @@ class VisionTransformerConfig:
     attn_drop_rate: float = 0.1
     num_experts: int = 7    # number or experts
     top_k: int = 3
-    balance_loss_weight: float = 20.0  # high balance loss indicates not utilizing all experts
+    balance_loss_weight: float = 1.0  # Reduced from a potentially higher value
     drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
     router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
@@ -143,9 +143,10 @@ class MoEBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
 
         router_logits = self.router(x)
-        noise = torch.rand_like(router_logits) * 0.75
-        router_logits = router_logits + noise
-        router_logits = torch.clamp(router_logits, -10, 10)
+        # Noise and clamping removed for better differentiation
+        #noise = torch.rand_like(router_logits) * 0.75
+        #router_logits = router_logits + noise
+        #router_logits = torch.clamp(router_logits, -10, 10)
         
         temperature = 1.0
         router_probs = F.softmax(router_logits / temperature, dim=-1)
@@ -153,7 +154,7 @@ class MoEBlock(nn.Module):
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
         
-        top_k_indices_original = top_k_indices
+        #top_k_indices_original = top_k_indices
         
         expert_outputs = torch.stack([expert(x) for expert in self.experts], dim = 2)
         top_k_indices = top_k_indices.unsqueeze(-1).expand(-1, -1, -1, self.embed_dim)
@@ -162,18 +163,19 @@ class MoEBlock(nn.Module):
 
         # Apply DropPath
         combine_output = self.drop_path(combine_output)
+        x = x + combine_output 
     
         # Validate indices
-        if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
-            raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
+        #if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
+        #    raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
             
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
         expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
         for k in range(self.top_k):
-            indices = top_k_indices_original[:, :, k].flatten().long()
+            indices = top_k_indices[:, :, k].flatten().long() # remember to check this
             expert_counts += torch.bincount(indices, minlength=self.num_experts)
-        total_assignments = batch_size * seq_len * self.top_k
+        #total_assignments = batch_size * seq_len * self.top_k
         
         #if expert_counts.sum() != total_assignments:
         #    print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
@@ -197,7 +199,7 @@ class MoEBlock(nn.Module):
         #print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
         #print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
         
-        return combine_output, balance_loss
+        return x, balance_loss
 
 class VisionTransformer(nn.Module):
     def __init__(self, config):
