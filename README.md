@@ -60,8 +60,8 @@ Standard folder structure:
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.7314    |                       |
-| **Best testing accuracy** |**0.5337** |                       |
+| Best training accuracy    | 0.8289    |                       |
+| **Best testing accuracy** |**0.5734** |last train: c0f42b6f   |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |

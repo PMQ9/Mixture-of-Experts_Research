@@ -19,7 +19,7 @@ class VisionTransformerConfig:
     attn_drop_rate: float = 0.1
     num_experts: int = 7    # number or experts
     top_k: int = 3
-    balance_loss_weight: float = 20.0  # high balance loss indicates not utilizing all experts
+    balance_loss_weight: float = 1.0  # Reduced from a potentially higher value
     drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
     router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
@@ -77,7 +77,18 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-    
+
+class AttentionRouter(nn.Module):
+    def __init__(self, embed_dim, num_experts):
+        super().__init__()
+        self.expert_tokens = nn.Parameter(torch.empty(num_experts, embed_dim))
+        nn.init.xavier_uniform_(self.expert_tokens)
+        self.embed_dim = embed_dim
+
+    def forward(self, x):
+        router_logits = torch.einsum('bse,ne->bsn', x, self.expert_tokens) / (self.embed_dim ** 0.5)
+        return router_logits
+
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -119,10 +130,11 @@ class MoEBlock(nn.Module):
         self.router_weight_reg = config.router_weight_reg
 
         # Router
-        self.router = nn.Linear(self.embed_dim, self.num_experts)
-        nn.init.xavier_uniform_(self.router.weight)  # Add initialization
-        if self.router.bias is not None:
-            nn.init.zeros_(self.router.bias)
+        #self.router = nn.Linear(self.embed_dim, self.num_experts)
+        #nn.init.xavier_uniform_(self.router.weight)  # Add initialization
+        #if self.router.bias is not None:
+        #    nn.init.zeros_(self.router.bias)
+        self.router = AttentionRouter(self.embed_dim, self.num_experts)
             
         # Experts
         self.experts = nn.ModuleList([Block(config) for _ in range (self.num_experts)])
@@ -131,17 +143,24 @@ class MoEBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
 
         router_logits = self.router(x)
-        noise = torch.rand_like(router_logits) * 0.75
-        router_logits = router_logits + noise
-        router_logits = torch.clamp(router_logits, -10, 10)
+        # Noise and clamping removed for better differentiation
+        #noise = torch.rand_like(router_logits) * 0.75
+        #router_logits = router_logits + noise
+        #router_logits = torch.clamp(router_logits, -10, 10)
         
         temperature = 1.0
         router_probs = F.softmax(router_logits / temperature, dim=-1)
         
         top_k_probs, top_k_indices = torch.topk(router_probs, self.top_k, dim = -1)
+
+        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
+        for k in range(self.top_k):
+            indices = top_k_indices[:, :, k].flatten().long() # remember to check this
+            expert_counts += torch.bincount(indices, minlength=self.num_experts)
+
         top_k_probs = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
         
-        top_k_indices_original = top_k_indices
+        #top_k_indices_original = top_k_indices
         
         expert_outputs = torch.stack([expert(x) for expert in self.experts], dim = 2)
         top_k_indices = top_k_indices.unsqueeze(-1).expand(-1, -1, -1, self.embed_dim)
@@ -150,18 +169,16 @@ class MoEBlock(nn.Module):
 
         # Apply DropPath
         combine_output = self.drop_path(combine_output)
+        x = x + combine_output 
     
         # Validate indices
-        if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
-            raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
+        #if top_k_indices_original.min() < 0 or top_k_indices_original.max() >= self.num_experts:
+        #    raise ValueError(f"Invalid expert indices: {top_k_indices_original.min()} to {top_k_indices_original.max()}")
             
         # Compute load balancing loss
         # f_i: Fraction of tokens assigned to each expert
-        expert_counts = torch.zeros(self.num_experts, device=x.device, dtype=torch.long)
-        for k in range(self.top_k):
-            indices = top_k_indices_original[:, :, k].flatten().long()
-            expert_counts += torch.bincount(indices, minlength=self.num_experts)
-        total_assignments = batch_size * seq_len * self.top_k
+
+        #total_assignments = batch_size * seq_len * self.top_k
         
         #if expert_counts.sum() != total_assignments:
         #    print(f"Error: Expert Counts Sum = {expert_counts.sum()}, Expected = {total_assignments}")
@@ -169,13 +186,13 @@ class MoEBlock(nn.Module):
         #    print("Expert counts match expected total!")
             
         f_i = expert_counts.float() / (batch_size * seq_len * self.top_k)  # Fraction of tokens per expert
-
-        # P_i: Mean routing probability for each expert
         P_i = router_probs.mean(dim=[0, 1])  # Shape: [num_experts]
 
         # Load balancing loss
         balance_loss = self.num_experts * torch.sum(f_i * P_i)
-        balance_loss += self.router_weight_reg * torch.norm(self.router.weight, p=2)
+        router_weight_norm = torch.norm(self.router.expert_tokens, p=2)
+
+        balance_loss += self.router_weight_reg * router_weight_norm
         
         #print(f"Batch Size: {batch_size}, Seq Len: {seq_len}, Top K: {self.top_k}")
         #print(f"Expert Counts: {expert_counts.tolist()}")
@@ -185,7 +202,7 @@ class MoEBlock(nn.Module):
         #print(f"Top K Indices: {top_k_indices[0, 0, :].tolist()}")
         #print(f"Router Logits Sample: {router_logits[0, 0, :].tolist()}")
         
-        return combine_output, balance_loss
+        return x, balance_loss
 
 class VisionTransformer(nn.Module):
     def __init__(self, config):
