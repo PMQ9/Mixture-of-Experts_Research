@@ -12,7 +12,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [x] Add L2 Regularization
 - [x] Add CutMix
 - [x] Start testing after N epochs, once every M epochs.
-- [ ] Add Attention mechanism for Router improvement
+- [x] Add Attention mechanism for Router improvement
 - [ ] Add RandAugment
 - [ ] Add Label Smoothing 
 - [ ] Add Warmup
@@ -61,7 +61,7 @@ Standard folder structure:
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
 | Best training accuracy    | 0.8289    |                       |
-| **Best testing accuracy** |**0.5734** |last train: c0f42b6f   |
+| **Best testing accuracy** |**0.5967** |last train: c0f42b6f   |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
