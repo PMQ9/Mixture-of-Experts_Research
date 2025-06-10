@@ -13,6 +13,7 @@ import numpy as np
 import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
+from torchvision.transforms import RandAugment
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
 
@@ -260,6 +261,7 @@ def main():
 
     transform_train = transforms.Compose([
         transforms.Resize(32), 
+        RandAugment(num_ops=2, magnitude=9), # If overfitting decreases but training becomes too slow or unstable, reduce num_ops to 1 or magnitude to 5-7. If overfitting, increase magnitude to 10-12 or num_ops to 3
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
@@ -344,6 +346,8 @@ def main():
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
             torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            if (epoch + 1) % 10 == 0:
+                torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, f"vit_gtsrb_epoch_{epoch+1}.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
