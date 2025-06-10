@@ -123,6 +123,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     total_balance_loss = 0
     correct = 0
     total = 0
+    scaler = torch.amp.GradScaler()
     
     for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Training")):
         data, target = data.to(device), target.to(device)
@@ -130,20 +131,22 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
-        if apply_cutmix:
-            data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
-            output, balance_losses = model(data)
-            cls_loss = lam * criterion(output, target_a) + (1 - lam) * criterion(output, target_b)
-        else:
-            output, balance_losses = model(data)
-            cls_loss = criterion(output, target)
+        with torch.amp.autocast(device_type='cuda'):
+            if apply_cutmix:
+                data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
+                output, balance_losses = model(data)
+                cls_loss = lam * criterion(output, target_a) + (1 - lam) * criterion(output, target_b)
+            else:
+                output, balance_losses = model(data)
+                cls_loss = criterion(output, target)
+            
+            # Aggregate balance loss across all MoE blocks
+            balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
+            total_loss_combined = cls_loss + balance_loss_weight * balance_loss
         
-        # Aggregate balance loss across all MoE blocks
-        balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
-        total_loss_combined = cls_loss + balance_loss_weight * balance_loss
-        
-        total_loss_combined.backward()
-        optimizer.step()
+        scaler.scale(total_loss_combined).backward()
+        scaler.step(optimizer)
+        scaler.update()
         
         total_loss += cls_loss.item()
         total_balance_loss += balance_loss.item()
@@ -169,10 +172,11 @@ def test(model, loader, optimizer, criterion, device):
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Testing")):
             data, target = data.to(device), target.to(device)
-            output, balance_losses = model(data)
-            loss = criterion(output, target)
+            with torch.amp.autocast(device_type='cuda'):
+                output, balance_losses = model(data)
+                loss = criterion(output, target)
 
-            balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
+                balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
 
             total_loss += loss.item()
             total_balance_loss += balance_loss.item()
