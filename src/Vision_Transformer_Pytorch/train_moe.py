@@ -343,7 +343,8 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            #torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
