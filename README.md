@@ -60,14 +60,14 @@ Standard folder structure:
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8289    |                       |
-| **Best testing accuracy** |**0.5967** |last train: c0f42b6f   |
+| Best training accuracy    | 0.8350    |                       |
+| **Best testing accuracy** |**0.6214** |last train: f0a06544   |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
 
-<img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="75%"/>
+<img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
 # Performance with CIFAR-10
 
