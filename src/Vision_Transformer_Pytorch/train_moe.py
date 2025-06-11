@@ -1,4 +1,5 @@
 import torch
+import torch.onnx
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
@@ -357,6 +358,37 @@ def main():
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
+    print("\nExporting model to ONNX...")
+
+    best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+    model = torch.load(best_model_path, map_location=DEVICE)
+    model.eval()
+    class ExpertTracer(nn.Module):
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+        def forward(self, x):
+            out, balance_losses = self.model(x)
+            expert_traces = [torch.zeros_like(out) for _ in range(config.num_experts)]
+            return (out, *expert_traces)
+    wrapped_model = ExpertTracer(model).to(DEVICE)
+    dummy_input = torch.randn(1, 3, 32, 32).to(DEVICE)  # (batch, channels, height, width)
+    onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
+    torch.onnx.export(
+        wrapped_model,
+        dummy_input,
+        onnx_path,
+        input_names=["input"],
+        output_names=["output"],
+        opset_version=14,
+        dynamic_axes={
+            "input": {0: "batch_size"},  # Dynamic batch size
+            "output": {0: "batch_size"}
+        },
+        verbose=True,
+        do_constant_folding=True,
+    )
+    print(f"ONNX model saved to: {onnx_path}")
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support

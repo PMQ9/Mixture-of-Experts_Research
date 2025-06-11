@@ -19,6 +19,20 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
+# Architecture
+
+| Criteria                                  | Value       | Note    |
+|-------------------------------------------|-------------|---------|
+| Number of experts:                        | 7           |         |
+| Top K (number of experts active per token)| 3           |         |
+| Number of embedded layers                 | 9           |         |
+| Parameters                                | 18.756.846  |         |
+
+Architecture:
+
+<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="25%"/>
+
+
 # Performance with GTSRB
 
 Full Name: German Traffic Sign Recognition Benchmark
@@ -28,6 +42,17 @@ Purpose: Traffic sign recognition for **autonomous driving** and computer vision
 Content: 50,000 images for 43 dfferent traffc sign classes, vary in size and include real-world distortions.
 
 Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-traffic-sign/data
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    | 0.8350    |                       |
+| **Best testing accuracy** |**0.6214** |last train: f0a06544   |
+| Best training loss        |           |                       |
+| Best testing loss         |           |                       |
+| Train balance loss        |           |                       |
+| Test balance loss         |           |                       |
+
+<img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
 Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/published-archive.html
 
@@ -57,17 +82,6 @@ Standard folder structure:
         │   │   ├── 00001.ppm
         │   │   └── ...
         │   └── GT-final_test.csv
-
-| Criteria                  | Result    | Note                  |
-|---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8350    |                       |
-| **Best testing accuracy** |**0.6214** |last train: f0a06544   |
-| Best training loss        |           |                       |
-| Best testing loss         |           |                       |
-| Train balance loss        |           |                       |
-| Test balance loss         |           |                       |
-
-<img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
 # Performance with CIFAR-10
 
