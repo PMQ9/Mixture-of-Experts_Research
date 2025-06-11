@@ -15,7 +15,7 @@ import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 
-from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
+from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy
 
 # **************** Dataset class for GTSRB ****************
 class GTSRBTestDataset(Dataset):
@@ -56,6 +56,7 @@ CUTMIX_ALPHA = 1.0
 CUTMIX_PROB = 0.5
 TEST_START_EPOCH = 50
 TEST_FREQUENCY = 2
+LABEL_SMOOTHING = 0.1
 
 # **************** DevOps Params ****************
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
@@ -136,7 +137,9 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
             if apply_cutmix:
                 data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
                 output, balance_losses = model(data)
-                cls_loss = lam * criterion(output, target_a) + (1 - lam) * criterion(output, target_b)
+                loss_a = criterion(output, target_a)
+                loss_b = criterion(output, target_b)
+                cls_loss = lam * loss_a + (1 - lam) * loss_b
             else:
                 output, balance_losses = model(data)
                 cls_loss = criterion(output, target)
@@ -295,7 +298,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True)
 
     model = VisionTransformer(config).to(DEVICE)
-    criterion = nn.CrossEntropyLoss()
+    criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
