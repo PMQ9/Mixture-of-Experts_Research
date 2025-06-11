@@ -373,7 +373,7 @@ def main():
             return (out, *expert_traces)
     wrapped_model = ExpertTracer(model).to(DEVICE)
     dummy_input = torch.randn(1, 3, 32, 32).to(DEVICE)  # (batch, channels, height, width)
-    onnx_path = os.path.join(OUTPUT_DIR, "vit_moe_gtsrb.onnx")
+    onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
     torch.onnx.export(
         wrapped_model,
         dummy_input,
