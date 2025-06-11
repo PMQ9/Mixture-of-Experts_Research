@@ -48,12 +48,12 @@ class GTSRBTestDataset(Dataset):
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
-EPOCHS = int(os.getenv('CICD_EPOCH', 350))
+EPOCHS = int(os.getenv('CICD_EPOCH', 400))
 LEARNING_RATE = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CUTMIX_ALPHA = 1.0
 CUTMIX_PROB = 0.5
-TEST_START_EPOCH = 100
+TEST_START_EPOCH = 50
 TEST_FREQUENCY = 2
 
 # **************** DevOps Params ****************
@@ -343,7 +343,8 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            #torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
