@@ -14,6 +14,7 @@ import numpy as np
 import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
+from torchvision.transforms import RandAugment
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy
 
@@ -264,6 +265,7 @@ def main():
 
     transform_train = transforms.Compose([
         transforms.Resize(32), 
+        RandAugment(num_ops=2, magnitude=9), # If overfitting decreases but training becomes too slow or unstable, reduce num_ops to 1 or magnitude to 5-7. If overfitting, increase magnitude to 10-12 or num_ops to 3
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
@@ -300,7 +302,7 @@ def main():
     model = VisionTransformer(config).to(DEVICE)
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
     train_losses = []
     test_losses = []
