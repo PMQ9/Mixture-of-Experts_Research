@@ -20,7 +20,7 @@ class VisionTransformerConfig:
     num_experts: int = 7    # number or experts
     top_k: int = 3
     balance_loss_weight: float = 1.0  # Reduced from a potentially higher value
-    drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    drop_path_rate: float = 0.1 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
     router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
 class DropPath(nn.Module):
