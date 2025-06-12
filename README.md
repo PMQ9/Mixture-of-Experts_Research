@@ -45,8 +45,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8350    |                       |
-| **Best testing accuracy** |**0.6214** |last train: f0a06544   |
+| Best training accuracy    | 0.8363    |                       |
+| **Best testing accuracy** |**0.6277** |last train: 0940a907   |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
