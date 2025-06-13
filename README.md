@@ -13,9 +13,9 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [x] Add CutMix
 - [x] Start testing after N epochs, once every M epochs.
 - [x] Add Attention mechanism for Router improvement
-- [ ] Add RandAugment
-- [ ] Add Label Smoothing 
-- [ ] Add Warmup
+- [x] Add RandAugment
+- [x] Add Label Smoothing 
+- [x] Add Warmup
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
@@ -45,8 +45,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.6484    |                       |
-| **Best testing accuracy** |**0.6981** |last train: 5483f643   |
+| Best training accuracy    | 0.7764    |                       |
+| **Best testing accuracy** |**0.8289** |last train:            |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
