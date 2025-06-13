@@ -57,6 +57,7 @@ CUTMIX_ALPHA = 1.0
 CUTMIX_PROB = 0.5
 TEST_START_EPOCH = 50
 TEST_FREQUENCY = 2
+WARMUP_EPOCHS = 10
 LABEL_SMOOTHING = 0.1
 
 # **************** DevOps Params ****************
@@ -302,7 +303,17 @@ def main():
     model = VisionTransformer(config).to(DEVICE)
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
+    #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+    T_max = EPOCHS
+    # if T_max = epoch. Pros: steady and predictable decay, improve convergence stability. Cons: complex models might not explore enough
+    # if T_max = 100. Pros: good for exploring, escape local minima
+    def lr_lambda(epoch):
+        if epoch < WARMUP_EPOCHS:
+            return (epoch + 1) / WARMUP_EPOCHS
+        else:
+            t = epoch - WARMUP_EPOCHS
+            return 0.5 * (1 + np.cos(np.pi * (t % T_max) / T_max))
+    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
     train_losses = []
     test_losses = []
