@@ -20,7 +20,7 @@ class VisionTransformerConfig:
     num_experts: int = 7    # number or experts
     top_k: int = 3
     balance_loss_weight: float = 1.0  # Reduced from a potentially higher value
-    drop_path_rate: float = 0.01 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
+    drop_path_rate: float = 0.1 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
     router_weight_reg: float = 0.03 # Start with a small value 0.01 to avoid overly penalizing the router, increase to 0.05 or 0.1 if overfit
 
 class DropPath(nn.Module):
@@ -106,6 +106,22 @@ class MLP(nn.Module):
         x = self.drop(x)
         return x
 
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self, smoothing=0.1):
+        super().__init__()
+        self.smoothing = smoothing
+
+    def forward(self, input, target):
+        log_probs = F.log_softmax(input, dim=-1)
+        n_classes = input.size(-1)
+        
+        with torch.no_grad():
+            smooth_target = torch.zeros_like(log_probs).fill_(self.smoothing / (n_classes - 1))
+            smooth_target.scatter_(1, target.unsqueeze(1), 1.0 - self.smoothing)
+        
+        loss = -torch.sum(smooth_target * log_probs, dim=-1).mean()
+        return loss
+    
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()

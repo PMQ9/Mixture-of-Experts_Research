@@ -30,7 +30,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 Architecture:
 
-<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="25%"/>
+<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="30%"/>
 
 
 # Performance with GTSRB
@@ -45,8 +45,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8350    |                       |
-| **Best testing accuracy** |**0.6214** |last train: f0a06544   |
+| Best training accuracy    | 0.6484    |                       |
+| **Best testing accuracy** |**0.6981** |last train: 5483f643   |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
