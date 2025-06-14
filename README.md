@@ -61,11 +61,23 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
 | Best training accuracy    | 0.7764    |                       |
-| **Best testing accuracy** |**0.8289** |last train:            |
+| **Best testing accuracy** |**0.8289** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
+
+Normalization on GTSRB training dataset:
+
+| Normalization             | Value                 |
+|---------------------------|-----------------------|
+| Red mean                  | 0.3432482055626116    |
+| Green mean                | 0.31312152061376486   |
+| Blue mean                 | 0.32248030768500435   |
+| Red standard              | 0.27380229614172485   |
+| Green standard            | 0.26033050034131744   |
+| Blue standard             | 0.2660272789537349    |
+
 
 <img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
