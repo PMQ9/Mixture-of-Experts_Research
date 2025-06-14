@@ -54,18 +54,6 @@ parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
 
 args = parser.parse_args()
 
-# **************** Training Params ****************
-BATCH_SIZE = args.batch_size
-EPOCHS = args.epochs
-LEARNING_RATE = args.learning_rate
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-CUTMIX_ALPHA = args.cutmix_alpha
-CUTMIX_PROB = args.cutmix_prob
-TEST_START_EPOCH = args.test_start_epoch
-TEST_FREQUENCY = args.test_frequency
-WARMUP_EPOCHS = args.warmup_epochs
-LABEL_SMOOTHING = args.label_smoothing
-
 NORMALIZATION_MEAN_R_GTSRB = 0.3432482055626116
 NORMALIZATION_MEAN_G_GTSRB = 0.31312152061376486
 NORMALIZATION_MEAN_B_GTSRB = 0.32248030768500435
@@ -79,6 +67,18 @@ NORMALIZAION_MEAN_B_CIFAR10 = 0.4465
 NORMALIZATION_STD_R_CIFAR10 = 0.247
 NORMALIZATION_STD_G_CIFAR10 = 0.243
 NORMALIZATION_STD_B_CIFAR10 = 0.261
+
+# **************** Training Params ****************
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+LEARNING_RATE = args.learning_rate
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+CUTMIX_ALPHA = args.cutmix_alpha
+CUTMIX_PROB = args.cutmix_prob
+TEST_START_EPOCH = args.test_start_epoch
+TEST_FREQUENCY = args.test_frequency
+WARMUP_EPOCHS = args.warmup_epochs
+LABEL_SMOOTHING = args.label_smoothing
 
 # **************** Overide Default Config Params ****************
 def apply_config_overrides(config, overrides_str):
@@ -293,7 +293,6 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 def main():
     config = VisionTransformerConfig(num_class = 43)
     apply_config_overrides(config, args.config_overrides)
-    print(f"Using top_k: {config.top_k}")
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
@@ -389,9 +388,6 @@ def main():
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
-        print(f"echo batch_size: {BATCH_SIZE} ")
-        print(f"echo warmup_epochs: {WARMUP_EPOCHS} ")
-
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
