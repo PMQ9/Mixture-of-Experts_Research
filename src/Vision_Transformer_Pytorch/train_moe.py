@@ -18,6 +18,11 @@ from torchvision.transforms import RandAugment
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, GTSRBTestDataset
 
+torch.backends.cudnn.benchmark = True
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
 # **************** Training Params ****************
 BATCH_SIZE = 128
 EPOCHS = int(os.getenv('CICD_EPOCH', 400))
@@ -109,15 +114,15 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     total_balance_loss = 0
     correct = 0
     total = 0
-    scaler = torch.amp.GradScaler()
+    scaler = torch.amp.GradScaler(enabled=True)
     
     for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Training")):
-        data, target = data.to(device), target.to(device)
+        data, target = data.to(device, non_blocking=True), target.to(device, non_blocking=True)
         optimizer.zero_grad()
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
-        with torch.amp.autocast(device_type='cuda'):
+        with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
             if apply_cutmix:
                 data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
                 output, balance_losses = model(data)
@@ -268,8 +273,8 @@ def main():
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
     test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)
 
     model = VisionTransformer(config).to(DEVICE)
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
