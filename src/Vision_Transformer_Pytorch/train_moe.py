@@ -22,7 +22,6 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-torch.set_float32_matmul_precision("high")
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
@@ -123,7 +122,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
-        with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=True):
+        with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
             if apply_cutmix:
                 data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
                 output, balance_losses = model(data)
@@ -166,7 +165,7 @@ def test(model, loader, optimizer, criterion, device):
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Testing")):
             data, target = data.to(device), target.to(device)
-            with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16):
+            with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
                 output, balance_losses = model(data)
                 loss = criterion(output, target)
 
