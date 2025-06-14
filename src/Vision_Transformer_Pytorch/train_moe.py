@@ -271,8 +271,8 @@ def main():
     if not os.path.exists(csv_file):
         raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
     
-    num_workers = min(os.cpu_count(), 4)
-    prefetch_factor = 6 if num_workers > 0 else 4
+    num_workers = min(os.cpu_count(), 8)
+    prefetch_factor = 4
 
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
     test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
