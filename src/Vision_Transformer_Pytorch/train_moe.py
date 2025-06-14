@@ -111,24 +111,22 @@ OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',
 # **************** DevOps Functions ****************
 def setup_logging():
     log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
-    class DualOutput:
-        def __init__(self, file, terminal):
-            self.file = file
-            self.terminal = terminal
+    os.makedirs(OUTPUT_DIR, exist_ok=True) 
 
-        def write(self, message):
-            self.file.write(message)
-            self.terminal.write(message)
+    class TerminalOutput:
+        def __init__(self, file):
+            self.file = file
+
+        def write(self, x):
+            if 'it/s' not in x and '/s' not in x:
+                self.file.write(x)
             self.file.flush()
 
         def flush(self):
             self.file.flush()
-            self.terminal.flush()
-
-    os.makedirs(OUTPUT_DIR, exist_ok=True)        
+           
     log_file_handle = open(log_file, 'w', buffering=1)
-    sys.stdout = sys.stderr = open(log_file, 'w', buffering=1)
-    sys.stderr = DualOutput(log_file_handle, sys.__stderr__)
+    sys.stdout = TerminalOutput(log_file_handle)
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
 
