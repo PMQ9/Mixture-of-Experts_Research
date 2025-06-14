@@ -15,6 +15,9 @@ import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
+import argparse
+import ast
+from dataclasses import fields, asdict
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, GTSRBTestDataset
 
@@ -23,17 +26,45 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
+# **************** Argument Parser ****************
+DEFAULT_BATCH_SIZE = 128
+DEFAULT_EPOCH = 400
+DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_CUTMIX_ALPHA = 1.0
+DEFAULT_CUTMIX_PROB = 0.5
+DEFAULT_TEST_START_EPOCH = 50
+DEFAULT_TEST_FREQUENCY = 2
+DEFAULT_WARMUP_EPOCH = 10
+DEFAULT_LABEL_SMOOTHING = 0.1
+
+parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
+parser.add_argument('--batch_size', type=int, default=DEFAULT_BATCH_SIZE, help='Batch size for training')
+parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_EPOCH)), help='Number of epochs to train')
+parser.add_argument('--learning_rate', type=float, default=DEFAULT_LEARNING_RATE, help='Learning rate for optimizer')
+parser.add_argument('--cutmix_alpha', type=float, default=DEFAULT_CUTMIX_ALPHA, help='Alpha parameter for CutMix')
+parser.add_argument('--cutmix_prob', type=float, default=DEFAULT_CUTMIX_PROB, help='Probability of applying CutMix')
+parser.add_argument('--test_start_epoch', type=int, default=DEFAULT_TEST_START_EPOCH, help='Epoch to start testing')
+parser.add_argument('--test_frequency', type=int, default=DEFAULT_TEST_FREQUENCY, help='Frequency of testing in epochs')
+parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_WARMUP_EPOCH, help='Number of warmup epochs')
+parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOTHING, help='Label smoothing factor')
+
+config_fields = [f.name for f in fields(VisionTransformerConfig)]
+help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
+parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
+
+args = parser.parse_args()
+
 # **************** Training Params ****************
-BATCH_SIZE = 128
-EPOCHS = int(os.getenv('CICD_EPOCH', 400))
-LEARNING_RATE = 1e-3
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+LEARNING_RATE = args.learning_rate
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-CUTMIX_ALPHA = 1.0
-CUTMIX_PROB = 0.5
-TEST_START_EPOCH = 50
-TEST_FREQUENCY = 2
-WARMUP_EPOCHS = 10
-LABEL_SMOOTHING = 0.1
+CUTMIX_ALPHA = args.cutmix_alpha
+CUTMIX_PROB = args.cutmix_prob
+TEST_START_EPOCH = args.test_start_epoch
+TEST_FREQUENCY = args.test_frequency
+WARMUP_EPOCHS = args.warmup_epochs
+LABEL_SMOOTHING = args.label_smoothing
 
 NORMALIZATION_MEAN_R_GTSRB = 0.3432482055626116
 NORMALIZATION_MEAN_G_GTSRB = 0.31312152061376486
@@ -48,6 +79,31 @@ NORMALIZAION_MEAN_B_CIFAR10 = 0.4465
 NORMALIZATION_STD_R_CIFAR10 = 0.247
 NORMALIZATION_STD_G_CIFAR10 = 0.243
 NORMALIZATION_STD_B_CIFAR10 = 0.261
+
+# **************** Overide Default Config Params ****************
+def apply_config_overrides(config, overrides_str):
+    if not overrides_str:
+        return
+    overrides = overrides_str.split(',')
+    for override in overrides:
+        if '=' in override:
+            key, value = override.split('=', 1)
+            if hasattr(config, key):
+                field = next((f for f in fields(config) if f.name == key), None)
+                if field:
+                    try:
+                        parsed_value = ast.literal_eval(value)
+                        if isinstance(parsed_value, field.type):
+                            setattr(config, key, parsed_value)
+                        else:
+                            print(f"Type mismatch for {key}: expected {field.type}, got {type(parsed_value)}")
+                    except ValueError:
+                        print(f"Invalid value for {key}: {value}")
+                else:
+                    print(f"Unknown config parameter: {key}")
+            else:
+                print(f"Invalid override format: {override}")
+
 
 # **************** DevOps Params ****************
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
@@ -238,6 +294,9 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 # **************** Main Functions ****************
 def main():
     config = VisionTransformerConfig(num_class = 43)
+    apply_config_overrides(config, args.config_overrides)
+    print(f"Using top_k: {config.top_k}")
+    print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
 
@@ -332,6 +391,9 @@ def main():
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
+        print(f"echo batch_size: {BATCH_SIZE} ")
+        print(f"echo warmup_epochs: {WARMUP_EPOCHS} ")
+
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
