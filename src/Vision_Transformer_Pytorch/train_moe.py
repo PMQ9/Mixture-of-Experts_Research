@@ -22,6 +22,7 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+torch.set_float32_matmul_precision("high")
 
 # **************** Training Params ****************
 BATCH_SIZE = 128
@@ -122,7 +123,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
-        with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
+        with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=True):
             if apply_cutmix:
                 data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
                 output, balance_losses = model(data)
@@ -165,7 +166,7 @@ def test(model, loader, optimizer, criterion, device):
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Testing")):
             data, target = data.to(device), target.to(device)
-            with torch.amp.autocast(device_type='cuda'):
+            with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16):
                 output, balance_losses = model(data)
                 loss = criterion(output, target)
 
@@ -270,15 +271,18 @@ def main():
     if not os.path.exists(csv_file):
         raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
     
+    num_workers = min(os.cpu_count(), 4)
+    prefetch_factor = 6 if num_workers > 0 else 4
+
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
     test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0, prefetch_factor=prefetch_factor)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)
 
     model = VisionTransformer(config).to(DEVICE)
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
-    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
+    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05, fused=torch.cuda.is_available)
     #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
     T_max = EPOCHS
     # if T_max = epoch. Pros: steady and predictable decay, improve convergence stability. Cons: complex models might not explore enough
