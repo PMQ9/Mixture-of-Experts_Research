@@ -19,6 +19,21 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
+# User Manual
+
+ **Requirements**
+
+- Python 3.10
+- `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
+- `pip install tqdm matplotlib netron onnx`
+
+ **Instruction**
+
+- Start training: 
+    `python .\src\Vision_Transformer_Pytorch\train_moe.py`
+- Calculate normalization value for the dataset:
+    `python .\src\Normalization_Value\gtsrb_normalization_compute.py `
+
 # Architecture
 
 | Criteria                                  | Value       | Note    |

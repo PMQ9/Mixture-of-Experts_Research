@@ -1,7 +1,11 @@
+import os
+import csv
+from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
+from torch.utils.data import Dataset
 
 # dataclass
 @dataclass
@@ -9,15 +13,15 @@ class VisionTransformerConfig:
     img_size: int = 32
     patch_size: int = 4
     in_chans : int =3
-    num_class: int = 10     #number of classes for classification
-    embed_dim: int = 192 # consider increase to 256 or 384
+    num_class: int = 10
+    embed_dim: int = 192
     depth: int = 9
     num_heads: int = 12
     mlp_ratio: float = 2.0
     qkv_bias: bool = True
     drop_rate: float = 0.15
     attn_drop_rate: float = 0.1
-    num_experts: int = 7    # number or experts
+    num_experts: int = 7 
     top_k: int = 3
     balance_loss_weight: float = 1.0  # Reduced from a potentially higher value
     drop_path_rate: float = 0.1 # If overfitting persists (test loss still increases), increase to 0.2 or 0.3. If training becomes unstable or accuracy drops significantly, reduce to 0.05
@@ -121,7 +125,37 @@ class LabelSmoothingCrossEntropy(nn.Module):
         
         loss = -torch.sum(smooth_target * log_probs, dim=-1).mean()
         return loss
+
+# **************** Dataset class for GTSRB ****************
+class GTSRBTestDataset(Dataset):
+    def __init__(self, root, csv_file, transform=None):
+        if not os.path.exists(csv_file):
+            raise FileNotFoundError(f"CSV file not found at {csv_file}")
+        if not os.path.exists(root):
+            raise FileNotFoundError(f"Test dataset directory not found at {root}")
+        self.root = root
+        self.transform = transform
+        self.images = []
+        self.labels = []
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            for row in reader:
+                self.images.append(row['Filename'])
+                self.labels.append(int(row['ClassId']))
     
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.root, "Images", self.images[idx])
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"Image not found at {img_path}")
+        image = Image.open(img_path).convert('RGB')
+        label = self.labels[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+        
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
