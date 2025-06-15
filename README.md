@@ -16,6 +16,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [x] Add RandAugment
 - [x] Add Label Smoothing 
 - [x] Add Warmup
+- [x] Add Args
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
@@ -32,14 +33,13 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - Start training: 
     `python .\src\Vision_Transformer_Pytorch\train_moe.py`
 - Argument:
-    `python train_moe.py --batch_size 64 --epochs 200 --learning_rate 0.001 --config_overrides "img_size=48,patch_size=8,embed_dim=256,num_class=10"`
+    `python .\src\Vision_Transformer_Pytorch\train_moe.py --batch_size 256 --epochs 500 --config_overrides "img_size=48,patch_size=8,embed_dim=256,num_class=10"`
 - List of most used arguments:
     - `--batch_size`
     - `--epochs`
     - `--learning-rate`
     - `--test_star_epoch`
     - to see all options run `python .\src\Vision_Transformer_Pytorch\train_moe.py --help`
-
 
 - Calculate normalization value for the dataset:
     `python .\src\Normalization_Value\gtsrb_normalization_compute.py `
