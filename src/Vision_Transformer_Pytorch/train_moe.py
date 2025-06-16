@@ -415,7 +415,10 @@ def main():
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
             #torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
-            torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            if args.dataset == 'GTSRB':
+                torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            elif args.dataset == 'PTSD':
+                torch.save(model, os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
@@ -427,7 +430,10 @@ def main():
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
     print("\nExporting model to ONNX...")
 
-    best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+    if args.dataset == 'GTSRB':
+        best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+    elif args.dataset == 'PTSD':
+        best_model_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth")
     model = torch.load(best_model_path, map_location=DEVICE)
     model.eval()
 
@@ -442,7 +448,10 @@ def main():
         
     wrapped_model = ExpertTracer(model).to(DEVICE)
     dummy_input = torch.randn(1, 3, 32, 32).to(DEVICE)  # (batch, channels, height, width)
-    onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
+    if args.dataset == 'GTSRB':
+        onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
+    elif args.dataset == 'PTSD':
+        onnx_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.onnx")
     torch.onnx.export(
         wrapped_model,
         dummy_input,

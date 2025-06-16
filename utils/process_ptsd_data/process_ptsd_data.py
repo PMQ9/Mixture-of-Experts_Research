@@ -31,14 +31,31 @@ def rename_numbered_folders(root_path):
             except (ValueError, IndexError):
                 continue
 
+def remove_leading_zeros(folders_root_gtsrb):
+    for foldername in os.listdir(folders_root_gtsrb):
+        if foldername.isdigit():
+            try:
+                num = int(foldername)
+                new_name = str(num)
+                if new_name != foldername:
+                    old_path = os.path.join(folders_root_gtsrb, foldername)
+                    new_path = os.path.join(folders_root_gtsrb, new_name)
+                    os.rename(old_path, new_path)
+                    print(f'Renamed folder: {foldername} -> {new_name}')
+            except ValueError:
+                continue
 
 if __name__ == '__main__':
     ptsd_folder = './data/PTSD/Test/Images/' 
     if os.path.exists(ptsd_folder):
         remove_ptsd_prefix(ptsd_folder)
     
-    folders_root = './data/PTSD/Training'  # Change this to where your numbered folders are
+    folders_root = './data/PTSD/Training'
     if os.path.exists(folders_root):
         rename_numbered_folders(folders_root)
+
+    folders_root_gtsrb = './data/GTSRB/Training'
+    if os.path.exists(folders_root_gtsrb):
+        remove_leading_zeros(folders_root_gtsrb)
     
     print("All operations completed successfully!")
