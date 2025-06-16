@@ -126,8 +126,8 @@ class LabelSmoothingCrossEntropy(nn.Module):
         loss = -torch.sum(smooth_target * log_probs, dim=-1).mean()
         return loss
 
-# **************** Dataset class for GTSRB ****************
-class GTSRBTestDataset(Dataset):
+# **************** Dataset class for GTSRB and PTSD ****************
+class TrafficSignTestDataset(Dataset):
     def __init__(self, root, csv_file, transform=None):
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"CSV file not found at {csv_file}")
@@ -141,7 +141,7 @@ class GTSRBTestDataset(Dataset):
             reader = csv.DictReader(f, delimiter=';')
             for row in reader:
                 self.images.append(row['Filename'])
-                self.labels.append(int(row['ClassId']))
+                self.labels.append(str(row['ClassId']))
     
     def __len__(self):
         return len(self.images)

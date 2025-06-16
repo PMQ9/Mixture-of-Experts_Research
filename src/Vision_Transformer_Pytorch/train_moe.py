@@ -19,7 +19,7 @@ import argparse
 import ast
 from dataclasses import fields, asdict
 
-from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, GTSRBTestDataset
+from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -38,6 +38,7 @@ DEFAULT_WARMUP_EPOCH = 10
 DEFAULT_LABEL_SMOOTHING = 0.1
 
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
+parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_BATCH_SIZE, help='Batch size for training')
 parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_EPOCH)), help='Number of epochs to train')
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_LEARNING_RATE, help='Learning rate for optimizer')
@@ -60,6 +61,13 @@ NORMALIZATION_MEAN_B_GTSRB = 0.32248030768500435
 NORMALIZATION_STD_R_GTSRB = 0.27380229614172485
 NORMALIZATION_STD_G_GTSRB = 0.26033050034131744
 NORMALIZATION_STD_B_GTSRB = 0.2660272789537349
+
+NORMALIZATION_MEAN_R_PTSD = 0.3432482055626116
+NORMALIZATION_MEAN_G_PTSD = 0.31312152061376486
+NORMALIZATION_MEAN_B_PTSD = 0.32248030768500435
+NORMALIZATION_STD_R_PTSD = 0.27380229614172485
+NORMALIZATION_STD_G_PTSD = 0.26033050034131744
+NORMALIZATION_STD_B_PTSD = 0.2660272789537349
 
 NORMALIZAION_MEAN_R_CIFAR10 = 0.4914
 NORMALIZAION_MEAN_G_CIFAR10 = 0.4822
@@ -291,8 +299,26 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 
 # **************** Main Functions ****************
 def main():
-    config = VisionTransformerConfig(num_class = 43)
+    if args.dataset == 'GTSRB':
+        num_classes = 43
+        train_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Training'
+        test_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Test'
+        csv_file = './src/Vision_Transformer_Pytorch/data/GTSRB/Test/GT-final_test.csv'
+        normalization_mean = (NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB)
+        normalization_std = (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)
+    elif args.dataset == 'PTSD':
+        num_classes = 43
+        train_dir = './src/Vision_Transformer_Pytorch/data/PTSD/Training'
+        test_dir = './src/Vision_Transformer_Pytorch/data/PTSD/Test'
+        csv_file = './src/Vision_Transformer_Pytorch/data/PTSD/Test/testset_CSV.csv'
+        normalization_mean = (NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD)
+        normalization_std = (NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD)
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
+    
+    config = VisionTransformerConfig(num_class = num_classes)
     apply_config_overrides(config, args.config_overrides)
+    print(f"Training with dataset: {args.dataset} with number of classes: {num_classes}" )
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
@@ -305,7 +331,7 @@ def main():
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize((NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB), (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)),
+        transforms.Normalize(normalization_mean, normalization_std),
         transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
     ])
 
@@ -313,12 +339,9 @@ def main():
         transforms.Resize(32),
         transforms.CenterCrop(32),
         transforms.ToTensor(),
-        transforms.Normalize((NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB), (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)),
+        transforms.Normalize(normalization_mean, normalization_std),
     ])
 
-    train_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Training'
-    test_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Test'
-    csv_file = './src/Vision_Transformer_Pytorch/data/GTSRB/Test/GT-final_test.csv'
     if not os.path.exists(train_dir):
         raise FileNotFoundError(f"Training directory not found at {train_dir}")
     if not os.path.exists(test_dir):
@@ -330,7 +353,7 @@ def main():
     prefetch_factor = 4
 
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
-    test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
+    test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0, prefetch_factor=prefetch_factor)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)
