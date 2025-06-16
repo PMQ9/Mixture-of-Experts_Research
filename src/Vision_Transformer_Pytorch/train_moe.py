@@ -353,7 +353,7 @@ def main():
     prefetch_factor = 4
 
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
-    test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
+    test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test, class_to_idx=train_dataset.class_to_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0, prefetch_factor=prefetch_factor)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)

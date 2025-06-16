@@ -128,7 +128,7 @@ class LabelSmoothingCrossEntropy(nn.Module):
 
 # **************** Dataset class for GTSRB and PTSD ****************
 class TrafficSignTestDataset(Dataset):
-    def __init__(self, root, csv_file, transform=None):
+    def __init__(self, root, csv_file, transform=None, class_to_idx=None):
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"CSV file not found at {csv_file}")
         if not os.path.exists(root):
@@ -142,6 +142,7 @@ class TrafficSignTestDataset(Dataset):
             for row in reader:
                 self.images.append(row['Filename'])
                 self.labels.append(str(row['ClassId']))
+        self.class_to_idx = class_to_idx
     
     def __len__(self):
         return len(self.images)
@@ -151,9 +152,14 @@ class TrafficSignTestDataset(Dataset):
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Image not found at {img_path}")
         image = Image.open(img_path).convert('RGB')
-        label = self.labels[idx]
+        label_str = self.labels[idx]  # Get the string label
+        if self.class_to_idx is not None:
+            label = self.class_to_idx[label_str]  # Use mapping if provided
+        else:
+            label = int(label_str)  # Fallback for integer labels (e.g., GTSRB)
         if self.transform:
             image = self.transform(image)
+
         return image, label
         
 class Block(nn.Module):
