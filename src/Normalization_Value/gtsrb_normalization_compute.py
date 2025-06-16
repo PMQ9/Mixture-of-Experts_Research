@@ -14,9 +14,9 @@ if __name__ == '__main__':
     device = torch.device('cpu')
 
     if args.dataset == 'GTSRB':
-        root = './src/Vision_Transformer_Pytorch/data/GTSRB/Training'
+        root = './data/GTSRB/Training'
     elif args.dataset == 'PTSD':
-        root = './src/Vision_Transformer_Pytorch/data/PTSD/Training'
+        root = './data/PTSD/Training'
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
 

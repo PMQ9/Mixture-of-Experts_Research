@@ -301,16 +301,16 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 def main():
     if args.dataset == 'GTSRB':
         num_classes = 43
-        train_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Training'
-        test_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Test'
-        csv_file = './src/Vision_Transformer_Pytorch/data/GTSRB/Test/GT-final_test.csv'
+        train_dir = './data/GTSRB/Training'
+        test_dir = './data/GTSRB/Test'
+        csv_file = './data/GTSRB/Test/GT-final_test.csv'
         normalization_mean = (NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB)
         normalization_std = (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)
     elif args.dataset == 'PTSD':
         num_classes = 43
-        train_dir = './src/Vision_Transformer_Pytorch/data/PTSD/Training'
-        test_dir = './src/Vision_Transformer_Pytorch/data/PTSD/Test'
-        csv_file = './src/Vision_Transformer_Pytorch/data/PTSD/Test/testset_CSV.csv'
+        train_dir = './data/PTSD/Training'
+        test_dir = './data/PTSD/Test'
+        csv_file = './data/PTSD/Test/testset_CSV.csv'
         normalization_mean = (NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD)
         normalization_std = (NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD)
     else:

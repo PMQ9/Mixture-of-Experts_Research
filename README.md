@@ -77,18 +77,6 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
 
-Normalization on GTSRB training dataset:
-
-| Normalization             | Value                 |
-|---------------------------|-----------------------|
-| Red mean                  | 0.3432482055626116    |
-| Green mean                | 0.31312152061376486   |
-| Blue mean                 | 0.32248030768500435   |
-| Red standard              | 0.27380229614172485   |
-| Green standard            | 0.26033050034131744   |
-| Blue standard             | 0.2660272789537349    |
-
-
 <img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
 Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/published-archive.html
@@ -99,26 +87,7 @@ Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152ae
 
 - Test Annotations: GTSRB_Final_Test_GT.zip
 
-Standard folder structure: 
 
-    ./src/Vision_Transformer_Pytorch/data/
-    └── GTSRB/
-        ├── Training/
-        │   ├── 00000/
-        │   │   ├── 00000_00000.ppm
-        │   │   ├── 00000_00001.ppm
-        │   │   └── GT-00000.csv
-        │   ├── 00001/
-        │   │   ├── 00001_00000.ppm
-        │   │   ├── 00001_00001.ppm
-        │   │   └── GT-00001.csv
-        │   └── ... (up to 00042)
-        ├── Test/
-        │   ├── Images/
-        │   │   ├── 00000.ppm
-        │   │   ├── 00001.ppm
-        │   │   └── ...
-        │   └── GT-final_test.csv
 
 # Performance with PTSD
 
@@ -137,16 +106,59 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
 
-Normalization on GTSRB training dataset:
+## Dataset folder structure: 
 
-| Normalization             | Value                 |
-|---------------------------|-----------------------|
-| Red mean                  | 0.42227414577051153   |
-| Green mean                | 0.40389899174730964   |
-| Blue mean                 | 0.42392441068660547   |
-| Red standard              | 0.2550717671385188    |
-| Green standard            | 0.2273784047793104    |
-| Blue standard             | 0.22533597220675006   |
+### Folder structure
+    ./data/
+    └── GTSRB/
+        ├── Training/
+        │   ├── 00000/
+        │   │   ├── 00000_00000.ppm
+        │   │   ├── 00000_00001.ppm
+        │   │   └── GT-00000.csv
+        │   ├── 00001/
+        │   │   ├── 00001_00000.ppm
+        │   │   ├── 00001_00001.ppm
+        │   │   └── GT-00001.csv
+        │   └── ... (up to 00042)
+        ├── Test/
+        │   ├── Images/
+        │   │   ├── 00000.ppm
+        │   │   ├── 00001.ppm
+        │   │   └── ...
+        │   └── GT-final_test.csv
+    └── PTSD/
+        ├── Training/
+        │   ├── 0_/
+        │   │   ├── 00_00001.jpg
+        │   │   └── 00_00002.jpg
+        │   ├── 1_/
+        │   │   ├── 01_00001.jpg
+        │   │   └── 01_00002.jpg
+        │   └── ... (up to 00042)
+        ├── Test/
+        │   ├── Images/
+        │   │   ├── PTSD_00001.jpg
+        │   │   ├── PTSD_00002.jpg
+        │   │   └── ...
+        │   └── testset_CSV.csv
+
+### Normalization value calculated from the test set:
+
+| Normalization             | GTSRB                 | PTSD                  |
+|---------------------------|-----------------------|-----------------------|
+| Red mean                  | 0.3432482055626116    | 0.42227414577051153   |
+| Green mean                | 0.31312152061376486   | 0.40389899174730964   |
+| Blue mean                 | 0.32248030768500435   | 0.42392441068660547   |
+| Red standard              | 0.27380229614172485   | 0.2550717671385188    |
+| Green standard            | 0.26033050034131744   | 0.2273784047793104    |
+| Blue standard             | 0.2660272789537349    | 0.22533597220675006   |
+
+### Modification with PTSD test classes:
+
+Make the following change to the .csv file downloaded for PTSD dataset:
+
+<img src="utils/doc/modify_ptsd_dataset.png" alt="Alt Text" width="15%"/>
 
 # Performance with CIFAR-10
 
