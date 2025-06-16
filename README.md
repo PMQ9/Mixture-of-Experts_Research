@@ -160,6 +160,10 @@ Make the following change to the .csv file downloaded for PTSD dataset:
 
 <img src="utils/doc/modify_ptsd_dataset.png" alt="Alt Text" width="15%"/>
 
+Run the following script to modify all PTSD testset files
+
+- `python .\utils\process_ptsd_data\process_ptsd_data.py`
+
 # Performance with CIFAR-10
 
 Full Name: Canadian Institute For Advanced Research (CIFAR-10)
