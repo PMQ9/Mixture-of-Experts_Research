@@ -42,7 +42,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
     - to see all options run `python .\src\Vision_Transformer_Pytorch\train_moe.py --help`
 
 - Calculate normalization value for the dataset:
-    `python .\src\Normalization_Value\gtsrb_normalization_compute.py `
+    `python .\src\Normalization_Value\gtsrb_normalization_compute.py --dataset PTSD`
 
 # Architecture
 
@@ -119,6 +119,34 @@ Standard folder structure:
         │   │   ├── 00001.ppm
         │   │   └── ...
         │   └── GT-final_test.csv
+
+# Performance with PTSD
+
+Full Name: Persian Traffic Sign Database
+
+Content: 14,000 images for 43 dfferent traffc sign classes, vary in size and include real-world distortions.
+
+Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign-dataset-ptsd
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    |           |                       |
+| **Best testing accuracy** |           |                       |
+| Best training loss        |           |                       |
+| Best testing loss         |           |                       |
+| Train balance loss        |           |                       |
+| Test balance loss         |           |                       |
+
+Normalization on GTSRB training dataset:
+
+| Normalization             | Value                 |
+|---------------------------|-----------------------|
+| Red mean                  | 0.42227414577051153   |
+| Green mean                | 0.40389899174730964   |
+| Blue mean                 | 0.42392441068660547   |
+| Red standard              | 0.2550717671385188    |
+| Green standard            | 0.2273784047793104    |
+| Blue standard             | 0.22533597220675006   |
 
 # Performance with CIFAR-10
 
