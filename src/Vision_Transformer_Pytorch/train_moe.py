@@ -19,7 +19,7 @@ import argparse
 import ast
 from dataclasses import fields, asdict
 
-from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, GTSRBTestDataset
+from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -38,6 +38,7 @@ DEFAULT_WARMUP_EPOCH = 10
 DEFAULT_LABEL_SMOOTHING = 0.1
 
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
+parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_BATCH_SIZE, help='Batch size for training')
 parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_EPOCH)), help='Number of epochs to train')
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_LEARNING_RATE, help='Learning rate for optimizer')
@@ -60,6 +61,13 @@ NORMALIZATION_MEAN_B_GTSRB = 0.32248030768500435
 NORMALIZATION_STD_R_GTSRB = 0.27380229614172485
 NORMALIZATION_STD_G_GTSRB = 0.26033050034131744
 NORMALIZATION_STD_B_GTSRB = 0.2660272789537349
+
+NORMALIZATION_MEAN_R_PTSD = 0.42227414577051153
+NORMALIZATION_MEAN_G_PTSD = 0.40389899174730964
+NORMALIZATION_MEAN_B_PTSD = 0.42392441068660547
+NORMALIZATION_STD_R_PTSD = 0.2550717671385188
+NORMALIZATION_STD_G_PTSD = 0.2273784047793104
+NORMALIZATION_STD_B_PTSD = 0.22533597220675006
 
 NORMALIZAION_MEAN_R_CIFAR10 = 0.4914
 NORMALIZAION_MEAN_G_CIFAR10 = 0.4822
@@ -291,8 +299,26 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
 
 # **************** Main Functions ****************
 def main():
-    config = VisionTransformerConfig(num_class = 43)
+    if args.dataset == 'GTSRB':
+        num_classes = 43
+        train_dir = './data/GTSRB/Training'
+        test_dir = './data/GTSRB/Test'
+        csv_file = './data/GTSRB/Test/GT-final_test.csv'
+        normalization_mean = (NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB)
+        normalization_std = (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)
+    elif args.dataset == 'PTSD':
+        num_classes = 43
+        train_dir = './data/PTSD/Training'
+        test_dir = './data/PTSD/Test'
+        csv_file = './data/PTSD/Test/testset_CSV.csv'
+        normalization_mean = (NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD)
+        normalization_std = (NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD)
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
+    
+    config = VisionTransformerConfig(num_class = num_classes)
     apply_config_overrides(config, args.config_overrides)
+    print(f"Training with dataset: {args.dataset} with number of classes: {num_classes}" )
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
@@ -305,7 +331,7 @@ def main():
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize((NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB), (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)),
+        transforms.Normalize(normalization_mean, normalization_std),
         transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
     ])
 
@@ -313,12 +339,9 @@ def main():
         transforms.Resize(32),
         transforms.CenterCrop(32),
         transforms.ToTensor(),
-        transforms.Normalize((NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB), (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)),
+        transforms.Normalize(normalization_mean, normalization_std),
     ])
 
-    train_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Training'
-    test_dir = './src/Vision_Transformer_Pytorch/data/GTSRB/Test'
-    csv_file = './src/Vision_Transformer_Pytorch/data/GTSRB/Test/GT-final_test.csv'
     if not os.path.exists(train_dir):
         raise FileNotFoundError(f"Training directory not found at {train_dir}")
     if not os.path.exists(test_dir):
@@ -330,7 +353,7 @@ def main():
     prefetch_factor = 4
 
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
-    test_dataset = GTSRBTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
+    test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test, class_to_idx=train_dataset.class_to_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0, prefetch_factor=prefetch_factor)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)
@@ -392,7 +415,10 @@ def main():
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
             #torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
-            torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            if args.dataset == 'GTSRB':
+                torch.save(model, os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
+            elif args.dataset == 'PTSD':
+                torch.save(model, os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth"))
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
@@ -404,7 +430,10 @@ def main():
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
     print("\nExporting model to ONNX...")
 
-    best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+    if args.dataset == 'GTSRB':
+        best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+    elif args.dataset == 'PTSD':
+        best_model_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth")
     model = torch.load(best_model_path, map_location=DEVICE)
     model.eval()
 
@@ -419,7 +448,10 @@ def main():
         
     wrapped_model = ExpertTracer(model).to(DEVICE)
     dummy_input = torch.randn(1, 3, 32, 32).to(DEVICE)  # (batch, channels, height, width)
-    onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
+    if args.dataset == 'GTSRB':
+        onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
+    elif args.dataset == 'PTSD':
+        onnx_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.onnx")
     torch.onnx.export(
         wrapped_model,
         dummy_input,

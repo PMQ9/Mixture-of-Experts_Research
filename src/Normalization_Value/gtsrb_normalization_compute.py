@@ -3,15 +3,23 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import argparse
+
+parser = argparse.ArgumentParser(description='Calculate the normalization values of the dataset')
+parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD'], help='Dataset to calculate')
+args = parser.parse_args()
 
 if __name__ == '__main__':
     # Set device to CPU for simplicity and precision in accumulation
     device = torch.device('cpu')
 
-    # Define the root directory for the GTSRB training set
-    root = './../Vision_Transformer_Pytorch/data/GTSRB/Training'
+    if args.dataset == 'GTSRB':
+        root = './data/GTSRB/Training'
+    elif args.dataset == 'PTSD':
+        root = './data/PTSD/Training'
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
 
-    # Define the transformation: resize to 32x32 and convert to tensor
     transform = transforms.Compose([
         transforms.Resize(32),      # Resize the smaller side to 32, preserving aspect ratio
         transforms.CenterCrop(32),  # Crop to 32x32 to ensure uniform size

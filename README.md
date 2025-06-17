@@ -20,6 +20,11 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
+ **Inter-Model Performance**
+- [x] Add PTSD
+- [ ] TBD
+
+
 # User Manual
 
  **Requirements**
@@ -42,7 +47,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
     - to see all options run `python .\src\Vision_Transformer_Pytorch\train_moe.py --help`
 
 - Calculate normalization value for the dataset:
-    `python .\src\Normalization_Value\gtsrb_normalization_compute.py `
+    `python .\src\Normalization_Value\gtsrb_normalization_compute.py --dataset PTSD`
 
 # Architecture
 
@@ -70,24 +75,12 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.7764    |                       |
-| **Best testing accuracy** |**0.8289** |                       |
+| Best training accuracy    | 0.8408    |                       |
+| **Best testing accuracy** |**0.9221** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
-
-Normalization on GTSRB training dataset:
-
-| Normalization             | Value                 |
-|---------------------------|-----------------------|
-| Red mean                  | 0.3432482055626116    |
-| Green mean                | 0.31312152061376486   |
-| Blue mean                 | 0.32248030768500435   |
-| Red standard              | 0.27380229614172485   |
-| Green standard            | 0.26033050034131744   |
-| Blue standard             | 0.2660272789537349    |
-
 
 <img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
 
@@ -99,9 +92,30 @@ Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152ae
 
 - Test Annotations: GTSRB_Final_Test_GT.zip
 
-Standard folder structure: 
 
-    ./src/Vision_Transformer_Pytorch/data/
+# Performance with PTSD
+
+Full Name: Persian Traffic Sign Database
+
+Content: 14,000 images for 43 dfferent traffc sign classes, vary in size and include real-world distortions.
+
+Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign-dataset-ptsd
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    | 0.8250    |                       |
+| **Best testing accuracy** |**0.8538** |                       |
+| Best training loss        |           |                       |
+| Best testing loss         |           |                       |
+| Train balance loss        |           |                       |
+| Test balance loss         |           |                       |
+
+<img src="utils/doc/training_metrics_ptsd.png" alt="Alt Text" width="70%"/>
+
+## Dataset folder structure: 
+
+### Folder structure
+    ./data/
     └── GTSRB/
         ├── Training/
         │   ├── 00000/
@@ -119,6 +133,42 @@ Standard folder structure:
         │   │   ├── 00001.ppm
         │   │   └── ...
         │   └── GT-final_test.csv
+    └── PTSD/
+        ├── Training/
+        │   ├── 0_/
+        │   │   ├── 00_00001.jpg
+        │   │   └── 00_00002.jpg
+        │   ├── 1_/
+        │   │   ├── 01_00001.jpg
+        │   │   └── 01_00002.jpg
+        │   └── ... (up to 00042)
+        ├── Test/
+        │   ├── Images/
+        │   │   ├── PTSD_00001.jpg
+        │   │   ├── PTSD_00002.jpg
+        │   │   └── ...
+        │   └── testset_CSV.csv
+
+### Normalization value calculated from the test set:
+
+| Normalization             | GTSRB                 | PTSD                  |
+|---------------------------|-----------------------|-----------------------|
+| Red mean                  | 0.3432482055626116    | 0.42227414577051153   |
+| Green mean                | 0.31312152061376486   | 0.40389899174730964   |
+| Blue mean                 | 0.32248030768500435   | 0.42392441068660547   |
+| Red standard              | 0.27380229614172485   | 0.2550717671385188    |
+| Green standard            | 0.26033050034131744   | 0.2273784047793104    |
+| Blue standard             | 0.2660272789537349    | 0.22533597220675006   |
+
+### Modification with PTSD test classes:
+
+Make the following change to the .csv file downloaded for PTSD dataset:
+
+<img src="utils/doc/modify_ptsd_dataset.png" alt="Alt Text" width="15%"/>
+
+Run the following script to modify all PTSD testset files
+
+- `python .\utils\process_ptsd_data\process_ptsd_data.py`
 
 # Performance with CIFAR-10
 
