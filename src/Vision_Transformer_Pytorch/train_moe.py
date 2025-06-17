@@ -19,6 +19,8 @@ import argparse
 import ast
 from dataclasses import fields, asdict
 import torch.multiprocessing
+import shutil
+import json
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
 
@@ -51,6 +53,7 @@ parser.add_argument('--test_start_epoch', type=int, default=DEFAULT_TEST_START_E
 parser.add_argument('--test_frequency', type=int, default=DEFAULT_TEST_FREQUENCY, help='Frequency of testing in epochs')
 parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_WARMUP_EPOCH, help='Number of warmup epochs')
 parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOTHING, help='Label smoothing factor')
+parser.add_argument('--log_params', type=bool, default=False, help='Save full training params')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -138,6 +141,30 @@ def setup_logging():
     sys.stdout = TerminalOutput(log_file_handle)
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
+
+def archive_artifacts(args, config):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_name = f"training_{timestamp}"
+    artifacts_dir = os.path.join(OUTPUT_DIR, folder_name)
+    os.makedirs(artifacts_dir, exist_ok=True)
+    for item in os.listdir(OUTPUT_DIR):
+        src = os.path.join(OUTPUT_DIR, item)
+        # Skip the new artifacts folder and the 'results' folder
+        if os.path.basename(src) == folder_name or item == "results":
+            continue
+        dst = os.path.join(artifacts_dir, item)
+        shutil.move(src, dst)
+    config_log = {
+        "training_parameters": vars(args),
+        "model_config": asdict(config),
+        "timestamp": timestamp
+    }
+    log_file_path = os.path.join(artifacts_dir, "training_config.json")
+    with open(log_file_path, 'w') as f:
+        json.dump(config_log, f, indent=4)
+    print(f"\nAll artifacts moved to: {artifacts_dir}")
+    print(f"Training configuration saved to: {log_file_path}")
+    return artifacts_dir
 
 # **************** CutMix Function ****************
 def cutmix(data, targets, alpha):
@@ -461,7 +488,7 @@ def main():
         best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
     elif args.dataset == 'PTSD':
         best_model_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth")
-    model = torch.load(best_model_path, map_location=DEVICE)
+    model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
     model.eval()
 
     class ExpertTracer(nn.Module):
@@ -494,6 +521,9 @@ def main():
         do_constant_folding=True,
     )
     print(f"ONNX model saved to: {onnx_path}")
+
+    if args.log_params == True:
+        archive_artifacts(args, config)
 
 if __name__ == '__main__':
     if os.name == 'nt':
