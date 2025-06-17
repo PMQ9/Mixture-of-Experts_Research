@@ -55,6 +55,7 @@ parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
 
 args = parser.parse_args()
 
+# **************** Normalization Values ****************
 NORMALIZATION_MEAN_R_GTSRB = 0.3432482055626116
 NORMALIZATION_MEAN_G_GTSRB = 0.31312152061376486
 NORMALIZATION_MEAN_B_GTSRB = 0.32248030768500435
