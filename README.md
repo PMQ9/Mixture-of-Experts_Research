@@ -20,6 +20,11 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [ ] Gradient clipping
 - [ ] Add DEBUG mode
 
+ **Inter-Model Performance**
+- [x] Add PTSD
+- [ ] TBD
+
+
 # User Manual
 
  **Requirements**
@@ -70,8 +75,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.7764    |                       |
-| **Best testing accuracy** |**0.8289** |                       |
+| Best training accuracy    | 0.8408    |                       |
+| **Best testing accuracy** |**0.9221** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
@@ -88,7 +93,6 @@ Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152ae
 - Test Annotations: GTSRB_Final_Test_GT.zip
 
 
-
 # Performance with PTSD
 
 Full Name: Persian Traffic Sign Database
@@ -99,12 +103,14 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    |           |                       |
-| **Best testing accuracy** |           |                       |
+| Best training accuracy    | 0.8250    |                       |
+| **Best testing accuracy** |**0.8538** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
 | Test balance loss         |           |                       |
+
+<img src="utils/doc/training_metrics_ptsd.png" alt="Alt Text" width="70%"/>
 
 ## Dataset folder structure: 
 
