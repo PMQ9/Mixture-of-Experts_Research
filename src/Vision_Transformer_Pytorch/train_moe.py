@@ -18,6 +18,7 @@ from torchvision.transforms import RandAugment
 import argparse
 import ast
 from dataclasses import fields, asdict
+import torch.multiprocessing
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
 
@@ -25,6 +26,8 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+if os.name != 'nt':  # Only for Linux
+    torch.multiprocessing.set_sharing_strategy('file_system')  # Prevents hangs
 
 # **************** Argument Parser ****************
 DEFAULT_BATCH_SIZE = 128
@@ -125,12 +128,9 @@ def setup_logging():
     class TerminalOutput:
         def __init__(self, file):
             self.file = file
-
         def write(self, x):
-            if 'it/s' not in x and '/s' not in x:
-                self.file.write(x)
+            self.file.write(x)
             self.file.flush()
-
         def flush(self):
             self.file.flush()
            
@@ -350,14 +350,40 @@ def main():
     if not os.path.exists(csv_file):
         raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
     
-    num_workers = min(os.cpu_count(), 8)
-    prefetch_factor = 4
+    if os.name == 'nt':  # Windows
+        num_workers_train = min(os.cpu_count(), 8)
+        prefetch_factor_train = 4
+        persistent_workers_train = num_workers_train > 0
+        num_workers_test = 8
+        persistent_workers_test = True
+    else:  # Linux
+        num_workers_train = min(os.cpu_count(), 8)
+        prefetch_factor_train = 4
+        persistent_workers_train = True
+        num_workers_test = 8
+        persistent_workers_test = True
 
     train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
     test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test, class_to_idx=train_dataset.class_to_idx)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0, prefetch_factor=prefetch_factor)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8, persistent_workers=True, pin_memory=True)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=num_workers_train,
+        pin_memory=True,
+        persistent_workers=persistent_workers_train,
+        prefetch_factor=prefetch_factor_train
+    )
+
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=num_workers_test,
+        persistent_workers=persistent_workers_test,
+        pin_memory=True
+    )
 
     model = VisionTransformer(config).to(DEVICE)
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
@@ -470,6 +496,7 @@ def main():
     print(f"ONNX model saved to: {onnx_path}")
 
 if __name__ == '__main__':
-    from multiprocessing import freeze_support
-    freeze_support()
+    if os.name == 'nt':
+        from multiprocessing import freeze_support
+        freeze_support()
     main()
