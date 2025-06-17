@@ -19,6 +19,8 @@ import argparse
 import ast
 from dataclasses import fields, asdict
 import torch.multiprocessing
+import shutil
+import json
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
 
@@ -138,6 +140,29 @@ def setup_logging():
     sys.stdout = TerminalOutput(log_file_handle)
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
+
+def archive_artifacts(args, config):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_name = f"training_{timestamp}"
+    artifacts_dir = os.path.join(OUTPUT_DIR, folder_name)
+    os.makedirs(artifacts_dir, exist_ok=True)
+    for item in os.listdir(OUTPUT_DIR):
+        src = os.path.join(OUTPUT_DIR, item)
+        if os.path.basename(src) == folder_name:
+            continue
+        dst = os.path.join(artifacts_dir, item)
+        shutil.move(src, dst)
+    config_log = {
+        "training_parameters": vars(args),
+        "model_config": asdict(config),
+        "timestamp": timestamp
+    }
+    log_file_path = os.path.join(artifacts_dir, "training_config.json")
+    with open(log_file_path, 'w') as f:
+        json.dump(config_log, f, indent=4)
+    print(f"\nAll artifacts moved to: {artifacts_dir}")
+    print(f"Training configuration saved to: {log_file_path}")
+    return artifacts_dir
 
 # **************** CutMix Function ****************
 def cutmix(data, targets, alpha):
@@ -494,6 +519,7 @@ def main():
         do_constant_folding=True,
     )
     print(f"ONNX model saved to: {onnx_path}")
+    archive_artifacts(args, config)
 
 if __name__ == '__main__':
     if os.name == 'nt':
