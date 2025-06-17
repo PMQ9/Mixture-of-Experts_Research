@@ -351,11 +351,11 @@ def main():
         raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
     
     if os.name == 'nt':  # Windows
-        num_workers_train = 0
-        prefetch_factor_train = None
-        persistent_workers_train = False
-        num_workers_test = 0
-        persistent_workers_test = False
+        num_workers_train = min(os.cpu_count(), 8)
+        prefetch_factor_train = 4
+        persistent_workers_train = num_workers_train > 0
+        num_workers_test = 8
+        persistent_workers_test = True
     else:  # Linux
         num_workers_train = min(os.cpu_count(), 8)
         prefetch_factor_train = 4
