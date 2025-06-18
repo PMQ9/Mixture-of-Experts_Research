@@ -300,7 +300,7 @@ def main():
         print()
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
-            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY )
+            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
