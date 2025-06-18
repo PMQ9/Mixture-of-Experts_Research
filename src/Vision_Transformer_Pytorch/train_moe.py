@@ -58,6 +58,7 @@ parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOT
 parser.add_argument('--archive_params', type=bool, default=True, help='Save full training params')
 parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained GTSRB and PTSD experts')
+parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -378,9 +379,11 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            #torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth"))
             save_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"vit_{args.dataset.lower()}_best.pth")
             torch.save(model, save_path)
+            if not args.meta_moe and args.save_state_dict:
+                state_dict_path = os.path.join(OUTPUT_DIR, f"vit_{args.dataset.lower()}_best_state_dict.pth")
+                torch.save(model.state_dict(), state_dict_path)         
             print(f"New best accuracy: {best_acc:.4f}")
         print()
 
