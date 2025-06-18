@@ -1,7 +1,7 @@
 import torch
 import os
+from train_moe import (PRETRAINED_MODEL_DIR)
 
-PRETRAINED_MODEL_DIR = r"C:\\Users\\admin\\Documents\\Project\\Mixture-of-Experts_Research\\artifacts\\results"
 DEVICE = torch.device("cpu")  # Use CPU for inspection to avoid GPU issues
 
 def inspect_pth_file(filename):
