@@ -276,35 +276,16 @@ def main():
     )
 
     if args.meta_moe:
-        # Define configuration for pre-trained VisionTransformer models
-        config_expert = VisionTransformerConfig(
-            img_size=32,
-            patch_size=4,
-            in_chans=3,
-            num_class=43,  # Each expert has 43 classes
-            embed_dim=192,
-            depth=9,
-            num_heads=12,
-            mlp_ratio=2.0,
-            qkv_bias=True,
-            drop_rate=0.15,
-            attn_drop_rate=0.1,
-            num_experts=7,
-            top_k=3,
-            balance_loss_weight=1.0,
-            drop_path_rate=0.1,
-            router_weight_reg=0.03
-        )
-
-        # Load GTSRB model as state dictionary
-        gtsrb_model = VisionTransformer(config_expert).to(DEVICE)
-        gtsrb_state_dict = torch.load(
+        # Load GTSRB model as full model
+        gtsrb_model = torch.load(
             os.path.join(PRETRAINED_MODEL_DIR, "vit_gtsrb_best.pth"),
             map_location=DEVICE,
-            weights_only=True
+            weights_only=False
         )
-        gtsrb_model.load_state_dict(gtsrb_state_dict)
-        print(f"Loaded vit_gtsrb_best.pth as state dictionary into VisionTransformer model.")
+        if not isinstance(gtsrb_model, VisionTransformer):
+            raise RuntimeError(f"vit_gtsrb_best.pth is not a VisionTransformer instance: {type(gtsrb_model)}")
+        gtsrb_model = gtsrb_model.to(DEVICE)
+        print(f"Loaded vit_gtsrb_best.pth as full VisionTransformer model.")
 
         # Load PTSD model as full model
         ptsd_model = torch.load(
@@ -411,12 +392,11 @@ def main():
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
     
    # **************** Export to ONNX and save training params **************** 
-   # By default, DO export ONNX and DO NOT log params
-    if args.export_onnx == True:
+    if args.export_onnx:
         best_model_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"vit_{args.dataset.lower()}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset)
-    if args.archive_params == True:
+    if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
 
 if __name__ == '__main__':
