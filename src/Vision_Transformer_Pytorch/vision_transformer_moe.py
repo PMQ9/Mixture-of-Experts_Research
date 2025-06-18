@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
 from torch.utils.data import Dataset
+from torchvision import models
 
 # dataclass
 @dataclass
@@ -296,4 +297,55 @@ class VisionTransformer(nn.Module):
         x = x[:, 0]
         x = self.head(x)
         return x, balance_losses
-           
+
+class MetaGatingNet(nn.Module):
+    def __init__(self):
+        super(MetaGatingNet, self).__init__()
+        self.model = models.resnet18(pretrained=True)
+        self.model.fc = nn.Sequential(
+            nn.Linear(self.model.fc.in_features, 2),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+class MetaMoE(nn.Module):
+    def __init__(self, gtsrb_model, ptsd_model, meta_gating_net, num_classes_gtsrb, num_classes_ptsd):
+        super(MetaMoE, self).__init__()
+        self.gtsrb_model = gtsrb_model
+        self.ptsd_model = ptsd_model
+        self.meta_gating_net = meta_gating_net
+        self.num_classes_gtsrb = num_classes_gtsrb
+        self.num_classes_ptsd = num_classes_ptsd
+        self.total_classes = num_classes_gtsrb + num_classes_ptsd
+
+    def forward(self, x):
+        gates = self.meta_gating_net(x)  # [batch_size, 2]
+        W_G, W_P = gates[:, 0], gates[:, 1]
+
+        P_G, _ = self.gtsrb_model(x)  # [batch_size, num_classes_gtsrb]
+        P_P, _ = self.ptsd_model(x)   # [batch_size, num_classes_ptsd]
+
+        weighted_P_G = W_G.unsqueeze(1) * P_G
+        weighted_P_P = W_P.unsqueeze(1) * P_P
+
+        final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)  # [batch_size, total_classes]
+        return final_output
+
+class CombinedDataset(Dataset):
+    def __init__(self, gtsrb_dataset, ptsd_dataset, num_classes_gtsrb):
+        self.gtsrb_dataset = gtsrb_dataset
+        self.ptsd_dataset = ptsd_dataset
+        self.num_classes_gtsrb = num_classes_gtsrb
+
+    def __len__(self):
+        return len(self.gtsrb_dataset) + len(self.ptsd_dataset)
+
+    def __getitem__(self, idx):
+        if idx < len(self.gtsrb_dataset):
+            image, label = self.gtsrb_dataset[idx]
+        else:
+            image, label = self.ptsd_dataset[idx - len(self.gtsrb_dataset)]
+            label = label + self.num_classes_gtsrb  # Shift PTSD labels
+        return image, label

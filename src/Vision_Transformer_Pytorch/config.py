@@ -34,6 +34,14 @@ NORM_STD_R_CIFAR10 = 0.247
 NORM_STD_G_CIFAR10 = 0.243
 NORM_STD_B_CIFAR10 = 0.261
 
+# **************** Unified Normalization Values ****************
+NORM_MEAN_R_UNIFIED = 0.3432482055626116
+NORM_MEAN_G_UNIFIED = 0.31312152061376486
+NORM_MEAN_B_UNIFIED = 0.32248030768500435
+NORM_STD_R_UNIFIED = 0.27380229614172485
+NORM_STD_G_UNIFIED = 0.26033050034131744
+NORM_STD_B_UNIFIED = 0.2660272789537349
+
 # **************** Overide Default Config Params ****************
 def apply_config_overrides(config, overrides_str):
     if not overrides_str:
