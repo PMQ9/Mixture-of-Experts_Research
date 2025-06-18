@@ -54,6 +54,7 @@ parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_WARMUP_EPOCH, h
 parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOTHING, help='Label smoothing factor')
 parser.add_argument('--archive_params', type=bool, default=True, help='Save full training params')
 parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
+parser.add_argument('--enable_data_augment', type=bool, default=True, help='Enable data augmentation techniques')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -73,7 +74,7 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 
 # **************** Training Functions ****************
-def train(model, loader, optimizer, criterion, device, balance_loss_weight):
+def train(model, loader, optimizer, criterion, device, balance_loss_weight, enable_cutmix=True):
     model.train()
     total_loss = 0
     total_balance_loss = 0
@@ -85,7 +86,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
         data, target = data.to(device, non_blocking=True), target.to(device, non_blocking=True)
         optimizer.zero_grad()
 
-        apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
+        apply_cutmix = enable_cutmix and (data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB)
 
         with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
             if apply_cutmix:
@@ -174,17 +175,25 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging(OUTPUT_DIR)
 
-    transform_train = transforms.Compose([
-        transforms.Resize(32), 
-        RandAugment(num_ops=2, magnitude=9), # If overfitting decreases but training becomes too slow or unstable, reduce num_ops to 1 or magnitude to 5-7. If overfitting, increase magnitude to 10-12 or num_ops to 3
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
-        transforms.RandomRotation(15),
-        transforms.ToTensor(),
-        transforms.Normalize(normalization_mean, normalization_std),
-        transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
-    ])
+    if args.enable_data_augment == True:
+        transform_train = transforms.Compose([
+            transforms.Resize(32),
+            RandAugment(num_ops=2, magnitude=9),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+            transforms.RandomRotation(15),
+            transforms.ToTensor(),
+            transforms.Normalize(normalization_mean, normalization_std),
+            transforms.RandomErasing(p=0.3, scale=(0.02, 0.2)),
+        ])
+    else:
+        transform_train = transforms.Compose([
+            transforms.Resize(32),
+            transforms.CenterCrop(32),
+            transforms.ToTensor(),
+            transforms.Normalize(normalization_mean, normalization_std),
+        ])
 
     transform_test = transforms.Compose([
         transforms.Resize(32),
