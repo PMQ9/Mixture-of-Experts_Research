@@ -60,7 +60,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 Architecture:
 
-<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="30%"/>
+<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="25%"/>
 
 
 # Performance with GTSRB
@@ -103,8 +103,8 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8250    |                       |
-| **Best testing accuracy** |**0.8538** |                       |
+| Best training accuracy    | 0.8546    |                       |
+| **Best testing accuracy** |**0.8765** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
