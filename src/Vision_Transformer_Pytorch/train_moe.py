@@ -52,7 +52,7 @@ parser.add_argument('--test_start_epoch', type=int, default=DEFAULT_TEST_START_E
 parser.add_argument('--test_frequency', type=int, default=DEFAULT_TEST_FREQUENCY, help='Frequency of testing in epochs')
 parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_WARMUP_EPOCH, help='Number of warmup epochs')
 parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOTHING, help='Label smoothing factor')
-parser.add_argument('--archive_params', type=bool, default=False, help='Save full training params')
+parser.add_argument('--archive_params', type=bool, default=True, help='Save full training params')
 parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
