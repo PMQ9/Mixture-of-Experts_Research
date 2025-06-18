@@ -8,14 +8,12 @@ import torch.nn as nn
 from dataclasses import asdict
 import matplotlib.pyplot as plt
 
-from config import *
-
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
 # **************** Logging Function ****************
-def setup_logging():
-    log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
-    os.makedirs(OUTPUT_DIR, exist_ok=True) 
+def setup_logging(output_dir):
+    log_file = os.path.join(output_dir, "training_log.txt")
+    os.makedirs(output_dir, exist_ok=True) 
 
     class TerminalOutput:
         def __init__(self, file):
@@ -32,13 +30,13 @@ def setup_logging():
     print(f"Logging to: {log_file}")
 
 # **************** Archive Trained Models for Fine Tuning ****************
-def archive_params(args, config):
+def archive_params(args, config, output_dir):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     folder_name = f"training_{timestamp}"
-    artifacts_dir = os.path.join(OUTPUT_DIR, folder_name)
+    artifacts_dir = os.path.join(output_dir, folder_name)
     os.makedirs(artifacts_dir, exist_ok=True)
-    for item in os.listdir(OUTPUT_DIR):
-        src = os.path.join(OUTPUT_DIR, item)
+    for item in os.listdir(output_dir):
+        src = os.path.join(output_dir, item)
         # Skip the new artifacts folder and the 'results' folder
         if os.path.basename(src) == folder_name or item == "results":
             continue
@@ -57,7 +55,8 @@ def archive_params(args, config):
     return artifacts_dir
 
 # **************** Plot training metrics ****************
-def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, plot_epochs, plot_test_start_epoch, plot_test_freq):
+def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, 
+                 plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir):
     train_epochs = list(range(plot_epochs))
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
@@ -107,7 +106,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance
     axes[2, 1].grid(True)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
+    plt.savefig(os.path.join(output_dir, "training_metrics.png"))
     plt.close(fig)
 
 # **************** Export to ONNX ****************

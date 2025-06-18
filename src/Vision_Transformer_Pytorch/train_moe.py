@@ -13,7 +13,6 @@ from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
 import argparse
-import ast
 from dataclasses import fields, asdict
 import torch.multiprocessing
 import torch
@@ -26,11 +25,12 @@ from config import (
     DEFAULT_BATCH_SIZE, DEFAULT_EPOCH, DEFAULT_LEARNING_RATE,
     DEFAULT_CUTMIX_ALPHA, DEFAULT_CUTMIX_PROB, DEFAULT_WARMUP_EPOCH, DEFAULT_LABEL_SMOOTHING,
     DEFAULT_TEST_START_EPOCH, DEFAULT_TEST_FREQUENCY,
-    NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB,
-    NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB,
-    NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD,
-    NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD,
+    NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB,
+    NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB,
+    NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD,
+    NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD,
 )
+from config import apply_config_overrides
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
 torch.backends.cudnn.benchmark = True
@@ -71,30 +71,6 @@ TEST_START_EPOCH = args.test_start_epoch
 TEST_FREQUENCY = args.test_frequency
 WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
-
-# **************** Overide Default Config Params ****************
-def apply_config_overrides(config, overrides_str):
-    if not overrides_str:
-        return
-    overrides = overrides_str.split(',')
-    for override in overrides:
-        if '=' in override:
-            key, value = override.split('=', 1)
-            if hasattr(config, key):
-                field = next((f for f in fields(config) if f.name == key), None)
-                if field:
-                    try:
-                        parsed_value = ast.literal_eval(value)
-                        if isinstance(parsed_value, field.type):
-                            setattr(config, key, parsed_value)
-                        else:
-                            print(f"Type mismatch for {key}: expected {field.type}, got {type(parsed_value)}")
-                    except ValueError:
-                        print(f"Invalid value for {key}: {value}")
-                else:
-                    print(f"Unknown config parameter: {key}")
-            else:
-                print(f"Invalid override format: {override}")
 
 # **************** Training Functions ****************
 def train(model, loader, optimizer, criterion, device, balance_loss_weight):
@@ -144,6 +120,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     accuracy = correct / total
     return avg_loss, avg_balance_loss, accuracy
 
+# **************** Testing Functions ****************
 def test(model, loader, optimizer, criterion, device):
     model.eval()
     total_loss = 0
@@ -178,15 +155,15 @@ def main():
         train_dir = './data/GTSRB/Training'
         test_dir = './data/GTSRB/Test'
         csv_file = './data/GTSRB/Test/GT-final_test.csv'
-        normalization_mean = (NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB)
-        normalization_std = (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)
+        normalization_mean = (NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB)
+        normalization_std = (NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB)
     elif args.dataset == 'PTSD':
         num_classes = 43
         train_dir = './data/PTSD/Training'
         test_dir = './data/PTSD/Test'
         csv_file = './data/PTSD/Test/testset_CSV.csv'
-        normalization_mean = (NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD)
-        normalization_std = (NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD)
+        normalization_mean = (NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD)
+        normalization_std = (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
     
@@ -195,7 +172,7 @@ def main():
     print(f"Training with dataset: {args.dataset} with number of classes: {num_classes}" )
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    setup_logging()
+    setup_logging(OUTPUT_DIR)
 
     transform_train = transforms.Compose([
         transforms.Resize(32), 
@@ -339,7 +316,7 @@ def main():
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)   
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name=args.dataset)
     if args.archive_params == True:
-        archive_params(args, config)
+        archive_params(args, config, OUTPUT_DIR)
 
 if __name__ == '__main__':
     if os.name == 'nt':
