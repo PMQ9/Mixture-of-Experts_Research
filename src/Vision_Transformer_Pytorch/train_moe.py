@@ -1,11 +1,8 @@
 import torch
-import torch.onnx
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 import time
 import os
 import sys
@@ -16,13 +13,25 @@ from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
 import argparse
-import ast
 from dataclasses import fields, asdict
 import torch.multiprocessing
-import shutil
-import json
+import torch
 
-from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
+from vision_transformer_moe import VisionTransformer, VisionTransformerConfig
+from vision_transformer_moe import LabelSmoothingCrossEntropy, TrafficSignTestDataset
+from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
+from augmentation_functions import cutmix
+from config import (
+    DEFAULT_BATCH_SIZE, DEFAULT_EPOCH, DEFAULT_LEARNING_RATE,
+    DEFAULT_CUTMIX_ALPHA, DEFAULT_CUTMIX_PROB, DEFAULT_WARMUP_EPOCH, DEFAULT_LABEL_SMOOTHING,
+    DEFAULT_TEST_START_EPOCH, DEFAULT_TEST_FREQUENCY,
+    NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB,
+    NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB,
+    NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD,
+    NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD,
+)
+from config import apply_config_overrides
+OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -32,16 +41,6 @@ if os.name != 'nt':  # Only for Linux
     torch.multiprocessing.set_sharing_strategy('file_system')  # Prevents hangs
 
 # **************** Argument Parser ****************
-DEFAULT_BATCH_SIZE = 128
-DEFAULT_EPOCH = 400
-DEFAULT_LEARNING_RATE = 1e-3
-DEFAULT_CUTMIX_ALPHA = 1.0
-DEFAULT_CUTMIX_PROB = 0.5
-DEFAULT_TEST_START_EPOCH = 50
-DEFAULT_TEST_FREQUENCY = 2
-DEFAULT_WARMUP_EPOCH = 10
-DEFAULT_LABEL_SMOOTHING = 0.1
-
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
 parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_BATCH_SIZE, help='Batch size for training')
@@ -53,35 +52,13 @@ parser.add_argument('--test_start_epoch', type=int, default=DEFAULT_TEST_START_E
 parser.add_argument('--test_frequency', type=int, default=DEFAULT_TEST_FREQUENCY, help='Frequency of testing in epochs')
 parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_WARMUP_EPOCH, help='Number of warmup epochs')
 parser.add_argument('--label_smoothing', type=float, default=DEFAULT_LABEL_SMOOTHING, help='Label smoothing factor')
-parser.add_argument('--log_params', type=bool, default=False, help='Save full training params')
+parser.add_argument('--archive_params', type=bool, default=True, help='Save full training params')
+parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
 parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
-
 args = parser.parse_args()
-
-# **************** Normalization Values ****************
-NORMALIZATION_MEAN_R_GTSRB = 0.3432482055626116
-NORMALIZATION_MEAN_G_GTSRB = 0.31312152061376486
-NORMALIZATION_MEAN_B_GTSRB = 0.32248030768500435
-NORMALIZATION_STD_R_GTSRB = 0.27380229614172485
-NORMALIZATION_STD_G_GTSRB = 0.26033050034131744
-NORMALIZATION_STD_B_GTSRB = 0.2660272789537349
-
-NORMALIZATION_MEAN_R_PTSD = 0.42227414577051153
-NORMALIZATION_MEAN_G_PTSD = 0.40389899174730964
-NORMALIZATION_MEAN_B_PTSD = 0.42392441068660547
-NORMALIZATION_STD_R_PTSD = 0.2550717671385188
-NORMALIZATION_STD_G_PTSD = 0.2273784047793104
-NORMALIZATION_STD_B_PTSD = 0.22533597220675006
-
-NORMALIZAION_MEAN_R_CIFAR10 = 0.4914
-NORMALIZAION_MEAN_G_CIFAR10 = 0.4822
-NORMALIZAION_MEAN_B_CIFAR10 = 0.4465
-NORMALIZATION_STD_R_CIFAR10 = 0.247
-NORMALIZATION_STD_G_CIFAR10 = 0.243
-NORMALIZATION_STD_B_CIFAR10 = 0.261
 
 # **************** Training Params ****************
 BATCH_SIZE = args.batch_size
@@ -94,108 +71,6 @@ TEST_START_EPOCH = args.test_start_epoch
 TEST_FREQUENCY = args.test_frequency
 WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
-
-# **************** Overide Default Config Params ****************
-def apply_config_overrides(config, overrides_str):
-    if not overrides_str:
-        return
-    overrides = overrides_str.split(',')
-    for override in overrides:
-        if '=' in override:
-            key, value = override.split('=', 1)
-            if hasattr(config, key):
-                field = next((f for f in fields(config) if f.name == key), None)
-                if field:
-                    try:
-                        parsed_value = ast.literal_eval(value)
-                        if isinstance(parsed_value, field.type):
-                            setattr(config, key, parsed_value)
-                        else:
-                            print(f"Type mismatch for {key}: expected {field.type}, got {type(parsed_value)}")
-                    except ValueError:
-                        print(f"Invalid value for {key}: {value}")
-                else:
-                    print(f"Unknown config parameter: {key}")
-            else:
-                print(f"Invalid override format: {override}")
-
-
-# **************** DevOps Params ****************
-OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
-
-# **************** DevOps Functions ****************
-def setup_logging():
-    log_file = os.path.join(OUTPUT_DIR, "training_log.txt")
-    os.makedirs(OUTPUT_DIR, exist_ok=True) 
-
-    class TerminalOutput:
-        def __init__(self, file):
-            self.file = file
-        def write(self, x):
-            self.file.write(x)
-            self.file.flush()
-        def flush(self):
-            self.file.flush()
-           
-    log_file_handle = open(log_file, 'w', buffering=1)
-    sys.stdout = TerminalOutput(log_file_handle)
-    print(f"Training started at {datetime.now()}\n")
-    print(f"Logging to: {log_file}")
-
-def archive_artifacts(args, config):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder_name = f"training_{timestamp}"
-    artifacts_dir = os.path.join(OUTPUT_DIR, folder_name)
-    os.makedirs(artifacts_dir, exist_ok=True)
-    for item in os.listdir(OUTPUT_DIR):
-        src = os.path.join(OUTPUT_DIR, item)
-        # Skip the new artifacts folder and the 'results' folder
-        if os.path.basename(src) == folder_name or item == "results":
-            continue
-        dst = os.path.join(artifacts_dir, item)
-        shutil.move(src, dst)
-    config_log = {
-        "training_parameters": vars(args),
-        "model_config": asdict(config),
-        "timestamp": timestamp
-    }
-    log_file_path = os.path.join(artifacts_dir, "training_config.json")
-    with open(log_file_path, 'w') as f:
-        json.dump(config_log, f, indent=4)
-    print(f"\nAll artifacts moved to: {artifacts_dir}")
-    print(f"Training configuration saved to: {log_file_path}")
-    return artifacts_dir
-
-# **************** CutMix Function ****************
-def cutmix(data, targets, alpha):
-    indices = torch.randperm(data.size(0))
-    shuffled_data = data[indices]
-    shuffled_targets = targets[indices]
-
-    lam = np.random.beta(alpha, alpha)
-    
-    bbx1, bby1, bbx2, bby2 = rand_bbox(data.size(), lam)
-    data[:, :, bbx1:bbx2, bby1:bby2] = shuffled_data[:, :, bbx1:bbx2, bby1:bby2]
-    lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (data.size(-1) * data.size(-2)))
-    
-    return data, targets, shuffled_targets, lam
-
-def rand_bbox(size, lam):
-    W = size[2]
-    H = size[3]
-    cut_rat = np.sqrt(1. - lam)
-    cut_w = int(W * cut_rat)
-    cut_h = int(H * cut_rat)
-
-    cx = np.random.randint(W)
-    cy = np.random.randint(H)
-
-    bbx1 = np.clip(cx - cut_w // 2, 0, W)
-    bby1 = np.clip(cy - cut_h // 2, 0, H)
-    bbx2 = np.clip(cx + cut_w // 2, 0, W)
-    bby2 = np.clip(cy + cut_h // 2, 0, H)
-
-    return bbx1, bby1, bbx2, bby2
 
 # **************** Training Functions ****************
 def train(model, loader, optimizer, criterion, device, balance_loss_weight):
@@ -245,6 +120,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight):
     accuracy = correct / total
     return avg_loss, avg_balance_loss, accuracy
 
+# **************** Testing Functions ****************
 def test(model, loader, optimizer, criterion, device):
     model.eval()
     total_loss = 0
@@ -272,59 +148,6 @@ def test(model, loader, optimizer, criterion, device):
     accuracy = correct / total
     return avg_loss, avg_balance_loss, accuracy
 
-def plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses):
-    train_epochs = list(range(EPOCHS))
-    test_epochs = list(range(TEST_START_EPOCH, EPOCHS, TEST_FREQUENCY))
-
-    fig, axes = plt.subplots(3, 2, figsize=(15, 18))
-    fig.suptitle('Training and Testing Metrics', fontsize=16)
-
-    axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
-    axes[0, 0].set_xlabel('Epoch')
-    axes[0, 0].set_ylabel('Loss')
-    axes[0, 0].set_title('Training Classification Loss')
-    axes[0, 0].legend()
-    axes[0, 0].grid(True)
-
-    axes[0, 1].plot(test_epochs[:len(test_losses)], test_losses, label='Test Loss')
-    axes[0, 1].set_xlabel('Epoch')
-    axes[0, 1].set_ylabel('Loss')
-    axes[0, 1].set_title(f'Test Classification Loss (Starting from Epoch {TEST_START_EPOCH})')
-    axes[0, 1].legend()
-    axes[0, 1].grid(True)
-
-    axes[1, 0].plot(train_epochs[:len(train_accs)], train_accs, label='Train Accuracy')
-    axes[1, 0].set_xlabel('Epoch')
-    axes[1, 0].set_ylabel('Accuracy')
-    axes[1, 0].set_title('Training Accuracy')
-    axes[1, 0].legend()
-    axes[1, 0].grid(True)
-
-    axes[1, 1].plot(test_epochs[:len(test_accs)], test_accs, label='Test Accuracy')
-    axes[1, 1].set_xlabel('Epoch')
-    axes[1, 1].set_ylabel('Accuracy')
-    axes[1, 1].set_title(f'Test Accuracy (Starting from Epoch {TEST_START_EPOCH})')
-    axes[1, 1].legend()
-    axes[1, 1].grid(True)
-
-    axes[2, 0].plot(train_epochs[:len(train_balance_losses)], train_balance_losses, label='Train Balance Loss')
-    axes[2, 0].set_xlabel('Epoch')
-    axes[2, 0].set_ylabel('Balance Loss')
-    axes[2, 0].set_title('Training Balance Loss')
-    axes[2, 0].legend()
-    axes[2, 0].grid(True)
-
-    axes[2, 1].plot(test_epochs[:len(test_balance_losses)], test_balance_losses, label='Test Balance Loss')
-    axes[2, 1].set_xlabel('Epoch')
-    axes[2, 1].set_ylabel('Balance Loss')
-    axes[2, 1].set_title(f'Test Balance Loss (Starting from Epoch {TEST_START_EPOCH})')
-    axes[2, 1].legend()
-    axes[2, 1].grid(True)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig(os.path.join(OUTPUT_DIR, "training_metrics.png"))
-    plt.close(fig)
-
 # **************** Main Functions ****************
 def main():
     if args.dataset == 'GTSRB':
@@ -332,15 +155,15 @@ def main():
         train_dir = './data/GTSRB/Training'
         test_dir = './data/GTSRB/Test'
         csv_file = './data/GTSRB/Test/GT-final_test.csv'
-        normalization_mean = (NORMALIZATION_MEAN_R_GTSRB, NORMALIZATION_MEAN_G_GTSRB, NORMALIZATION_MEAN_B_GTSRB)
-        normalization_std = (NORMALIZATION_STD_R_GTSRB, NORMALIZATION_STD_G_GTSRB, NORMALIZATION_STD_B_GTSRB)
+        normalization_mean = (NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB)
+        normalization_std = (NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB)
     elif args.dataset == 'PTSD':
         num_classes = 43
         train_dir = './data/PTSD/Training'
         test_dir = './data/PTSD/Test'
         csv_file = './data/PTSD/Test/testset_CSV.csv'
-        normalization_mean = (NORMALIZATION_MEAN_R_PTSD, NORMALIZATION_MEAN_G_PTSD, NORMALIZATION_MEAN_B_PTSD)
-        normalization_std = (NORMALIZATION_STD_R_PTSD, NORMALIZATION_STD_G_PTSD, NORMALIZATION_STD_B_PTSD)
+        normalization_mean = (NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD)
+        normalization_std = (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
     
@@ -349,7 +172,7 @@ def main():
     print(f"Training with dataset: {args.dataset} with number of classes: {num_classes}" )
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    setup_logging()
+    setup_logging(OUTPUT_DIR)
 
     transform_train = transforms.Compose([
         transforms.Resize(32), 
@@ -477,53 +300,23 @@ def main():
         print()
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
-            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses)
+            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR)
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
-    print("\nExporting model to ONNX...")
-
-    if args.dataset == 'GTSRB':
-        best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
-    elif args.dataset == 'PTSD':
-        best_model_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth")
-    model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-    model.eval()
-
-    class ExpertTracer(nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            self.model = model
-        def forward(self, x):
-            out, balance_losses = self.model(x)
-            expert_traces = [torch.zeros_like(out) for _ in range(config.num_experts)]
-            return (out, *expert_traces)
-        
-    wrapped_model = ExpertTracer(model).to(DEVICE)
-    dummy_input = torch.randn(1, 3, 32, 32).to(DEVICE)  # (batch, channels, height, width)
-    if args.dataset == 'GTSRB':
-        onnx_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.onnx")
-    elif args.dataset == 'PTSD':
-        onnx_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.onnx")
-    torch.onnx.export(
-        wrapped_model,
-        dummy_input,
-        onnx_path,
-        input_names=["input"],
-        output_names=["output"],
-        opset_version=14,
-        dynamic_axes={
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"}
-        },
-        verbose=True,
-        do_constant_folding=True,
-    )
-    print(f"ONNX model saved to: {onnx_path}")
-
-    if args.log_params == True:
-        archive_artifacts(args, config)
+    
+   # **************** Export to ONNX and save training params **************** 
+   # By default, DO export ONNX and DO NOT log params
+    if args.export_onnx == True:
+        if args.dataset == 'GTSRB':
+            best_model_path = os.path.join(OUTPUT_DIR, "vit_gtsrb_best.pth")
+        elif args.dataset == 'PTSD':
+            best_model_path = os.path.join(OUTPUT_DIR, "vit_ptsd_best.pth")
+        model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)   
+        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name=args.dataset)
+    if args.archive_params == True:
+        archive_params(args, config, OUTPUT_DIR)
 
 if __name__ == '__main__':
     if os.name == 'nt':
