@@ -75,8 +75,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8408    |                       |
-| **Best testing accuracy** |**0.9221** |                       |
+| Best training accuracy    | 0.8431    |                       |
+| **Best testing accuracy** |**0.9334** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
@@ -103,8 +103,8 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8546    |                       |
-| **Best testing accuracy** |**0.8765** |                       |
+| Best training accuracy    | 0.8633    |                       |
+| **Best testing accuracy** |**0.8786** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
