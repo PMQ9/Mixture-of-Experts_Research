@@ -130,6 +130,8 @@ def export_to_onnx(model, config, device, output_dir, dataset_name):
         onnx_path = os.path.join(output_dir, "vit_gtsrb_best.onnx")
     elif dataset_name == 'PTSD':
         onnx_path = os.path.join(output_dir, "vit_ptsd_best.onnx")
+    elif dataset_name == 'MetaMoE':
+        onnx_path = os.path.join(output_dir, "vit_meta_moe_best.onnx")
     
     torch.onnx.export(
         wrapped_model,
