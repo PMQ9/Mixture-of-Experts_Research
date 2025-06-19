@@ -37,8 +37,11 @@ def archive_params(args, config, output_dir):
     os.makedirs(artifacts_dir, exist_ok=True)
     for item in os.listdir(output_dir):
         src = os.path.join(output_dir, item)
-        # Skip the new artifacts folder and the 'results' folder
-        if os.path.basename(src) == folder_name or item == "results":
+        if (
+            item == folder_name  # Skip current run's folder (just created)
+            or item == "results"  # Skip results folder
+            or (os.path.isdir(src) and item.startswith("training_"))  # Skip all training_* folders
+        ):
             continue
         dst = os.path.join(artifacts_dir, item)
         shutil.move(src, dst)
