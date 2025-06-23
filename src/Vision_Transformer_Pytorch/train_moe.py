@@ -148,9 +148,10 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None)
     avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, accuracy, gating_accuracy
+    
+    logger.info(f"Train function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}")
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
-# **************** Testing Functions ****************
 def test(model, loader, optimizer, criterion, device):
     model.eval()
     total_loss = 0
@@ -192,9 +193,10 @@ def test(model, loader, optimizer, criterion, device):
     avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, accuracy, gating_accuracy
+    
+    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}")
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
-# **************** Main Functions ****************
 def main():
     if args.meta_moe:
         num_classes_gtsrb = 43
@@ -447,12 +449,20 @@ def main():
         
     for epoch in range(EPOCHS):
         start_time = time.time()
-        train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None)
+        train_results = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None)
+        if len(train_results) != 5:
+            logger.error(f"train function returned {len(train_results)} values, expected 5: {train_results}")
+            raise ValueError(f"train function returned incorrect number of values: {len(train_results)}")
+        train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
         test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = None, None, None, None, None
         if epoch >= TEST_START_EPOCH:
             if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = test(model, test_loader, optimizer, criterion, DEVICE)
+                test_results = test(model, test_loader, optimizer, criterion, DEVICE)
+                if len(test_results) != 5:
+                    logger.error(f"test function returned {len(test_results)} values, expected 5: {test_results}")
+                    raise ValueError(f"test function returned incorrect number of values: {len(test_results)}")
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = test_results
     
         scheduler.step()
         epoch_time = time.time() - start_time
