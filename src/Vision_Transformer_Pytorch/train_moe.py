@@ -17,7 +17,7 @@ import argparse
 from dataclasses import fields, asdict
 import torch.multiprocessing
 
-from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTestDataset
+from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
@@ -59,6 +59,7 @@ parser.add_argument('--archive_params', type=bool, default=True, help='Save full
 parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained GTSRB and PTSD experts')
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
+parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -76,27 +77,32 @@ TEST_START_EPOCH = args.test_start_epoch
 TEST_FREQUENCY = args.test_frequency
 WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
+GATING_LOSS_WEIGHT = args.gating_loss_weight
 
 # **************** Training Functions ****************
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None):
     model.train()
     total_loss = 0
     total_balance_loss = 0
+    total_gating_loss = 0
     correct = 0
+    gating_correct = 0
     total = 0
     scaler = torch.amp.GradScaler(enabled=True)
+    gating_criterion = nn.CrossEntropyLoss()
     
-    for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Training")):
-        data, target = data.to(device, non_blocking=True), target.to(device, non_blocking=True)
+    for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Training")):
+        data, target, meta_class = data.to(device, non_blocking=True), target.to(device, non_blocking=True), meta_class.to(device, non_blocking=True)
         optimizer.zero_grad()
 
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
         with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
             if args.meta_moe:
-                output = model(data)
+                output, gates = model(data)
                 cls_loss = criterion(output, target)
-                total_loss_combined = cls_loss  # No balance loss for MetaMoE (yet)
+                gating_loss = gating_criterion(gates, meta_class)
+                total_loss_combined = cls_loss + GATING_LOSS_WEIGHT * gating_loss
             else:
                 if apply_cutmix:
                     data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
@@ -119,50 +125,68 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None)
         total_loss += cls_loss.item()
         if not args.meta_moe:
             total_balance_loss += balance_loss.item()
+        else:
+            total_gating_loss += gating_loss.item()
         _, predicted = output.max(1)
         total += target.size(0)
         if not args.meta_moe and apply_cutmix:
             correct += lam * predicted.eq(target_a).sum().item() + (1 - lam) * predicted.eq(target_b).sum().item()
         else:
             correct += predicted.eq(target).sum().item()
+        if args.meta_moe:
+            _, gating_pred = gates.max(1)
+            gating_correct += gating_pred.eq(meta_class).sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
+    avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
-    return avg_loss, avg_balance_loss, accuracy
+    gating_accuracy = gating_correct / total if args.meta_moe else 0
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, accuracy, gating_accuracy
 
 # **************** Testing Functions ****************
 def test(model, loader, optimizer, criterion, device):
     model.eval()
     total_loss = 0
     total_balance_loss = 0
+    total_gating_loss = 0
     correct = 0
+    gating_correct = 0
     total = 0
+    gating_criterion = nn.CrossEntropyLoss()
     
     with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(tqdm(loader, desc="Testing")):
-            data, target = data.to(device), target.to(device)
+        for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing")):
+            data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
             with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
                 if args.meta_moe:
-                    output = model(data)
+                    output, gates = model(data)
                     loss = criterion(output, target)
-                    balance_loss = 0  # No balance loss for MetaMoE (yet)
+                    gating_loss = gating_criterion(gates, meta_class)
+                    balance_loss = 0
                 else:
                     output, balance_losses = model(data)
                     loss = criterion(output, target)
                     balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
-
+                    gating_loss = 0
             total_loss += loss.item()
             if not args.meta_moe:
                 total_balance_loss += balance_loss.item()
+            else:
+                total_gating_loss += gating_loss.item()
             _, predicted = output.max(1)
             total += target.size(0)
             correct += predicted.eq(target).sum().item()
+            if args.meta_moe:
+                _, gating_pred = gates.max(1)
+                gating_correct += gating_pred.eq(meta_class).sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
+    avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
-    return avg_loss, avg_balance_loss, accuracy
+    gating_accuracy = gating_correct / total if args.meta_moe else 0
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, accuracy, gating_accuracy
 
 # **************** Main Functions ****************
 def main():
@@ -217,18 +241,26 @@ def main():
     ])
 
     if args.meta_moe:
-        gtsrb_train_dataset = datasets.ImageFolder(root='./data/GTSRB/Training', transform=transform_train)
-        ptsd_train_dataset = datasets.ImageFolder(root='./data/PTSD/Training', transform=transform_train)
+        gtsrb_train_dataset = TrafficSignTrainDataset(
+            root='./data/GTSRB/Training',
+            csv_file='./data/GTSRB/Training/train_with_meta_class.csv',
+            transform=transform_train
+        )
+        ptsd_train_dataset = TrafficSignTrainDataset(
+            root='./data/PTSD/Training',
+            csv_file='./data/PTSD/Training/train_with_meta_class.csv',
+            transform=transform_train
+        )
         combined_train_dataset = CombinedDataset(gtsrb_train_dataset, ptsd_train_dataset, num_classes_gtsrb)
 
         gtsrb_test_dataset = TrafficSignTestDataset(
             root='./data/GTSRB/Test', 
-            csv_file='./data/GTSRB/Test/GT-final_test.csv', 
+            csv_file='./data/GTSRB/Test/testset_with_meta_class.csv', 
             transform=transform_test
         )
         ptsd_test_dataset = TrafficSignTestDataset(
             root='./data/PTSD/Test', 
-            csv_file='./data/PTSD/Test/testset_CSV.csv', 
+            csv_file='./data/PTSD/Test/testset_with_meta_class.csv', 
             transform=transform_test
         )
         combined_test_dataset = CombinedDataset(gtsrb_test_dataset, ptsd_test_dataset, num_classes_gtsrb)
@@ -343,17 +375,21 @@ def main():
     test_accs = []
     train_balance_losses = []
     test_balance_losses = []
+    train_gating_losses = []
+    test_gating_losses = []
+    train_gating_accs = []
+    test_gating_accs = []
     best_acc = 0
     total_training_time = 0
         
     for epoch in range(EPOCHS):
         start_time = time.time()
-        train_loss, train_balance_loss, train_acc = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None)
+        train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None)
         
-        test_loss, test_balance_loss, test_acc = None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = None, None, None, None, None
         if epoch >= TEST_START_EPOCH:
             if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
-                test_loss, test_balance_loss, test_acc = test(model, test_loader, optimizer, criterion, DEVICE)
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = test(model, test_loader, optimizer, criterion, DEVICE)
     
         scheduler.step()
         epoch_time = time.time() - start_time
@@ -362,17 +398,21 @@ def main():
         train_losses.append(train_loss)
         train_accs.append(train_acc)
         train_balance_losses.append(train_balance_loss)
+        train_gating_losses.append(train_gating_loss)
+        train_gating_accs.append(train_gating_acc)
 
         if test_loss is not None:
             test_losses.append(test_loss)
             test_accs.append(test_acc)
             test_balance_losses.append(test_balance_loss)
+            test_gating_losses.append(test_gating_loss)
+            test_gating_accs.append(test_gating_acc)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
-        print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Acc: {train_acc:.4f}")
+        print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Gating Loss: {train_gating_loss:.4f}, Train Acc: {train_acc:.4f}, Train Gating Acc: {train_gating_acc:.4f}")
         if test_loss is not None:
-            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Acc: {test_acc:.4f}")
+            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc is not None and test_acc > best_acc:

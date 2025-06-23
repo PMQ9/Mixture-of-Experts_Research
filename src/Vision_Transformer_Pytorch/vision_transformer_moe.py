@@ -127,7 +127,38 @@ class LabelSmoothingCrossEntropy(nn.Module):
         loss = -torch.sum(smooth_target * log_probs, dim=-1).mean()
         return loss
 
-# **************** Dataset class for GTSRB and PTSD ****************
+class TrafficSignTrainDataset(Dataset):
+    def __init__(self, root, csv_file, transform=None):
+        if not os.path.exists(csv_file):
+            raise FileNotFoundError(f"CSV file not found at {csv_file}")
+        if not os.path.exists(root):
+            raise FileNotFoundError(f"Training dataset directory not found at {root}")
+        self.root = root
+        self.transform = transform
+        self.images = []
+        self.labels = []
+        self.meta_classes = []
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            for row in reader:
+                self.images.append(row['Filename'])
+                self.labels.append(int(row['ClassId']))
+                self.meta_classes.append(int(row['meta_class']))
+    
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.root, "Images", self.images[idx])
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"Image not found at {img_path}")
+        image = Image.open(img_path).convert('RGB')
+        label = self.labels[idx]
+        meta_class = self.meta_classes[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, label, meta_class
+
 class TrafficSignTestDataset(Dataset):
     def __init__(self, root, csv_file, transform=None):
         if not os.path.exists(csv_file):
@@ -138,11 +169,13 @@ class TrafficSignTestDataset(Dataset):
         self.transform = transform
         self.images = []
         self.labels = []
+        self.meta_classes = []
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f, delimiter=';')
             for row in reader:
                 self.images.append(row['Filename'])
-                self.labels.append(int(row['ClassId']))  # Directly convert to int
+                self.labels.append(int(row['ClassId']))
+                self.meta_classes.append(int(row['meta_class']))
     
     def __len__(self):
         return len(self.images)
@@ -152,10 +185,11 @@ class TrafficSignTestDataset(Dataset):
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Image not found at {img_path}")
         image = Image.open(img_path).convert('RGB')
-        label = self.labels[idx]  # Already an integer
+        label = self.labels[idx]
+        meta_class = self.meta_classes[idx]
         if self.transform:
             image = self.transform(image)
-        return image, label
+        return image, label, meta_class
         
 class Block(nn.Module):
     def __init__(self, config):
@@ -338,8 +372,8 @@ class CombinedDataset(Dataset):
 
     def __getitem__(self, idx):
         if idx < len(self.gtsrb_dataset):
-            image, label = self.gtsrb_dataset[idx]
+            image, label, meta_class = self.gtsrb_dataset[idx]
         else:
-            image, label = self.ptsd_dataset[idx - len(self.gtsrb_dataset)]
+            image, label, meta_class = self.ptsd_dataset[idx - len(self.gtsrb_dataset)]
             label = label + self.num_classes_gtsrb  # Shift PTSD labels
-        return image, label
+        return image, label, meta_class
