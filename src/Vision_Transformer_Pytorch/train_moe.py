@@ -177,14 +177,14 @@ def main():
             num_classes = 43
             train_dir = './data/GTSRB/Training'
             test_dir = './data/GTSRB/Test'
-            csv_file = './data/GTSRB/Test/GT-final_test.csv'
+            csv_file = './data/GTSRB/Test/testset_with_meta_class.csv'
             normalization_mean = (NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB)
             normalization_std = (NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB)
         elif args.dataset == 'PTSD':
             num_classes = 43
             train_dir = './data/PTSD/Training'
             test_dir = './data/PTSD/Test'
-            csv_file = './data/PTSD/Test/testset_CSV.csv'
+            csv_file = './data/PTSD/Test/testset_with_meta_class.csv'
             normalization_mean = (NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD)
             normalization_std = (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)
         else:
@@ -224,14 +224,12 @@ def main():
         gtsrb_test_dataset = TrafficSignTestDataset(
             root='./data/GTSRB/Test', 
             csv_file='./data/GTSRB/Test/GT-final_test.csv', 
-            transform=transform_test, 
-            class_to_idx=gtsrb_train_dataset.class_to_idx
+            transform=transform_test
         )
         ptsd_test_dataset = TrafficSignTestDataset(
             root='./data/PTSD/Test', 
             csv_file='./data/PTSD/Test/testset_CSV.csv', 
-            transform=transform_test, 
-            class_to_idx=ptsd_train_dataset.class_to_idx
+            transform=transform_test
         )
         combined_test_dataset = CombinedDataset(gtsrb_test_dataset, ptsd_test_dataset, num_classes_gtsrb)
     else:
@@ -242,7 +240,7 @@ def main():
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
         train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
-        test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test, class_to_idx=train_dataset.class_to_idx)
+        test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
 
     if os.name == 'nt':  # Windows
         num_workers_train = min(os.cpu_count(), 8)
