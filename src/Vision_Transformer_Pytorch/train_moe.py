@@ -16,6 +16,7 @@ from torchvision.transforms import RandAugment
 import argparse
 from dataclasses import fields, asdict
 import torch.multiprocessing
+import logging
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset
@@ -33,6 +34,11 @@ from config import (
     NORM_STD_R_UNIFIED, NORM_STD_G_UNIFIED, NORM_STD_B_UNIFIED,
 )
 from config import apply_config_overrides
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 PRETRAINED_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts', 'results'))
 
@@ -196,6 +202,31 @@ def main():
         total_classes = num_classes_gtsrb + num_classes_ptsd
         normalization_mean = (NORM_MEAN_R_UNIFIED, NORM_MEAN_G_UNIFIED, NORM_MEAN_B_UNIFIED)
         normalization_std = (NORM_STD_R_UNIFIED, NORM_STD_G_UNIFIED, NORM_STD_B_UNIFIED)
+        
+        # Validate dataset paths
+        gtsrb_train_dir = './data/GTSRB/Training'
+        gtsrb_train_csv = './data/GTSRB/Training/train_with_meta_class.csv'
+        ptsd_train_dir = './data/PTSD/Training'
+        ptsd_train_csv = './data/PTSD/Training/train_with_meta_class.csv'
+        gtsrb_test_dir = './data/GTSRB/Test'
+        gtsrb_test_csv = './data/GTSRB/Test/GT-final_test.csv'
+        ptsd_test_dir = './data/PTSD/Test'
+        ptsd_test_csv = './data/PTSD/Test/testset_CSV.csv'
+        
+        for path, desc in [
+            (gtsrb_train_dir, "GTSRB training directory"),
+            (gtsrb_train_csv, "GTSRB training CSV"),
+            (ptsd_train_dir, "PTSD training directory"),
+            (ptsd_train_csv, "PTSD training CSV"),
+            (gtsrb_test_dir, "GTSRB test directory"),
+            (gtsrb_test_csv, "GTSRB test CSV"),
+            (ptsd_test_dir, "PTSD test directory"),
+            (ptsd_test_csv, "PTSD test CSV"),
+        ]:
+            if not os.path.exists(path):
+                logger.error(f"{desc} not found at {path}")
+                raise FileNotFoundError(f"{desc} not found at {path}")
+    
     else:
         if args.dataset == 'GTSRB':
             num_classes = 43
@@ -213,6 +244,16 @@ def main():
             normalization_std = (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)
         else:
             raise ValueError(f"Unknown dataset: {args.dataset}")
+        
+        # Validate non-MetaMoE paths
+        for path, desc in [
+            (train_dir, f"{args.dataset} training directory"),
+            (test_dir, f"{args.dataset} test directory"),
+            (csv_file, f"{args.dataset} test CSV"),
+        ]:
+            if not os.path.exists(path):
+                logger.error(f"{desc} not found at {path}")
+                raise FileNotFoundError(f"{desc} not found at {path}")
     
     config = VisionTransformerConfig(num_class=num_classes if not args.meta_moe else total_classes)
     apply_config_overrides(config, args.config_overrides)
@@ -256,25 +297,47 @@ def main():
         gtsrb_test_dataset = TrafficSignTestDataset(
             root='./data/GTSRB/Test', 
             csv_file='./data/GTSRB/Test/testset_with_meta_class.csv', 
-            transform=transform_test
+            transform=transform_test,
+            default_meta_class=0  # GTSRB
         )
         ptsd_test_dataset = TrafficSignTestDataset(
             root='./data/PTSD/Test', 
             csv_file='./data/PTSD/Test/testset_with_meta_class.csv', 
-            transform=transform_test
+            transform=transform_test,
+            default_meta_class=1  # PTSD
         )
         combined_test_dataset = CombinedDataset(gtsrb_test_dataset, ptsd_test_dataset, num_classes_gtsrb)
+        
+        # Log dataset sizes
+        logger.info(f"GTSRB training dataset size: {len(gtsrb_train_dataset)}")
+        logger.info(f"PTSD training dataset size: {len(ptsd_train_dataset)}")
+        logger.info(f"GTSRB test dataset size: {len(gtsrb_test_dataset)}")
+        logger.info(f"PTSD test dataset size: {len(ptsd_test_dataset)}")
+        
+        if len(gtsrb_train_dataset) == 0 or len(ptsd_train_dataset) == 0:
+            logger.error("One or both training datasets are empty. Check CSV files and image paths.")
+            raise ValueError("Empty training dataset detected")
+        if len(gtsrb_test_dataset) == 0 or len(ptsd_test_dataset) == 0:
+            logger.error("One or both test datasets are empty. Check CSV files and image paths.")
+            raise ValueError("Empty test dataset detected")
+    
     else:
-        if not os.path.exists(train_dir):
-            raise FileNotFoundError(f"Training directory not found at {train_dir}")
-        if not os.path.exists(test_dir):
-            raise FileNotFoundError(f"Test directory not found at {test_dir}")
-        if not os.path.exists(csv_file):
-            raise FileNotFoundError(f"Test CSV file not found at {csv_file}")
         train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
-        test_dataset = TrafficSignTestDataset(root=test_dir, csv_file=csv_file, transform=transform_test)
+        test_dataset = TrafficSignTestDataset(
+            root=test_dir,
+            csv_file=csv_file,
+            transform=transform_test,
+            default_meta_class=0 if args.dataset == 'GTSRB' else 1
+        )
+        
+        logger.info(f"{args.dataset} training dataset size: {len(train_dataset)}")
+        logger.info(f"{args.dataset} test dataset size: {len(test_dataset)}")
+        
+        if len(train_dataset) == 0 or len(test_dataset) == 0:
+            logger.error(f"{args.dataset} dataset is empty. Check dataset paths and CSV.")
+            raise ValueError(f"Empty {args.dataset} dataset detected")
 
-    if os.name == 'nt':  # Windows
+    if os.name == 'nt':
         num_workers_train = min(os.cpu_count(), 8)
         prefetch_factor_train = 4
         persistent_workers_train = num_workers_train > 0

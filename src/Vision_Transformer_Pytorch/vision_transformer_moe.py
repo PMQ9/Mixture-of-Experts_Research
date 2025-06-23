@@ -7,6 +7,11 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from torch.utils.data import Dataset
 from torchvision import models
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # dataclass
 @dataclass
@@ -49,7 +54,7 @@ class PatchEmbed(nn.Module):
         super().__init__()
         self.img_size = config.img_size
         self.patch_size = config.patch_size
-        self.n_patch = (config.img_size // config.patch_size) ** 2
+        self.n_patch = (self.img_size // self.patch_size) ** 2
         self.proj = nn.Conv2d(config.in_chans, config.embed_dim, config.patch_size, stride=config.patch_size)
         
     def forward(self, x):
@@ -71,10 +76,10 @@ class Attention(nn.Module):
         
     def forward(self, x):
         B, N, C = x.shape
-        qkv  = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
         
-        attn = (q @ k.transpose(-2,-1))* self.scale
+        attn = (q @ k.transpose(-2,-1)) * self.scale
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
         
@@ -141,6 +146,10 @@ class TrafficSignTrainDataset(Dataset):
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f, delimiter=';')
             for row in reader:
+                img_path = os.path.join(root, row['Filename'])
+                if not os.path.exists(img_path):
+                    logger.warning(f"Image not found at {img_path}, skipping")
+                    continue
                 self.images.append(row['Filename'])
                 self.labels.append(int(row['ClassId']))
                 self.meta_classes.append(int(row['meta_class']))
@@ -149,7 +158,7 @@ class TrafficSignTrainDataset(Dataset):
         return len(self.images)
     
     def __getitem__(self, idx):
-        img_path = os.path.join(self.root, "Images", self.images[idx])
+        img_path = os.path.join(self.root, self.images[idx])
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Image not found at {img_path}")
         image = Image.open(img_path).convert('RGB')
@@ -160,22 +169,31 @@ class TrafficSignTrainDataset(Dataset):
         return image, label, meta_class
 
 class TrafficSignTestDataset(Dataset):
-    def __init__(self, root, csv_file, transform=None):
+    def __init__(self, root, csv_file, transform=None, default_meta_class=None):
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"CSV file not found at {csv_file}")
         if not os.path.exists(root):
             raise FileNotFoundError(f"Test dataset directory not found at {root}")
         self.root = root
         self.transform = transform
+        self.default_meta_class = default_meta_class
         self.images = []
         self.labels = []
         self.meta_classes = []
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f, delimiter=';')
             for row in reader:
+                img_path = os.path.join(root, "Images", row['Filename'])
+                if not os.path.exists(img_path):
+                    logger.warning(f"Image not found at {img_path}, skipping")
+                    continue
                 self.images.append(row['Filename'])
                 self.labels.append(int(row['ClassId']))
-                self.meta_classes.append(int(row['meta_class']))
+                # Use default_meta_class if meta_class is not in CSV
+                meta_class = int(row.get('meta_class', self.default_meta_class))
+                if self.default_meta_class is not None and 'meta_class' not in row:
+                    logger.info(f"Using default meta_class {meta_class} for {csv_file}")
+                self.meta_classes.append(meta_class)
     
     def __len__(self):
         return len(self.images)
@@ -320,7 +338,6 @@ class VisionTransformer(nn.Module):
         for block in self.blocks:
             x, block_balance_loss = block(x)
             balance_losses.append(block_balance_loss)
-        
         x = self.norm(x)
         x = x[:, 0]
         x = self.head(x)
@@ -359,7 +376,7 @@ class MetaMoE(nn.Module):
         weighted_P_P = W_P.unsqueeze(1) * P_P
 
         final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)  # [batch_size, total_classes]
-        return final_output
+        return final_output, gates  # Return gates for supervision
 
 class CombinedDataset(Dataset):
     def __init__(self, gtsrb_dataset, ptsd_dataset, num_classes_gtsrb):
