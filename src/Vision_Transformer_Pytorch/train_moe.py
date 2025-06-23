@@ -85,8 +85,7 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
-# **************** Training Functions ****************
-def train(model, loader, optimizer, criterion, device, balance_loss_weight=None):
+def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = 0
     total_balance_loss = 0
@@ -97,7 +96,13 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None)
     scaler = torch.amp.GradScaler(enabled=True)
     gating_criterion = nn.CrossEntropyLoss()
     
-    for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Training")):
+    for batch_idx, batch in enumerate(tqdm(loader, desc="Training")):
+        if args.meta_moe:
+            data, target, meta_class = batch
+        else:
+            data, target = batch
+            meta_class = torch.full(target.size(), default_meta_class, dtype=torch.long, device=device)
+        
         data, target, meta_class = data.to(device, non_blocking=True), target.to(device, non_blocking=True), meta_class.to(device, non_blocking=True)
         optimizer.zero_grad()
 
@@ -152,7 +157,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None)
     logger.info(f"Train function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}")
     return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
-def test(model, loader, optimizer, criterion, device):
+def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     model.eval()
     total_loss = 0
     total_balance_loss = 0
@@ -198,6 +203,7 @@ def test(model, loader, optimizer, criterion, device):
     return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
 def main():
+    default_meta_class = None
     if args.meta_moe:
         num_classes_gtsrb = 43
         num_classes_ptsd = 43
@@ -237,6 +243,7 @@ def main():
             csv_file = './data/GTSRB/Test/testset_with_meta_class.csv'
             normalization_mean = (NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB)
             normalization_std = (NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB)
+            default_meta_class = 0
         elif args.dataset == 'PTSD':
             num_classes = 43
             train_dir = './data/PTSD/Training'
@@ -244,6 +251,7 @@ def main():
             csv_file = './data/PTSD/Test/testset_with_meta_class.csv'
             normalization_mean = (NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD)
             normalization_std = (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)
+            default_meta_class = 1
         else:
             raise ValueError(f"Unknown dataset: {args.dataset}")
         
@@ -449,7 +457,7 @@ def main():
         
     for epoch in range(EPOCHS):
         start_time = time.time()
-        train_results = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None)
+        train_results = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None, default_meta_class)
         if len(train_results) != 5:
             logger.error(f"train function returned {len(train_results)} values, expected 5: {train_results}")
             raise ValueError(f"train function returned incorrect number of values: {len(train_results)}")
@@ -458,7 +466,7 @@ def main():
         test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = None, None, None, None, None
         if epoch >= TEST_START_EPOCH:
             if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
-                test_results = test(model, test_loader, optimizer, criterion, DEVICE)
+                test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
                 if len(test_results) != 5:
                     logger.error(f"test function returned {len(test_results)} values, expected 5: {test_results}")
                     raise ValueError(f"test function returned incorrect number of values: {len(test_results)}")
