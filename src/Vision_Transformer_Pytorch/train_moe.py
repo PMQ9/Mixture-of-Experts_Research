@@ -165,6 +165,10 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     correct = 0
     gating_correct = 0
     total = 0
+    gtsrb_correct = 0
+    gtsrb_total = 0
+    ptsd_correct = 0
+    ptsd_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     
     with torch.no_grad():
@@ -192,15 +196,25 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
             if args.meta_moe:
                 _, gating_pred = gates.max(1)
                 gating_correct += gating_pred.eq(meta_class).sum().item()
+                gtsrb_mask = meta_class == 0
+                ptsd_mask = meta_class == 1
+                if gtsrb_mask.any():
+                    gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
+                    gtsrb_total += gtsrb_mask.sum().item()
+                if ptsd_mask.any():
+                    ptsd_correct += predicted[ptsd_mask].eq(target[ptsd_mask]).sum().item()
+                    ptsd_total += ptsd_mask.sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
     avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
+    gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
+    ptsd_accuracy = ptsd_correct / ptsd_total if ptsd_total > 0 and args.meta_moe else 0
     
-    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}")
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
+    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, gtsrb_accuracy={gtsrb_accuracy:.4f}, ptsd_accuracy={ptsd_accuracy:.4f}")
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy
 
 def main():
     default_meta_class = None
@@ -452,6 +466,8 @@ def main():
     test_gating_losses = []
     train_gating_accs = []
     test_gating_accs = []
+    test_gtsrb_accs = []  # New list for GTSRB test accuracy
+    test_ptsd_accs = []   # New list for PTSD test accuracy
     best_acc = 0
     total_training_time = 0
         
@@ -463,14 +479,14 @@ def main():
             raise ValueError(f"train function returned incorrect number of values: {len(train_results)}")
         train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc = None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH:
             if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
-                if len(test_results) != 5:
-                    logger.error(f"test function returned {len(test_results)} values, expected 5: {test_results}")
+                if len(test_results) != 7:
+                    logger.error(f"test function returned {len(test_results)} values, expected 7: {test_results}")
                     raise ValueError(f"test function returned incorrect number of values: {len(test_results)}")
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc = test_results
     
         scheduler.step()
         epoch_time = time.time() - start_time
@@ -488,12 +504,16 @@ def main():
             test_balance_losses.append(test_balance_loss)
             test_gating_losses.append(test_gating_loss)
             test_gating_accs.append(test_gating_acc)
+            test_gtsrb_accs.append(test_gtsrb_acc)
+            test_ptsd_accs.append(test_ptsd_acc)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Gating Loss: {train_gating_loss:.4f}, Train Acc: {train_acc:.4f}, Train Gating Acc: {train_gating_acc:.4f}")
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
+            if args.meta_moe:
+                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc is not None and test_acc > best_acc:
@@ -507,7 +527,15 @@ def main():
         print()
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
-            plot_metrics(train_losses, test_losses, train_accs, test_accs, train_balance_losses, test_balance_losses, EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR)
+            plot_metrics(
+                train_losses, test_losses, train_accs, test_accs,
+                train_balance_losses, test_balance_losses,
+                train_gating_losses, test_gating_losses,
+                train_gating_accs, test_gating_accs,
+                test_gtsrb_accs, test_ptsd_accs,
+                EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
+                meta_moe=args.meta_moe
+            )
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
