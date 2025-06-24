@@ -217,9 +217,9 @@ def main():
         ptsd_train_dir = './data/PTSD/Training'
         ptsd_train_csv = './data/PTSD/Training/train_with_meta_class.csv'
         gtsrb_test_dir = './data/GTSRB/Test'
-        gtsrb_test_csv = './data/GTSRB/Test/GT-final_test.csv'
+        gtsrb_test_csv = './data/GTSRB/Test/testset_with_meta_class.csv'
         ptsd_test_dir = './data/PTSD/Test'
-        ptsd_test_csv = './data/PTSD/Test/testset_CSV.csv'
+        ptsd_test_csv = './data/PTSD/Test/testset_with_meta_class.csv'
         
         for path, desc in [
             (gtsrb_train_dir, "GTSRB training directory"),
