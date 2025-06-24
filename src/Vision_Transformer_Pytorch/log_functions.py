@@ -118,33 +118,33 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 1].grid(True)
 
         # Gating Loss
-        axes[4, 0].plot(train_epochs[:len(train_gating_losses)], train_gating_losses, label='Train Gating Loss')
+        axes[3, 0].plot(train_epochs[:len(train_gating_losses)], train_gating_losses, label='Train Gating Loss')
+        axes[3, 0].set_xlabel('Epoch')
+        axes[3, 0].set_ylabel('Loss')
+        axes[3, 0].set_title('Training Gating Loss')
+        axes[3, 0].legend()
+        axes[3, 0].grid(True)
+
+        axes[3, 1].plot(test_epochs[:len(test_gating_losses)], test_gating_losses, label='Test Gating Loss')
+        axes[3, 1].set_xlabel('Epoch')
+        axes[3, 1].set_ylabel('Loss')
+        axes[3, 1].set_title(f'Test Gating Loss (Starting from Epoch {plot_test_start_epoch})')
+        axes[3, 1].legend()
+        axes[3, 1].grid(True)
+
+        axes[4, 0].plot(train_epochs[:len(train_gating_accs)], train_gating_accs, label='Train Gating Accuracy')
         axes[4, 0].set_xlabel('Epoch')
-        axes[4, 0].set_ylabel('Loss')
-        axes[4, 0].set_title('Training Gating Loss')
+        axes[4, 0].set_ylabel('Accuracy')
+        axes[4, 0].set_title('Training Gating Accuracy')
         axes[4, 0].legend()
         axes[4, 0].grid(True)
 
-        axes[4, 1].plot(test_epochs[:len(test_gating_losses)], test_gating_losses, label='Test Gating Loss')
+        axes[4, 1].plot(test_epochs[:len(test_gating_accs)], test_gating_accs, label='Test Gating Accuracy')
         axes[4, 1].set_xlabel('Epoch')
-        axes[4, 1].set_ylabel('Loss')
-        axes[4, 1].set_title(f'Test Gating Loss (Starting from Epoch {plot_test_start_epoch})')
+        axes[4, 1].set_ylabel('Accuracy')
+        axes[4, 1].set_title(f'Test Gating Accuracy (Starting from Epoch {plot_test_start_epoch})')
         axes[4, 1].legend()
         axes[4, 1].grid(True)
-
-        axes[5, 0].plot(train_epochs[:len(train_gating_accs)], train_gating_accs, label='Train Gating Accuracy')
-        axes[5, 0].set_xlabel('Epoch')
-        axes[5, 0].set_ylabel('Accuracy')
-        axes[5, 0].set_title('Training Gating Accuracy')
-        axes[5, 0].legend()
-        axes[5, 0].grid(True)
-
-        axes[5, 1].plot(test_epochs[:len(test_gating_accs)], test_gating_accs, label='Test Gating Accuracy')
-        axes[5, 1].set_xlabel('Epoch')
-        axes[5, 1].set_ylabel('Accuracy')
-        axes[5, 1].set_title(f'Test Gating Accuracy (Starting from Epoch {plot_test_start_epoch})')
-        axes[5, 1].legend()
-        axes[5, 1].grid(True)
 
     else:
         fig, axes = plt.subplots(3, 2, figsize=(15, 18))
