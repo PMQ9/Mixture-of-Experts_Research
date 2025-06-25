@@ -100,7 +100,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
         if args.meta_moe:
             data, target, meta_class = batch
         else:
-            data, target = batch
+            data, target, meta_class = batch
             meta_class = torch.full(target.size(), default_meta_class, dtype=torch.long, device=device)
         
         data, target, meta_class = data.to(device, non_blocking=True), target.to(device, non_blocking=True), meta_class.to(device, non_blocking=True)
@@ -346,7 +346,21 @@ def main():
             raise ValueError("Empty test dataset detected")
     
     else:
-        train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
+        if args.dataset == 'GTSRB':
+            train_dataset = TrafficSignTrainDataset(
+                root='./data/GTSRB/Training',
+                csv_file='./data/GTSRB/Training/train_with_meta_class.csv',
+                transform=transform_train
+            )
+        elif args.dataset == 'PTSD':
+                train_dataset = TrafficSignTrainDataset(
+                root='./data/PTSD/Training',
+                csv_file='./data/PTSD/Training/train_with_meta_class.csv',
+                transform=transform_train
+            )
+        else:
+            raise ValueError(f"Unknown dataset: {args.dataset}")    
+                    
         test_dataset = TrafficSignTestDataset(
             root=test_dir,
             csv_file=csv_file,
