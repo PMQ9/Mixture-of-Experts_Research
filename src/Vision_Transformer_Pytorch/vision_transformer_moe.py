@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from torch.utils.data import Dataset
 from torchvision import models
 import logging
+from torchvision.models.resnet import ResNet18_Weights
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -346,7 +347,7 @@ class VisionTransformer(nn.Module):
 class MetaGatingNet(nn.Module):
     def __init__(self):
         super(MetaGatingNet, self).__init__()
-        self.model = models.resnet18(pretrained=True)
+        self.model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         self.model.fc = nn.Sequential(
             nn.Linear(self.model.fc.in_features, 2),
             nn.Softmax(dim=1)
