@@ -1,8 +1,8 @@
 import torch
 import os
-from train_moe import (PRETRAINED_MODEL_DIR)
 
 DEVICE = torch.device("cpu")  # Use CPU for inspection to avoid GPU issues
+PRETRAINED_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts', 'results'))
 
 def inspect_pth_file(filename):
     filepath = os.path.join(PRETRAINED_MODEL_DIR, filename)
