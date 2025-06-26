@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from torchvision import models
 import logging
 from torchvision.models.resnet import ResNet18_Weights
+import timm
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -345,16 +346,19 @@ class VisionTransformer(nn.Module):
         return x, balance_losses
 
 class MetaGatingNet(nn.Module):
-    def __init__(self):
-        super(MetaGatingNet, self).__init__()
-        self.model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-        self.model.fc = nn.Sequential(
-            nn.Linear(self.model.fc.in_features, 2),
-            nn.Softmax(dim=1)
+    def __init__(self, temperature=0.2):
+        super().__init__()
+        self.model = timm.create_model('convnext_tiny', pretrained=True, num_classes=0)
+        self.fc = nn.Sequential(
+            nn.Linear(768, 2),  # ConvNeXt-Tiny outputs 768 features
+            nn.Softmax(dim=1)   # Convert logits to probabilities
         )
+        self.temperature = temperature  # Sharpens the softmax output
 
     def forward(self, x):
-        return self.model(x)
+        features = self.model(x) 
+        logits = self.fc(features) / self.temperature  # Compute gating probabilities
+        return logits
 
 class MetaMoE(nn.Module):
     def __init__(self, gtsrb_model, ptsd_model, meta_gating_net, num_classes_gtsrb, num_classes_ptsd):
