@@ -100,7 +100,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
         if args.meta_moe:
             data, target, meta_class = batch
         else:
-            data, target = batch
+            data, target, meta_class = batch
             meta_class = torch.full(target.size(), default_meta_class, dtype=torch.long, device=device)
         
         data, target, meta_class = data.to(device, non_blocking=True), target.to(device, non_blocking=True), meta_class.to(device, non_blocking=True)
@@ -199,11 +199,30 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 gtsrb_mask = meta_class == 0
                 ptsd_mask = meta_class == 1
                 if gtsrb_mask.any():
+                    avg_W_G = gates[gtsrb_mask, 1].mean().item()
+                    print(f"Average W_G for GTSRB samples: {avg_W_G:.4f}")
+                    
                     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
                     gtsrb_total += gtsrb_mask.sum().item()
+                    
+                    gtsrb_pred = predicted[gtsrb_mask]
+                    num_classes_ptsd = 43
+                    gtsrb_misrouted = (gtsrb_pred < num_classes_ptsd).sum().item()
+                    gtsrb_misrouted_percentage = (gtsrb_misrouted/gtsrb_total)*100
+                    print(f"{gtsrb_misrouted}/{gtsrb_total} GTSRB samples predicted as PTSD classes, percentage: {gtsrb_misrouted_percentage} %")
+                    
                 if ptsd_mask.any():
+                    avg_W_P = gates[ptsd_mask, 1].mean().item()
+                    print(f"Average W_P for PTSD samples: {avg_W_P:.4f}")
+                       
                     ptsd_correct += predicted[ptsd_mask].eq(target[ptsd_mask]).sum().item()
                     ptsd_total += ptsd_mask.sum().item()
+                    
+                    ptsd_pred = predicted[ptsd_mask]
+                    num_classes_gtsrb = 43
+                    ptsd_misrouted = (ptsd_pred < num_classes_gtsrb).sum().item()
+                    ptsd_misrouted_percentage = (ptsd_misrouted/ptsd_total)*100
+                    print(f"{ptsd_misrouted}/{ptsd_total} PTSD samples predicted as GTSRB classes, percentage: {ptsd_misrouted_percentage} %")
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
@@ -346,7 +365,21 @@ def main():
             raise ValueError("Empty test dataset detected")
     
     else:
-        train_dataset = datasets.ImageFolder(root=train_dir, transform=transform_train)
+        if args.dataset == 'GTSRB':
+            train_dataset = TrafficSignTrainDataset(
+                root='./data/GTSRB/Training',
+                csv_file='./data/GTSRB/Training/train_with_meta_class.csv',
+                transform=transform_train
+            )
+        elif args.dataset == 'PTSD':
+                train_dataset = TrafficSignTrainDataset(
+                root='./data/PTSD/Training',
+                csv_file='./data/PTSD/Training/train_with_meta_class.csv',
+                transform=transform_train
+            )
+        else:
+            raise ValueError(f"Unknown dataset: {args.dataset}")    
+                    
         test_dataset = TrafficSignTestDataset(
             root=test_dir,
             csv_file=csv_file,
