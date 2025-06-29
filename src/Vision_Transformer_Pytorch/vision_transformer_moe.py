@@ -346,7 +346,7 @@ class VisionTransformer(nn.Module):
         return x, balance_losses
 
 class MetaGatingNet(nn.Module):
-    def __init__(self, temperature=0.2):
+    def __init__(self, temperature=0.05):
         super().__init__()
         self.model = timm.create_model('convnext_tiny', pretrained=True, num_classes=0)
         self.fc = nn.Sequential(
@@ -381,6 +381,40 @@ class MetaMoE(nn.Module):
         weighted_P_P = W_P.unsqueeze(1) * P_P
 
         final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)  # [batch_size, total_classes]
+        return final_output, gates  # Return gates for supervision
+    
+class SparseMetaMoE(nn.Module):
+    def __init__(self, gtsrb_model, ptsd_model, meta_gating_net, num_classes_gtsrb, num_classes_ptsd):
+        super(SparseMetaMoE, self).__init__()
+        self.gtsrb_model = gtsrb_model
+        self.ptsd_model = ptsd_model
+        self.meta_gating_net = meta_gating_net
+        self.num_classes_gtsrb = num_classes_gtsrb
+        self.num_classes_ptsd = num_classes_ptsd
+        self.total_classes = num_classes_gtsrb + num_classes_ptsd
+
+    def forward(self, x):
+        gates = self.meta_gating_net(x)  # [batch_size, 2]
+        _, selected_expert = torch.max(gates, dim=1)  # [batch_size], select top-1 expert
+        batch_size = x.shape[0]
+        final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)  # Use x.dtype
+        balance_losses = []
+
+        gtsrb_mask = (selected_expert == 0)
+        ptsd_mask = (selected_expert == 1)
+
+        if gtsrb_mask.any():
+            gtsrb_output, gtsrb_balance_losses = self.gtsrb_model(x[gtsrb_mask])
+            gtsrb_output = gtsrb_output.to(dtype=final_output.dtype)
+            final_output[gtsrb_mask, :self.num_classes_gtsrb] = gtsrb_output
+            balance_losses.extend(gtsrb_balance_losses)
+
+        if ptsd_mask.any():
+            ptsd_output, ptsd_balance_losses = self.ptsd_model(x[ptsd_mask])
+            ptsd_output = ptsd_output.to(dtype=final_output.dtype)
+            final_output[ptsd_mask, self.num_classes_gtsrb:] = ptsd_output
+            balance_losses.extend(ptsd_balance_losses)
+
         return final_output, gates  # Return gates for supervision
 
 class CombinedDataset(Dataset):

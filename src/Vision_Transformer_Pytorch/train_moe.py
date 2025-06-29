@@ -19,7 +19,7 @@ import torch.multiprocessing
 import logging
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
-from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset
+from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset, SparseMetaMoE
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
 from config import (
@@ -464,7 +464,7 @@ def main():
 
         # Initialize MetaMoE
         meta_gating_net = MetaGatingNet().to(DEVICE)
-        model = MetaMoE(
+        model = SparseMetaMoE(
             gtsrb_model=gtsrb_model,
             ptsd_model=ptsd_model,
             meta_gating_net=meta_gating_net,
