@@ -19,7 +19,7 @@ import torch.multiprocessing
 import logging
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
-from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset
+from vision_transformer_moe import DenseMetaMoE, MetaGatingNet, CombinedDataset, SparseMetaMoE
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
 from config import (
@@ -170,10 +170,12 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     ptsd_correct = 0
     ptsd_total = 0
     gating_criterion = nn.CrossEntropyLoss()
+    inference_times = []
     
     with torch.no_grad():
         for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing")):
             data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
+            start_time = time.time()
             with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
                 if args.meta_moe:
                     output, gates = model(data)
@@ -185,6 +187,8 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                     loss = criterion(output, target)
                     balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
                     gating_loss = 0
+            inference_time = time.time() - start_time
+            inference_times.append(inference_time / data.size(0))
             total_loss += loss.item()
             if not args.meta_moe:
                 total_balance_loss += balance_loss.item()
@@ -231,9 +235,10 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gating_accuracy = gating_correct / total if args.meta_moe else 0
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     ptsd_accuracy = ptsd_correct / ptsd_total if ptsd_total > 0 and args.meta_moe else 0
+    avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
     
-    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, gtsrb_accuracy={gtsrb_accuracy:.4f}, ptsd_accuracy={ptsd_accuracy:.4f}")
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy
+    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, gtsrb_accuracy={gtsrb_accuracy:.4f}, ptsd_accuracy={ptsd_accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
+    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
 
 def main():
     default_meta_class = None
@@ -459,7 +464,7 @@ def main():
 
         # Initialize MetaMoE
         meta_gating_net = MetaGatingNet().to(DEVICE)
-        model = MetaMoE(
+        model = SparseMetaMoE(
             gtsrb_model=gtsrb_model,
             ptsd_model=ptsd_model,
             meta_gating_net=meta_gating_net,
@@ -499,10 +504,11 @@ def main():
     test_gating_losses = []
     train_gating_accs = []
     test_gating_accs = []
-    test_gtsrb_accs = []  # New list for GTSRB test accuracy
-    test_ptsd_accs = []   # New list for PTSD test accuracy
+    test_gtsrb_accs = []
+    test_ptsd_accs = []
     best_acc = 0
     total_training_time = 0
+    test_inference_times = []
         
     for epoch in range(EPOCHS):
         start_time = time.time()
@@ -512,14 +518,12 @@ def main():
             raise ValueError(f"train function returned incorrect number of values: {len(train_results)}")
         train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc = None, None, None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = None, None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH:
             if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
-                if len(test_results) != 7:
-                    logger.error(f"test function returned {len(test_results)} values, expected 7: {test_results}")
-                    raise ValueError(f"test function returned incorrect number of values: {len(test_results)}")
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = test_results
+                test_inference_times.append(test_inference_time)
     
         scheduler.step()
         epoch_time = time.time() - start_time
@@ -544,7 +548,7 @@ def main():
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Gating Loss: {train_gating_loss:.4f}, Train Acc: {train_acc:.4f}, Train Gating Acc: {train_gating_acc:.4f}")
         if test_loss is not None:
-            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
+            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}, Avg Inference Time: {test_inference_time:.6f} seconds/image")
             if args.meta_moe:
                 print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}")
         print(f"Epoch time: {epoch_time:.2f} seconds")
@@ -573,6 +577,9 @@ def main():
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
     print(f"Total training time: {total_training_time:.2f} seconds")
     print(f"Average time per epoch: {total_training_time/EPOCHS:.2f} seconds")
+    if test_inference_times:
+        avg_test_inference_time = sum(test_inference_times) / len(test_inference_times)
+        print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
    # **************** Export to ONNX and save training params **************** 
     if args.export_onnx:

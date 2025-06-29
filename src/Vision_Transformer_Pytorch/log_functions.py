@@ -217,8 +217,8 @@ def export_to_onnx(model, config, device, output_dir, dataset_name):
                 expert_traces = [torch.zeros_like(out) for _ in range(config.num_experts)]
                 return (out, *expert_traces)
 
-    from vision_transformer_moe import MetaMoE
-    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
+    from vision_transformer_moe import SparseMetaMoE, DenseMetaMoE
+    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, SparseMetaMoE)).to(device)
     dummy_input = torch.randn(1, 3, 32, 32).to(device)
     
     if dataset_name == 'GTSRB':
