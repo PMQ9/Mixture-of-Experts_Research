@@ -346,7 +346,7 @@ class VisionTransformer(nn.Module):
         return x, balance_losses
 
 class MetaGatingNet(nn.Module):
-    def __init__(self, temperature=0.05):
+    def __init__(self, temperature=0.025):
         super().__init__()
         self.model = timm.create_model('convnext_tiny', pretrained=True, num_classes=0)
         self.fc = nn.Sequential(
@@ -360,9 +360,9 @@ class MetaGatingNet(nn.Module):
         logits = self.fc(features) / self.temperature  # Compute gating probabilities
         return logits
 
-class MetaMoE(nn.Module):
+class DenseMetaMoE(nn.Module):
     def __init__(self, gtsrb_model, ptsd_model, meta_gating_net, num_classes_gtsrb, num_classes_ptsd):
-        super(MetaMoE, self).__init__()
+        super(DenseMetaMoE, self).__init__()
         self.gtsrb_model = gtsrb_model
         self.ptsd_model = ptsd_model
         self.meta_gating_net = meta_gating_net

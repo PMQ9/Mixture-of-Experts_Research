@@ -19,7 +19,7 @@ import torch.multiprocessing
 import logging
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
-from vision_transformer_moe import MetaMoE, MetaGatingNet, CombinedDataset, SparseMetaMoE
+from vision_transformer_moe import DenseMetaMoE, MetaGatingNet, CombinedDataset, SparseMetaMoE
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
 from config import (
