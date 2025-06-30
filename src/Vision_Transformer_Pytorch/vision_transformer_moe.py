@@ -383,6 +383,64 @@ class DenseMetaMoE(nn.Module):
         final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)  # [batch_size, total_classes]
         return final_output, gates  # Return gates for supervision
     
+    def forward_with_timing(self, x):
+        if torch.cuda.is_available():
+            start_total = torch.cuda.Event(enable_timing=True)
+            end_total = torch.cuda.Event(enable_timing=True)
+            start_router = torch.cuda.Event(enable_timing=True)
+            end_router = torch.cuda.Event(enable_timing=True)
+            start_experts = torch.cuda.Event(enable_timing=True)
+            end_experts = torch.cuda.Event(enable_timing=True)
+            start_post = torch.cuda.Event(enable_timing=True)
+            end_post = torch.cuda.Event(enable_timing=True)
+            
+            start_total.record()
+            start_router.record()
+            gates = self.meta_gating_net(x)
+            end_router.record()
+            start_experts.record()
+            P_G, _ = self.gtsrb_model(x)
+            P_P, _ = self.ptsd_model(x)
+            end_experts.record()
+            start_post.record()
+            W_G, W_P = gates[:, 0], gates[:, 1]
+            weighted_P_G = W_G.unsqueeze(1) * P_G
+            weighted_P_P = W_P.unsqueeze(1) * P_P
+            final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)
+            end_post.record()
+            end_total.record()
+            
+            torch.cuda.synchronize()
+            
+            router_time = start_router.elapsed_time(end_router) / 1000
+            experts_time = start_experts.elapsed_time(end_experts) / 1000
+            post_time = start_post.elapsed_time(end_post) / 1000
+            total_time = start_total.elapsed_time(end_total) / 1000
+        else:
+            import time
+            start_total = time.time()
+            start_router = time.time()
+            gates = self.meta_gating_net(x)
+            end_router = time.time()
+            start_experts = time.time()
+            P_G, _ = self.gtsrb_model(x)
+            P_P, _ = self.ptsd_model(x)
+            end_experts = time.time()
+            start_post = time.time()
+            W_G, W_P = gates[:, 0], gates[:, 1]
+            weighted_P_G = W_G.unsqueeze(1) * P_G
+            weighted_P_P = W_P.unsqueeze(1) * P_P
+            final_output = torch.cat([weighted_P_G, weighted_P_P], dim=1)
+            end_post = time.time()
+            end_total = time.time()
+            
+            router_time = end_router - start_router
+            experts_time = end_experts - start_experts
+            post_time = end_post - start_post
+            total_time = end_total - start_total
+        
+        return final_output, gates, router_time, experts_time, post_time, total_time
+    
 class SparseMetaMoE(nn.Module):
     def __init__(self, gtsrb_model, ptsd_model, meta_gating_net, num_classes_gtsrb, num_classes_ptsd):
         super(SparseMetaMoE, self).__init__()
@@ -416,6 +474,74 @@ class SparseMetaMoE(nn.Module):
             balance_losses.extend(ptsd_balance_losses)
 
         return final_output, gates  # Return gates for supervision
+    
+    def forward_with_timing(self, x):
+        if torch.cuda.is_available():
+            start_total = torch.cuda.Event(enable_timing=True)
+            end_total = torch.cuda.Event(enable_timing=True)
+            start_router = torch.cuda.Event(enable_timing=True)
+            end_router = torch.cuda.Event(enable_timing=True)
+            start_experts = torch.cuda.Event(enable_timing=True)
+            end_experts = torch.cuda.Event(enable_timing=True)
+            start_post = torch.cuda.Event(enable_timing=True)
+            end_post = torch.cuda.Event(enable_timing=True)
+            
+            start_total.record()
+            start_router.record()
+            gates = self.meta_gating_net(x)
+            _, selected_expert = torch.max(gates, dim=1)
+            end_router.record()
+            start_experts.record()
+            batch_size = x.shape[0]
+            final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
+            gtsrb_mask = (selected_expert == 0)
+            ptsd_mask = (selected_expert == 1)
+            if gtsrb_mask.any():
+                gtsrb_output, _ = self.gtsrb_model(x[gtsrb_mask])
+                final_output[gtsrb_mask, :self.num_classes_gtsrb] = gtsrb_output.to(dtype=final_output.dtype)
+            if ptsd_mask.any():
+                ptsd_output, _ = self.ptsd_model(x[ptsd_mask])
+                final_output[ptsd_mask, self.num_classes_gtsrb:] = ptsd_output.to(dtype=final_output.dtype)
+            end_experts.record()
+            start_post.record()
+            end_post.record()
+            end_total.record()
+            
+            torch.cuda.synchronize()
+            
+            router_time = start_router.elapsed_time(end_router) / 1000
+            experts_time = start_experts.elapsed_time(end_experts) / 1000
+            post_time = start_post.elapsed_time(end_post) / 1000
+            total_time = start_total.elapsed_time(end_total) / 1000
+        else:
+            import time
+            start_total = time.time()
+            start_router = time.time()
+            gates = self.meta_gating_net(x)
+            _, selected_expert = torch.max(gates, dim=1)
+            end_router = time.time()
+            start_experts = time.time()
+            batch_size = x.shape[0]
+            final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
+            gtsrb_mask = (selected_expert == 0)
+            ptsd_mask = (selected_expert == 1)
+            if gtsrb_mask.any():
+                gtsrb_output, _ = self.gtsrb_model(x[gtsrb_mask])
+                final_output[gtsrb_mask, :self.num_classes_gtsrb] = gtsrb_output.to(dtype=final_output.dtype)
+            if ptsd_mask.any():
+                ptsd_output, _ = self.ptsd_model(x[ptsd_mask])
+                final_output[ptsd_mask, self.num_classes_gtsrb:] = ptsd_output.to(dtype=final_output.dtype)
+            end_experts = time.time()
+            start_post = time.time()
+            end_post = time.time()
+            end_total = time.time()
+            
+            router_time = end_router - start_router
+            experts_time = end_experts - start_experts
+            post_time = end_post - start_post
+            total_time = end_total - start_total
+        
+        return final_output, gates, router_time, experts_time, post_time, total_time
 
 class CombinedDataset(Dataset):
     def __init__(self, gtsrb_dataset, ptsd_dataset, num_classes_gtsrb):

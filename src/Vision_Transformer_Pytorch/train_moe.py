@@ -66,6 +66,7 @@ parser.add_argument('--export_onnx', type=bool, default=True, help='Export train
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained GTSRB and PTSD experts')
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
+parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse (only 1 expert activated) or dense (multiple experts activated)')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -95,6 +96,11 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
     total = 0
     scaler = torch.amp.GradScaler(enabled=True)
     gating_criterion = nn.CrossEntropyLoss()
+    total_router_time = 0.0
+    total_experts_time = 0.0
+    total_post_time = 0.0
+    total_total_time = 0.0
+    total_images = 0
     
     for batch_idx, batch in enumerate(tqdm(loader, desc="Training")):
         if args.meta_moe:
@@ -110,10 +116,15 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
 
         with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
             if args.meta_moe:
-                output, gates = model(data)
+                output, gates, router_time, experts_time, post_time, total_time = model.forward_with_timing(data)
                 cls_loss = criterion(output, target)
                 gating_loss = gating_criterion(gates, meta_class)
                 total_loss_combined = cls_loss + GATING_LOSS_WEIGHT * gating_loss
+                total_router_time += router_time
+                total_experts_time += experts_time
+                total_post_time += post_time
+                total_total_time += total_time
+                total_images += data.size(0)
             else:
                 if apply_cutmix:
                     data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
@@ -154,8 +165,14 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
     
-    logger.info(f"Train function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}")
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
+    if args.meta_moe:
+        avg_router_time = total_router_time / total_images if total_images > 0 else 0
+        avg_experts_time = total_experts_time / total_images if total_images > 0 else 0
+        avg_post_time = total_post_time / total_images if total_images > 0 else 0
+        avg_total_time = total_total_time / total_images if total_images > 0 else 0
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+    else:
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
 def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     model.eval()
@@ -171,24 +188,36 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     ptsd_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
+    total_router_time = 0.0
+    total_experts_time = 0.0
+    total_post_time = 0.0
+    total_total_time = 0.0
+    total_images = 0
     
     with torch.no_grad():
         for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing")):
             data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
-            start_time = time.time()
-            with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
-                if args.meta_moe:
-                    output, gates = model(data)
+            if args.meta_moe:
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                    output, gates, router_time, experts_time, post_time, total_time = model.forward_with_timing(data)
                     loss = criterion(output, target)
                     gating_loss = gating_criterion(gates, meta_class)
                     balance_loss = 0
-                else:
+                total_router_time += router_time
+                total_experts_time += experts_time
+                total_post_time += post_time
+                total_total_time += total_time
+                total_images += data.size(0)
+            else:
+                start_time = time.time()
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
                     output, balance_losses = model(data)
                     loss = criterion(output, target)
                     balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
                     gating_loss = 0
-            inference_time = time.time() - start_time
-            inference_times.append(inference_time / data.size(0))
+                inference_time = time.time() - start_time
+                inference_times.append(inference_time / data.size(0))
+            
             total_loss += loss.item()
             if not args.meta_moe:
                 total_balance_loss += balance_loss.item()
@@ -204,7 +233,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 ptsd_mask = meta_class == 1
                 if gtsrb_mask.any():
                     avg_W_G = gates[gtsrb_mask, 1].mean().item()
-                    print(f"Average W_G for GTSRB samples: {avg_W_G:.4f}")
+                    #print(f"Average W_G for GTSRB samples: {avg_W_G:.4f}")
                     
                     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
                     gtsrb_total += gtsrb_mask.sum().item()
@@ -213,11 +242,11 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                     num_classes_ptsd = 43
                     gtsrb_misrouted = (gtsrb_pred < num_classes_ptsd).sum().item()
                     gtsrb_misrouted_percentage = (gtsrb_misrouted/gtsrb_total)*100
-                    print(f"{gtsrb_misrouted}/{gtsrb_total} GTSRB samples predicted as PTSD classes, percentage: {gtsrb_misrouted_percentage} %")
+                    #print(f"{gtsrb_misrouted}/{gtsrb_total} GTSRB samples predicted as PTSD classes, percentage: {gtsrb_misrouted_percentage} %")
                     
                 if ptsd_mask.any():
                     avg_W_P = gates[ptsd_mask, 1].mean().item()
-                    print(f"Average W_P for PTSD samples: {avg_W_P:.4f}")
+                    #print(f"Average W_P for PTSD samples: {avg_W_P:.4f}")
                        
                     ptsd_correct += predicted[ptsd_mask].eq(target[ptsd_mask]).sum().item()
                     ptsd_total += ptsd_mask.sum().item()
@@ -226,7 +255,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                     num_classes_gtsrb = 43
                     ptsd_misrouted = (ptsd_pred < num_classes_gtsrb).sum().item()
                     ptsd_misrouted_percentage = (ptsd_misrouted/ptsd_total)*100
-                    print(f"{ptsd_misrouted}/{ptsd_total} PTSD samples predicted as GTSRB classes, percentage: {ptsd_misrouted_percentage} %")
+                    #print(f"{ptsd_misrouted}/{ptsd_total} PTSD samples predicted as GTSRB classes, percentage: {ptsd_misrouted_percentage} %")
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
@@ -235,10 +264,18 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gating_accuracy = gating_correct / total if args.meta_moe else 0
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     ptsd_accuracy = ptsd_correct / ptsd_total if ptsd_total > 0 and args.meta_moe else 0
-    avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
     
-    logger.info(f"Test function returning: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, gtsrb_accuracy={gtsrb_accuracy:.4f}, ptsd_accuracy={ptsd_accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
-    return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
+    if args.meta_moe:
+        avg_router_time = total_router_time / total_images if total_images > 0 else 0
+        avg_experts_time = total_experts_time / total_images if total_images > 0 else 0
+        avg_post_time = total_post_time / total_images if total_images > 0 else 0
+        avg_total_time = total_total_time / total_images if total_images > 0 else 0
+        logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_total_inference_time={avg_total_time:.6f} seconds/image")
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+    else:
+        avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
+        logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
 
 def main():
     default_meta_class = None
@@ -377,7 +414,7 @@ def main():
                 transform=transform_train
             )
         elif args.dataset == 'PTSD':
-                train_dataset = TrafficSignTrainDataset(
+            train_dataset = TrafficSignTrainDataset(
                 root='./data/PTSD/Training',
                 csv_file='./data/PTSD/Training/train_with_meta_class.csv',
                 transform=transform_train
@@ -464,13 +501,22 @@ def main():
 
         # Initialize MetaMoE
         meta_gating_net = MetaGatingNet().to(DEVICE)
-        model = SparseMetaMoE(
-            gtsrb_model=gtsrb_model,
-            ptsd_model=ptsd_model,
-            meta_gating_net=meta_gating_net,
-            num_classes_gtsrb=num_classes_gtsrb,
-            num_classes_ptsd=num_classes_ptsd
-        ).to(DEVICE)
+        if args.router_strategy == 'sparse':
+            model = SparseMetaMoE(
+                gtsrb_model=gtsrb_model,
+                ptsd_model=ptsd_model,
+                meta_gating_net=meta_gating_net,
+                num_classes_gtsrb=num_classes_gtsrb,
+                num_classes_ptsd=num_classes_ptsd
+            ).to(DEVICE)
+        elif args.router_strategy == 'dense':
+            model = DenseMetaMoE(
+                gtsrb_model=gtsrb_model,
+                ptsd_model=ptsd_model,
+                meta_gating_net=meta_gating_net,
+                num_classes_gtsrb=num_classes_gtsrb,
+                num_classes_ptsd=num_classes_ptsd
+            ).to(DEVICE)
         optimizer = optim.AdamW(
             meta_gating_net.parameters(),
             lr=LEARNING_RATE,
@@ -513,17 +559,21 @@ def main():
     for epoch in range(EPOCHS):
         start_time = time.time()
         train_results = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None, default_meta_class)
-        if len(train_results) != 5:
-            logger.error(f"train function returned {len(train_results)} values, expected 5: {train_results}")
-            raise ValueError(f"train function returned incorrect number of values: {len(train_results)}")
-        train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
+        if args.meta_moe:
+            train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc, avg_router_time, avg_experts_time, avg_post_time, avg_total_time = train_results
+        else:
+            train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
         test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = None, None, None, None, None, None, None, None
-        if epoch >= TEST_START_EPOCH:
-            if (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
-                test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
+        avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = None, None, None, None
+        if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
+            test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
+            if args.meta_moe:
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+                test_inference_time = avg_total_time_test
+            else:
                 test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = test_results
-                test_inference_times.append(test_inference_time)
+            test_inference_times.append(test_inference_time)
     
         scheduler.step()
         epoch_time = time.time() - start_time
@@ -547,10 +597,21 @@ def main():
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
         print(f"Train loss: {train_loss:.4f}, Train Balance Loss: {train_balance_loss:.4f}, Train Gating Loss: {train_gating_loss:.4f}, Train Acc: {train_acc:.4f}, Train Gating Acc: {train_gating_acc:.4f}")
+        if args.meta_moe:
+            print(f"Train Avg Router Time per image: {avg_router_time:.6f} seconds")
+            print(f"Train Avg Experts Time per image: {avg_experts_time:.6f} seconds")
+            print(f"Train Avg Post-Experts Time per image: {avg_post_time:.6f} seconds")
+            print(f"Train Avg Total Inference Time per image: {avg_total_time:.6f} seconds")
         if test_loss is not None:
-            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}, Avg Inference Time: {test_inference_time:.6f} seconds/image")
+            print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
             if args.meta_moe:
                 print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}")
+                print(f"Test Avg Router Time per image: {avg_router_time_test:.6f} seconds")
+                print(f"Test Avg Experts Time per image: {avg_experts_time_test:.6f} seconds")
+                print(f"Test Avg Post-Experts Time per image: {avg_post_time_test:.6f} seconds")
+                print(f"Test Avg Total Inference Time per image: {avg_total_time_test:.6f} seconds")
+            else:
+                print(f"Avg Inference Time per image: {test_inference_time:.6f} seconds")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
         if test_acc is not None and test_acc > best_acc:
