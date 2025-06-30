@@ -3,7 +3,6 @@ import torch.nn.functional as F
 from PIL import Image
 import argparse
 from torchvision import transforms
-from vision_transformer_moe import MetaMoE, VisionTransformer, MetaGatingNet, VisionTransformerConfig
 from config import (
     NORM_MEAN_R_UNIFIED, NORM_MEAN_G_UNIFIED, NORM_MEAN_B_UNIFIED,
     NORM_STD_R_UNIFIED, NORM_STD_G_UNIFIED, NORM_STD_B_UNIFIED

@@ -209,16 +209,16 @@ def export_to_onnx(model, config, device, output_dir, dataset_name):
             self.num_experts = config.num_experts if not is_meta_moe else 2  # MetaMoE has 2 experts (GTSRB, PTSD)
         def forward(self, x):
             if self.is_meta_moe:
-                out = self.model(x)
+                out, gates = self.model(x)
                 expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
                 return (out, *expert_traces)
             else:
                 out, balance_losses = self.model(x)
-                expert_traces = [torch.zeros_like(out) for _ in range(config.num_experts)]
+                expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
                 return (out, *expert_traces)
 
     from vision_transformer_moe import SparseMetaMoE, DenseMetaMoE
-    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, SparseMetaMoE)).to(device)
+    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, (SparseMetaMoE, DenseMetaMoE))).to(device)
     dummy_input = torch.randn(1, 3, 32, 32).to(device)
     
     if dataset_name == 'GTSRB':
