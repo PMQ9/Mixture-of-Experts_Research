@@ -17,6 +17,7 @@ import argparse
 from dataclasses import fields, asdict
 import torch.multiprocessing
 import logging
+import timm
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import DenseMetaMoE, MetaGatingNet, CombinedDataset, SparseMetaMoE
@@ -67,6 +68,9 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
 parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse (only 1 expert activated) or dense (multiple experts activated)')
+parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_moe', 'resnet50', 'vit_base'], help='Model architecture to use')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_gtsrb_best.pth"), help='Path to pre-trained GTSRB model for MetaMoE')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_ptsd_best.pth"), help='Path to pre-trained PTSD model for MetaMoE')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -85,6 +89,30 @@ TEST_FREQUENCY = args.test_frequency
 WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
+
+# **************** Model Wrapper for Standard Models ****************
+class ModelWrapper(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        output = self.model(x)
+        return output, [torch.tensor(0.0, device=x.device)]  # Dummy balance_loss
+
+# **************** Model Creation Function ****************
+def create_model(model_arch, config):
+    if model_arch == 'vit_moe':
+        return VisionTransformer(config)
+    elif model_arch == 'resnet50':
+        model = models.resnet50(pretrained=False)
+        model.fc = nn.Linear(model.fc.in_features, config.num_class)
+        return ModelWrapper(model)
+    elif model_arch == 'vit_base':
+        model = timm.create_model('vit_base_patch16_224', pretrained=False, num_classes=config.num_class, img_size=config.img_size, patch_size=config.patch_size)
+        return ModelWrapper(model)
+    else:
+        raise ValueError(f"Unknown model architecture: {model_arch}")
 
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
@@ -233,29 +261,20 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 ptsd_mask = meta_class == 1
                 if gtsrb_mask.any():
                     avg_W_G = gates[gtsrb_mask, 1].mean().item()
-                    #print(f"Average W_G for GTSRB samples: {avg_W_G:.4f}")
-                    
                     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
                     gtsrb_total += gtsrb_mask.sum().item()
-                    
                     gtsrb_pred = predicted[gtsrb_mask]
                     num_classes_ptsd = 43
                     gtsrb_misrouted = (gtsrb_pred < num_classes_ptsd).sum().item()
                     gtsrb_misrouted_percentage = (gtsrb_misrouted/gtsrb_total)*100
-                    #print(f"{gtsrb_misrouted}/{gtsrb_total} GTSRB samples predicted as PTSD classes, percentage: {gtsrb_misrouted_percentage} %")
-                    
                 if ptsd_mask.any():
                     avg_W_P = gates[ptsd_mask, 1].mean().item()
-                    #print(f"Average W_P for PTSD samples: {avg_W_P:.4f}")
-                       
                     ptsd_correct += predicted[ptsd_mask].eq(target[ptsd_mask]).sum().item()
                     ptsd_total += ptsd_mask.sum().item()
-                    
                     ptsd_pred = predicted[ptsd_mask]
                     num_classes_gtsrb = 43
                     ptsd_misrouted = (ptsd_pred < num_classes_gtsrb).sum().item()
                     ptsd_misrouted_percentage = (ptsd_misrouted/ptsd_total)*100
-                    #print(f"{ptsd_misrouted}/{ptsd_total} PTSD samples predicted as GTSRB classes, percentage: {ptsd_misrouted_percentage} %")
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
@@ -349,7 +368,7 @@ def main():
 
     transform_train = transforms.Compose([
         transforms.Resize(32), 
-        RandAugment(num_ops=2, magnitude=9), # If overfitting decreases but training becomes too slow or unstable, reduce num_ops to 1 or magnitude to 5-7. If overfitting, increase magnitude to 10-12 or num_ops to 3
+        RandAugment(num_ops=2, magnitude=9),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
@@ -524,14 +543,11 @@ def main():
             fused=torch.cuda.is_available()
         )
     else:
-        model = VisionTransformer(config).to(DEVICE)
-        optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05, fused=torch.cuda.is_available)
-        #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+        model = create_model(args.model_arch, config).to(DEVICE)
+        optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05, fused=torch.cuda.is_available())
     
     criterion = LabelSmoothingCrossEntropy(smoothing=LABEL_SMOOTHING)
     T_max = EPOCHS
-    # if T_max = epoch. Pros: steady and predictable decay, improve convergence stability. Cons: complex models might not explore enough
-    # if T_max = 100. Pros: good for exploring, escape local minima
     def lr_lambda(epoch):
         if epoch < WARMUP_EPOCHS:
             return (epoch + 1) / WARMUP_EPOCHS
@@ -616,10 +632,10 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            save_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"vit_{args.dataset.lower()}_best.pth")
+            save_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"{args.model_arch}_{args.dataset.lower()}_best.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
-                state_dict_path = os.path.join(OUTPUT_DIR, f"vit_{args.dataset.lower()}_best_state_dict.pth")
+                state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict.pth")
                 torch.save(model.state_dict(), state_dict_path)         
             print(f"New best accuracy: {best_acc:.4f}")
         print()
@@ -642,9 +658,9 @@ def main():
         avg_test_inference_time = sum(test_inference_times) / len(test_inference_times)
         print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
-   # **************** Export to ONNX and save training params **************** 
+    # **************** Export to ONNX and save training params **************** 
     if args.export_onnx:
-        best_model_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"vit_{args.dataset.lower()}_best.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"{args.model_arch}_{args.dataset.lower()}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset)
     if args.archive_params:
