@@ -68,7 +68,7 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
 parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse (only 1 expert activated) or dense (multiple experts activated)')
-parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_moe', 'resnet50', 'vit_base'], help='Model architecture to use')
+parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_gtsrb_best.pth"), help='Path to pre-trained GTSRB model for MetaMoE')
 parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_ptsd_best.pth"), help='Path to pre-trained PTSD model for MetaMoE')
 
@@ -108,8 +108,15 @@ def create_model(model_arch, config):
         model = models.resnet50(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, config.num_class)
         return ModelWrapper(model)
-    elif model_arch == 'vit_base':
-        model = timm.create_model('vit_base_patch16_224', pretrained=False, num_classes=config.num_class, img_size=config.img_size, patch_size=config.patch_size)
+    elif model_arch == 'resnet101':
+        model = models.resnet101(pretrained=False)
+        model.fc = nn.Linear(model.fc.in_features, config.num_class)
+        return ModelWrapper(model)
+    elif model_arch == 'convnext_tiny':
+        model = timm.create_model('convnext_tiny', pretrained=True, num_classes=config.num_class)
+        return ModelWrapper(model)
+    elif model_arch == 'efficientnet_b0':
+        model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=config.num_class)
         return ModelWrapper(model)
     else:
         raise ValueError(f"Unknown model architecture: {model_arch}")
