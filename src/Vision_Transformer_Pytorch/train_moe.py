@@ -513,22 +513,42 @@ def main():
 
     if args.meta_moe:
         gtsrb_model = torch.load(args.gtsrb_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(gtsrb_model, VisionTransformer):
-            raise RuntimeError(f"{args.gtsrb_model_path} is not a VisionTransformer instance")
+        if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.gtsrb_model_path} is not a supported model type")
+        if isinstance(gtsrb_model, ModelWrapper):
+            gtsrb_model = gtsrb_model.model  # Unwrap if necessary
         gtsrb_model = gtsrb_model.to(DEVICE)
-        print(f"Loaded {args.gtsrb_model_path} as full VisionTransformer model.")
-
+        print(f"Loaded {args.gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+        
         ptsd_model = torch.load(args.ptsd_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(ptsd_model, VisionTransformer):
-            raise RuntimeError(f"{args.ptsd_model_path} is not a VisionTransformer instance")
+        if not isinstance(ptsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.ptsd_model_path} is not a supported model type")
+        if isinstance(ptsd_model, ModelWrapper):
+            ptsd_model = ptsd_model.model  # Unwrap if necessary
         ptsd_model = ptsd_model.to(DEVICE)
-        print(f"Loaded {args.ptsd_model_path} as full VisionTransformer model.")
+        print(f"Loaded {args.ptsd_model_path} as full model. Type: {type(ptsd_model)}")
 
         tsrd_model = torch.load(args.tsrd_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(tsrd_model, VisionTransformer):
-            raise RuntimeError(f"{args.tsrd_model_path} is not a VisionTransformer instance")
+        if not isinstance(tsrd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.tsrd_model_path} is not a supported model type")
+        if isinstance(tsrd_model, ModelWrapper):
+            tsrd_model = tsrd_model.model  # Unwrap if necessary
         tsrd_model = tsrd_model.to(DEVICE)
-        print(f"Loaded {args.tsrd_model_path} as full VisionTransformer model.")
+        print(f"Loaded {args.tsrd_model_path} as full model. Type: {type(tsrd_model)}")
+
+        with torch.no_grad():
+            dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
+            for model, expected_classes, name in [
+                (gtsrb_model, num_classes_gtsrb, "GTSRB"),
+                (ptsd_model, num_classes_ptsd, "PTSD"),
+                (tsrd_model, num_classes_tsrd, "TSRD")
+            ]:
+                output = model(dummy_input)
+                if isinstance(output, tuple):
+                    output = output[0]
+                if output.shape[1] != expected_classes:
+                    raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
+                print(f"{name} model output shape: {output.shape}")
 
         gtsrb_model.eval()
         ptsd_model.eval()
@@ -662,8 +682,7 @@ def main():
                 train_balance_losses, test_balance_losses,
                 train_gating_losses, test_gating_losses,
                 train_gating_accs, test_gating_accs,
-                test_gtsrb_accs, test_ptsd_accs,
-                test_tsrd_accs,
+                test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
                 meta_moe=args.meta_moe
             )

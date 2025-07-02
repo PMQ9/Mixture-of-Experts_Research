@@ -311,12 +311,19 @@ class MetaMoE(nn.Module):
             for i in range(self.num_experts):
                 mask = (selected_expert == i)
                 if mask.any():
-                    expert_output, _ = self.experts[i](x[mask])
+                    expert_output = self.experts[i](x[mask])
+                    if isinstance(expert_output, tuple):
+                        expert_output = expert_output[0]  # Take the main output if tuple
                     start_idx = self.class_offsets[i]
                     end_idx = self.class_offsets[i+1]
-                    final_output[mask, start_idx:end_idx] = expert_output
+                    final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
         else:
-            expert_outputs = [expert(x)[0] for expert in self.experts]
+            expert_outputs = []
+            for expert in self.experts:
+                output = expert(x)
+                if isinstance(output, tuple):
+                    output = output[0]  # Take the main output if tuple
+                expert_outputs.append(output.to(dtype=x.dtype))
             weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
             final_output = torch.cat(weighted_outputs, dim=1)
         return final_output, gates
@@ -343,12 +350,19 @@ class MetaMoE(nn.Module):
                 for i in range(self.num_experts):
                     mask = (selected_expert == i)
                     if mask.any():
-                        expert_output, _ = self.experts[i](x[mask])
+                        expert_output = self.experts[i](x[mask])
+                        if isinstance(expert_output, tuple):
+                            expert_output = expert_output[0]  # Take the main output if tuple
                         start_idx = self.class_offsets[i]
                         end_idx = self.class_offsets[i+1]
-                        final_output[mask, start_idx:end_idx] = expert_output
+                        final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
             else:
-                expert_outputs = [expert(x)[0] for expert in self.experts]
+                expert_outputs = []
+                for expert in self.experts:
+                    output = expert(x)
+                    if isinstance(output, tuple):
+                        output = output[0]  # Take the main output if tuple
+                    expert_outputs.append(output.to(dtype=x.dtype))
                 weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
                 final_output = torch.cat(weighted_outputs, dim=1)
             end_experts.record()
@@ -374,12 +388,19 @@ class MetaMoE(nn.Module):
                 for i in range(self.num_experts):
                     mask = (selected_expert == i)
                     if mask.any():
-                        expert_output, _ = self.experts[i](x[mask])
+                        expert_output = self.experts[i](x[mask])
+                        if isinstance(expert_output, tuple):
+                            expert_output = expert_output[0]  # Take the main output if tuple
                         start_idx = self.class_offsets[i]
                         end_idx = self.class_offsets[i+1]
-                        final_output[mask, start_idx:end_idx] = expert_output
+                        final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
             else:
-                expert_outputs = [expert(x)[0] for expert in self.experts]
+                expert_outputs = []
+                for expert in self.experts:
+                    output = expert(x)
+                    if isinstance(output, tuple):
+                        output = output[0]  # Take the main output if tuple
+                    expert_outputs.append(output.to(dtype=x.dtype))
                 weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
                 final_output = torch.cat(weighted_outputs, dim=1)
             end_experts = time.time()
