@@ -53,6 +53,7 @@ if __name__ == '__main__':
         process_dataset('./../../data/GTSRB/Training')
         process_dataset('./../../data/PTSD/Training')
         process_dataset('./../../data/TSRD/Training')
+        process_dataset('./../../data/BTSD/Training')
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
 
