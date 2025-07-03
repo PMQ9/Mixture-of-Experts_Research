@@ -62,14 +62,14 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs,
+                 test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs, test_btsd_accs, test_etsd_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
                  meta_moe=False):
     train_epochs = list(range(plot_epochs))
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 3, figsize=(15, 18))
+        fig, axes = plt.subplots(5, 5, figsize=(15, 18))
         fig.suptitle('MetaMoE Training and Testing Metrics', fontsize=16)
 
         # Classification Loss
@@ -123,6 +123,20 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 2].set_title(f'TSRD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
         axes[2, 2].legend()
         axes[2, 2].grid(True)
+
+        axes[2, 3].plot(test_epochs[:len(test_btsd_accs)], test_btsd_accs, label='BTSD Test Accuracy')
+        axes[2, 3].set_xlabel('Epoch')
+        axes[2, 3].set_ylabel('Accuracy')
+        axes[2, 3].set_title(f'BTSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 3].legend()
+        axes[2, 3].grid(True)
+
+        axes[2, 4].plot(test_epochs[:len(test_etsd_accs)], test_etsd_accs, label='ETSD Test Accuracy')
+        axes[2, 4].set_xlabel('Epoch')
+        axes[2, 4].set_ylabel('Accuracy')
+        axes[2, 4].set_title(f'ETSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 4].legend()
+        axes[2, 4].grid(True)
 
         # Gating Loss
         axes[3, 0].plot(train_epochs[:len(train_gating_losses)], train_gating_losses, label='Train Gating Loss')

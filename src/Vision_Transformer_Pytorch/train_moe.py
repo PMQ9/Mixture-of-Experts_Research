@@ -68,9 +68,12 @@ parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weigh
 parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse or dense routing')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_gtsrb_best.pth"), help='Path to pre-trained GTSRB model')
-parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_ptsd_best.pth"), help='Path to pre-trained PTSD model')
-parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_tsrd_best.pth"), help='Path to pre-trained TSRD model')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_gtsrb_best.pth"), help='Path to pre-trained GTSRB model')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_ptsd_best.pth"), help='Path to pre-trained PTSD model')
+parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_tsrd_best.pth"), help='Path to pre-trained TSRD model')
+parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_btsd_best.pth"), help='Path to pre-trained PTSD model')
+parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_etsd_best.pth"), help='Path to pre-trained PTSD model')
+
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -302,7 +305,9 @@ def main():
         num_classes_gtsrb = 43
         num_classes_ptsd = 43
         num_classes_tsrd = 58
-        total_classes = num_classes_gtsrb + num_classes_ptsd + num_classes_tsrd
+        num_classes_btsd = 62
+        num_classes_etsd = 55
+        total_classes = num_classes_gtsrb + num_classes_ptsd + num_classes_tsrd + num_classes_btsd + num_classes_etsd
         normalization_mean = (NORM_MEAN_R_UNIFIED, NORM_MEAN_G_UNIFIED, NORM_MEAN_B_UNIFIED)
         normalization_std = (NORM_STD_R_UNIFIED, NORM_STD_G_UNIFIED, NORM_STD_B_UNIFIED)
         
@@ -312,12 +317,21 @@ def main():
         ptsd_train_csv = './data/PTSD/Training/train_with_meta_class.csv'
         tsrd_train_dir = './data/TSRD/Training'
         tsrd_train_csv = './data/TSRD/Training/train_with_meta_class.csv'
+        btsd_train_dir = './data/BTSD/Training'
+        btsd_train_csv = './data/BTSD/Training/train_with_meta_class.csv'
+        etsd_train_dir = './data/ETSD/Training'
+        etsd_train_csv = './data/ETSD/Training/train_with_meta_class.csv'
+
         gtsrb_test_dir = './data/GTSRB/Test'
         gtsrb_test_csv = './data/GTSRB/Test/testset_with_meta_class.csv'
         ptsd_test_dir = './data/PTSD/Test'
         ptsd_test_csv = './data/PTSD/Test/testset_with_meta_class.csv'
         tsrd_test_dir = './data/TSRD/Test'
         tsrd_test_csv = './data/TSRD/Test/testset_with_meta_class.csv'
+        btsd_test_dir = './data/BTSD/Test'
+        btsd_test_csv = './data/BTSD/Test/testset_with_meta_class.csv'
+        etsd_test_dir = './data/ETSD/Test'
+        etsd_test_csv = './data/ETSD/Test/testset_with_meta_class.csv'
         
         for path, desc in [
             (gtsrb_train_dir, "GTSRB training directory"),
@@ -326,12 +340,20 @@ def main():
             (ptsd_train_csv, "PTSD training CSV"),
             (tsrd_train_dir, "TSRD training directory"),
             (tsrd_train_csv, "TSRD training CSV"),
+            (btsd_train_dir, "BTSD training directory"),
+            (btsd_train_csv, "BTSD training CSV"),
+            (etsd_train_dir, "ETSD training directory"),
+            (etsd_train_csv, "ETSD training CSV"),
             (gtsrb_test_dir, "GTSRB test directory"),
             (gtsrb_test_csv, "GTSRB test CSV"),
             (ptsd_test_dir, "PTSD test directory"),
             (ptsd_test_csv, "PTSD test CSV"),
             (tsrd_test_dir, "TSRD test directory"),
             (tsrd_test_csv, "TSRD test CSV"),
+            (btsd_test_dir, "BTSD test directory"),
+            (btsd_test_csv, "BTSD test CSV"),
+            (etsd_test_dir, "ETSD test directory"),
+            (etsd_test_csv, "ETSD test CSV")
         ]:
             if not os.path.exists(path):
                 logger.error(f"{desc} not found at {path}")
@@ -370,7 +392,7 @@ def main():
     apply_config_overrides(config, args.config_overrides)
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
     if args.meta_moe:
-        print(f"Meta_MoE architecture: activate {args.meta_top_k} of 3 experts")
+        print(f"Meta_MoE architecture: activate {args.meta_top_k} of 5 experts")
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging(OUTPUT_DIR)
@@ -410,9 +432,19 @@ def main():
             csv_file='./data/TSRD/Training/train_with_meta_class.csv',
             transform=transform_train
         )
+        btsd_train_dataset = TrafficSignTrainDataset(
+            root='./data/BTSD/Training',
+            csv_file='./data/BTSD/Training/train_with_meta_class.csv',
+            transform=transform_train
+        )
+        etsd_train_dataset = TrafficSignTrainDataset(
+            root='./data/ETSD/Training',
+            csv_file='./data/ETSD/Training/train_with_meta_class.csv',
+            transform=transform_train
+        )        
         combined_train_dataset = CombinedDataset(
-            datasets=[gtsrb_train_dataset, ptsd_train_dataset, tsrd_train_dataset],
-            num_classes_list=[num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd]
+            datasets=[gtsrb_train_dataset, ptsd_train_dataset, tsrd_train_dataset, btsd_train_dataset, etsd_train_dataset],
+            num_classes_list=[num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd, num_classes_btsd, num_classes_etsd]
         )
 
         gtsrb_test_dataset = TrafficSignTestDataset(
@@ -433,22 +465,39 @@ def main():
             transform=transform_test,
             default_meta_class=2
         )
+        btsd_test_dataset = TrafficSignTestDataset(
+            root='./data/BTSD/Test', 
+            csv_file='./data/BTSD/Test/testset_with_meta_class.csv', 
+            transform=transform_test,
+            default_meta_class=3
+        )
+        etsd_test_dataset = TrafficSignTestDataset(
+            root='./data/ETSD/Test', 
+            csv_file='./data/ETSD/Test/testset_with_meta_class.csv', 
+            transform=transform_test,
+            default_meta_class=4
+        )
         combined_test_dataset = CombinedDataset(
-            datasets=[gtsrb_test_dataset, ptsd_test_dataset, tsrd_test_dataset],
-            num_classes_list=[num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd]
+            datasets=[gtsrb_test_dataset, ptsd_test_dataset, tsrd_test_dataset, btsd_test_dataset, etsd_test_dataset],
+            num_classes_list=[num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd, num_classes_btsd, num_classes_etsd]
         )
         
         logger.info(f"GTSRB training dataset size: {len(gtsrb_train_dataset)}")
         logger.info(f"PTSD training dataset size: {len(ptsd_train_dataset)}")
         logger.info(f"TSRD training dataset size: {len(tsrd_train_dataset)}")
+        logger.info(f"BTSD training dataset size: {len(btsd_train_dataset)}")
+        logger.info(f"ETSD training dataset size: {len(etsd_train_dataset)}")
         logger.info(f"GTSRB test dataset size: {len(gtsrb_test_dataset)}")
         logger.info(f"PTSD test dataset size: {len(ptsd_test_dataset)}")
         logger.info(f"TSRD test dataset size: {len(tsrd_test_dataset)}")
+        logger.info(f"BTSD test dataset size: {len(btsd_test_dataset)}")
+        logger.info(f"ETSD test dataset size: {len(etsd_test_dataset)}")
+
         
-        if len(gtsrb_train_dataset) == 0 or len(ptsd_train_dataset) == 0 or len(tsrd_train_dataset) == 0:
+        if len(gtsrb_train_dataset) == 0 or len(ptsd_train_dataset) == 0 or len(tsrd_train_dataset) == 0 or len(btsd_train_dataset) == 0 or len(etsd_train_dataset) == 0:
             logger.error("One or more training datasets are empty. Check CSV files and image paths.")
             raise ValueError("Empty training dataset detected")
-        if len(gtsrb_test_dataset) == 0 or len(ptsd_test_dataset) == 0 or len(tsrd_test_dataset) == 0:
+        if len(gtsrb_test_dataset) == 0 or len(ptsd_test_dataset) == 0 or len(tsrd_test_dataset) == 0 or len(btsd_test_dataset) == 0 or len(etsd_test_dataset) == 0:
             logger.error("One or more test datasets are empty. Check CSV files and image paths.")
             raise ValueError("Empty test dataset detected")
     
@@ -539,12 +588,30 @@ def main():
         tsrd_model = tsrd_model.to(DEVICE)
         print(f"Loaded {args.tsrd_model_path} as full model. Type: {type(tsrd_model)}")
 
+        btsd_model = torch.load(args.btsd_model_path, map_location=DEVICE, weights_only=False)
+        if not isinstance(btsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.btsd_model_path} is not a supported model type")
+        if isinstance(btsd_model, ModelWrapper):
+            btsd_model = btsd_model.model  # Unwrap if necessary
+        btsd_model = btsd_model.to(DEVICE)
+        print(f"Loaded {args.btsd_model_path} as full model. Type: {type(btsd_model)}")
+    
+        etsd_model = torch.load(args.etsd_model_path, map_location=DEVICE, weights_only=False)
+        if not isinstance(etsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.etsd_model_path} is not a supported model type")
+        if isinstance(etsd_model, ModelWrapper):
+            etsd_model = etsd_model.model  # Unwrap if necessary
+        etsd_model = etsd_model.to(DEVICE)
+        print(f"Loaded {args.etsd_model_path} as full model. Type: {type(etsd_model)}")
+
         with torch.no_grad():
             dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
             for model, expected_classes, name in [
                 (gtsrb_model, num_classes_gtsrb, "GTSRB"),
                 (ptsd_model, num_classes_ptsd, "PTSD"),
-                (tsrd_model, num_classes_tsrd, "TSRD")
+                (tsrd_model, num_classes_tsrd, "TSRD"),
+                (btsd_model, num_classes_btsd, "BTSD"),
+                (etsd_model, num_classes_etsd, "ETSD")
             ]:
                 output = model(dummy_input)
                 if isinstance(output, tuple):
@@ -556,16 +623,22 @@ def main():
         gtsrb_model.eval()
         ptsd_model.eval()
         tsrd_model.eval()
+        btsd_model.eval()
+        etsd_model.eval()
         for param in gtsrb_model.parameters():
             param.requires_grad = False
         for param in ptsd_model.parameters():
             param.requires_grad = False
         for param in tsrd_model.parameters():
             param.requires_grad = False
+        for param in btsd_model.parameters():
+            param.requires_grad = False
+        for param in etsd_model.parameters():
+            param.requires_grad = False    
 
-        meta_gating_net = MetaGatingNet(num_experts=3).to(DEVICE)
-        experts = [gtsrb_model, ptsd_model, tsrd_model]
-        num_classes_list = [num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd]
+        meta_gating_net = MetaGatingNet(num_experts=1).to(DEVICE)
+        experts = [gtsrb_model, ptsd_model, tsrd_model, btsd_model, etsd_model]
+        num_classes_list = [num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd, num_classes_btsd, num_classes_etsd]
         model = MetaMoE(
             experts=experts,
             num_classes_list=num_classes_list,
@@ -605,6 +678,8 @@ def main():
     test_gtsrb_accs = []
     test_ptsd_accs = []
     test_tsrd_accs = []
+    test_btsd_accs = []
+    test_etsd_accs = []
     best_acc = 0
     total_training_time = 0
     test_inference_times = []
@@ -617,12 +692,12 @@ def main():
         else:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_inference_time = None, None, None, None, None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, test_etsd_acc, test_inference_time = None, None, None, None, None, None, None, None, None, None, None
         avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
             if args.meta_moe:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, test_etsd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
             else:
                 test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = test_results
@@ -647,6 +722,8 @@ def main():
             test_gtsrb_accs.append(test_gtsrb_acc)
             test_ptsd_accs.append(test_ptsd_acc)
             test_tsrd_accs.append(test_tsrd_acc)
+            test_btsd_accs.append(test_btsd_acc)
+            test_etsd_accs.append(test_etsd_acc)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
@@ -659,7 +736,7 @@ def main():
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
             if args.meta_moe:
-                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}, Test TSRD Acc: {test_tsrd_acc:.4f}")
+                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}, Test TSRD Acc: {test_tsrd_acc:.4f}, Test BTSD Acc: {test_btsd_acc:.4f}, Test ETSD Acc: {test_etsd_acc:.4f}")
                 print(f"Test Avg Router Time per image: {avg_router_time_test:.6f} seconds")
                 print(f"Test Avg Experts Time per image: {avg_experts_time_test:.6f} seconds")
                 print(f"Test Avg Post-Experts Time per image: {avg_post_time_test:.6f} seconds")
@@ -684,7 +761,7 @@ def main():
                 train_balance_losses, test_balance_losses,
                 train_gating_losses, test_gating_losses,
                 train_gating_accs, test_gating_accs,
-                test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs,
+                test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs, test_btsd_accs, test_etsd_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
                 meta_moe=args.meta_moe
             )
