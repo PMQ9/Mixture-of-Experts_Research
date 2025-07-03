@@ -71,8 +71,8 @@ parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_m
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_gtsrb_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_ptsd_best.pth"), help='Path to pre-trained PTSD model')
 parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_tsrd_best.pth"), help='Path to pre-trained TSRD model')
-parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_btsd_best.pth"), help='Path to pre-trained PTSD model')
-parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_etsd_best.pth"), help='Path to pre-trained PTSD model')
+parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_btsd_best.pth"), help='Path to pre-trained BTSD model')
+parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_etsd_best.pth"), help='Path to pre-trained ETSD model')
 
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
@@ -222,6 +222,10 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     ptsd_total = 0
     tsrd_correct = 0
     tsrd_total = 0
+    btsd_correct = 0
+    btsd_total = 0
+    etsd_correct = 0
+    etsd_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
     total_router_time = 0.0
@@ -268,6 +272,8 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 gtsrb_mask = meta_class == 0
                 ptsd_mask = meta_class == 1
                 tsrd_mask = meta_class == 2
+                btsd_mask = meta_class == 3
+                etsd_mask = meta_class == 4
                 if gtsrb_mask.any():
                     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
                     gtsrb_total += gtsrb_mask.sum().item()
@@ -277,6 +283,12 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 if tsrd_mask.any():
                     tsrd_correct += predicted[tsrd_mask].eq(target[tsrd_mask]).sum().item()
                     tsrd_total += tsrd_mask.sum().item()
+                if btsd_mask.any():
+                    btsd_correct += predicted[btsd_mask].eq(target[btsd_mask]).sum().item()
+                    btsd_total += btsd_mask.sum().item()
+                if etsd_mask.any():
+                    etsd_correct += predicted[etsd_mask].eq(target[etsd_mask]).sum().item()
+                    etsd_total += etsd_mask.sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
@@ -286,6 +298,9 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     ptsd_accuracy = ptsd_correct / ptsd_total if ptsd_total > 0 and args.meta_moe else 0
     tsrd_accuracy = tsrd_correct / tsrd_total if tsrd_total > 0 and args.meta_moe else 0
+    btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
+    etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
+
     
     if args.meta_moe:
         avg_router_time = total_router_time / total_images if total_images > 0 else 0
@@ -293,7 +308,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         avg_post_time = total_post_time / total_images if total_images > 0 else 0
         avg_total_time = total_total_time / total_images if total_images > 0 else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_total_inference_time={avg_total_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, tsrd_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, tsrd_accuracy, btsd_accuracy, etsd_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
     else:
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
