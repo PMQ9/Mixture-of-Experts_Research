@@ -66,6 +66,7 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
 parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse or dense routing')
+parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='vit_moe', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_gtsrb_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "vit_ptsd_best.pth"), help='Path to pre-trained PTSD model')
@@ -368,6 +369,8 @@ def main():
     config = VisionTransformerConfig(num_class=num_classes if not args.meta_moe else total_classes)
     apply_config_overrides(config, args.config_overrides)
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
+    if args.meta_moe:
+        print(f"Meta_MoE architecture: activate {args.meta_top_k} of 3 experts")
     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging(OUTPUT_DIR)
@@ -563,12 +566,11 @@ def main():
         meta_gating_net = MetaGatingNet(num_experts=3).to(DEVICE)
         experts = [gtsrb_model, ptsd_model, tsrd_model]
         num_classes_list = [num_classes_gtsrb, num_classes_ptsd, num_classes_tsrd]
-        sparse = (args.router_strategy == 'sparse')
         model = MetaMoE(
             experts=experts,
             num_classes_list=num_classes_list,
             meta_gating_net=meta_gating_net,
-            sparse=sparse
+            meta_top_k=args.meta_top_k
         ).to(DEVICE)
         optimizer = optim.AdamW(
             meta_gating_net.parameters(),

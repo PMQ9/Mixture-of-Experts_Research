@@ -292,40 +292,38 @@ class MetaGatingNet(nn.Module):
         return logits
 
 class MetaMoE(nn.Module):
-    def __init__(self, experts, num_classes_list, meta_gating_net, sparse=False):
+    def __init__(self, experts, num_classes_list, meta_gating_net, meta_top_k=1):
         super(MetaMoE, self).__init__()
         self.experts = nn.ModuleList(experts)
         self.num_experts = len(experts)
         self.num_classes_list = num_classes_list
         self.total_classes = sum(num_classes_list)
         self.meta_gating_net = meta_gating_net
-        self.sparse = sparse
+        self.meta_top_k = min(max(meta_top_k, 1), self.num_experts)
         self.class_offsets = [0] + [sum(num_classes_list[:i+1]) for i in range(self.num_experts)]
 
     def forward(self, x):
-        gates = self.meta_gating_net(x)
-        if self.sparse:
-            _, selected_expert = torch.max(gates, dim=1)
-            batch_size = x.shape[0]
-            final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
-            for i in range(self.num_experts):
-                mask = (selected_expert == i)
-                if mask.any():
-                    expert_output = self.experts[i](x[mask])
-                    if isinstance(expert_output, tuple):
-                        expert_output = expert_output[0]  # Take the main output if tuple
-                    start_idx = self.class_offsets[i]
-                    end_idx = self.class_offsets[i+1]
-                    final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
-        else:
-            expert_outputs = []
-            for expert in self.experts:
-                output = expert(x)
-                if isinstance(output, tuple):
-                    output = output[0]  # Take the main output if tuple
-                expert_outputs.append(output.to(dtype=x.dtype))
-            weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
-            final_output = torch.cat(weighted_outputs, dim=1)
+        gates = self.meta_gating_net(x)  # [batch_size, num_experts], probabilities
+        batch_size = x.shape[0]
+        final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
+        
+        top_k_probs, top_k_indices = torch.topk(gates, k=self.meta_top_k, dim=1)  # [batch_size, top_k]
+        sum_top_k = top_k_probs.sum(dim=1, keepdim=True)
+        normalized_probs = top_k_probs / sum_top_k  # Renormalize probabilities
+        
+        for i in range(self.num_experts):
+            sample_indices, k_positions = torch.where(top_k_indices == i)
+            if len(sample_indices) > 0:
+                scaling_factors = normalized_probs[sample_indices, k_positions]
+                expert_input = x[sample_indices]
+                expert_output = self.experts[i](expert_input)
+                if isinstance(expert_output, tuple):
+                    expert_output = expert_output[0]
+                scaled_output = expert_output * scaling_factors.unsqueeze(1)
+                start_idx = self.class_offsets[i]
+                end_idx = self.class_offsets[i+1]
+                final_output[sample_indices, start_idx:end_idx] = scaled_output.to(dtype=x.dtype)
+        
         return final_output, gates
 
     def forward_with_timing(self, x):
@@ -343,28 +341,23 @@ class MetaMoE(nn.Module):
             gates = self.meta_gating_net(x)
             end_router.record()
             start_experts.record()
-            if self.sparse:
-                _, selected_expert = torch.max(gates, dim=1)
-                batch_size = x.shape[0]
-                final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
-                for i in range(self.num_experts):
-                    mask = (selected_expert == i)
-                    if mask.any():
-                        expert_output = self.experts[i](x[mask])
-                        if isinstance(expert_output, tuple):
-                            expert_output = expert_output[0]  # Take the main output if tuple
-                        start_idx = self.class_offsets[i]
-                        end_idx = self.class_offsets[i+1]
-                        final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
-            else:
-                expert_outputs = []
-                for expert in self.experts:
-                    output = expert(x)
-                    if isinstance(output, tuple):
-                        output = output[0]  # Take the main output if tuple
-                    expert_outputs.append(output.to(dtype=x.dtype))
-                weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
-                final_output = torch.cat(weighted_outputs, dim=1)
+            batch_size = x.shape[0]
+            final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
+            top_k_probs, top_k_indices = torch.topk(gates, k=self.meta_top_k, dim=1)
+            sum_top_k = top_k_probs.sum(dim=1, keepdim=True)
+            normalized_probs = top_k_probs / sum_top_k
+            for i in range(self.num_experts):
+                sample_indices, k_positions = torch.where(top_k_indices == i)
+                if len(sample_indices) > 0:
+                    scaling_factors = normalized_probs[sample_indices, k_positions]
+                    expert_input = x[sample_indices]
+                    expert_output = self.experts[i](expert_input)
+                    if isinstance(expert_output, tuple):
+                        expert_output = expert_output[0]
+                    scaled_output = expert_output * scaling_factors.unsqueeze(1)
+                    start_idx = self.class_offsets[i]
+                    end_idx = self.class_offsets[i+1]
+                    final_output[sample_indices, start_idx:end_idx] = scaled_output.to(dtype=x.dtype)
             end_experts.record()
             start_post.record()
             end_post.record()
@@ -381,28 +374,23 @@ class MetaMoE(nn.Module):
             gates = self.meta_gating_net(x)
             end_router = time.time()
             start_experts = time.time()
-            if self.sparse:
-                _, selected_expert = torch.max(gates, dim=1)
-                batch_size = x.shape[0]
-                final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
-                for i in range(self.num_experts):
-                    mask = (selected_expert == i)
-                    if mask.any():
-                        expert_output = self.experts[i](x[mask])
-                        if isinstance(expert_output, tuple):
-                            expert_output = expert_output[0]  # Take the main output if tuple
-                        start_idx = self.class_offsets[i]
-                        end_idx = self.class_offsets[i+1]
-                        final_output[mask, start_idx:end_idx] = expert_output.to(dtype=x.dtype)
-            else:
-                expert_outputs = []
-                for expert in self.experts:
-                    output = expert(x)
-                    if isinstance(output, tuple):
-                        output = output[0]  # Take the main output if tuple
-                    expert_outputs.append(output.to(dtype=x.dtype))
-                weighted_outputs = [gates[:, i].unsqueeze(1) * expert_outputs[i] for i in range(self.num_experts)]
-                final_output = torch.cat(weighted_outputs, dim=1)
+            batch_size = x.shape[0]
+            final_output = torch.zeros(batch_size, self.total_classes, device=x.device, dtype=x.dtype)
+            top_k_probs, top_k_indices = torch.topk(gates, k=self.meta_top_k, dim=1)
+            sum_top_k = top_k_probs.sum(dim=1, keepdim=True)
+            normalized_probs = top_k_probs / sum_top_k
+            for i in range(self.num_experts):
+                sample_indices, k_positions = torch.where(top_k_indices == i)
+                if len(sample_indices) > 0:
+                    scaling_factors = normalized_probs[sample_indices, k_positions]
+                    expert_input = x[sample_indices]
+                    expert_output = self.experts[i](expert_input)
+                    if isinstance(expert_output, tuple):
+                        expert_output = expert_output[0]
+                    scaled_output = expert_output * scaling_factors.unsqueeze(1)
+                    start_idx = self.class_offsets[i]
+                    end_idx = self.class_offsets[i+1]
+                    final_output[sample_indices, start_idx:end_idx] = scaled_output.to(dtype=x.dtype)
             end_experts = time.time()
             start_post = time.time()
             end_post = time.time()
