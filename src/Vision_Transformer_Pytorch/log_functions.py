@@ -69,7 +69,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 5, figsize=(15, 18))
+        fig, axes = plt.subplots(5, 5, figsize=(45, 27))
         fig.suptitle('MetaMoE Training and Testing Metrics', fontsize=16)
 
         # Classification Loss
