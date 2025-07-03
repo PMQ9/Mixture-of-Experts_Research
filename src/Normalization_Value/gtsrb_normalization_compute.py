@@ -6,8 +6,8 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Calculate the normalization values of the dataset')
-parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'meta'], 
-                    help='Dataset to calculate (GTSRB, PTSD, or meta for both combined)')
+parser.add_argument('--dataset', type=str, default='meta', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'meta'], 
+                    help='Dataset to calculate')
 args = parser.parse_args()
 
 if __name__ == '__main__':
@@ -48,12 +48,19 @@ if __name__ == '__main__':
         process_dataset('./../../data/GTSRB/Training')
     elif args.dataset == 'PTSD':
         process_dataset('./../../data/PTSD/Training')
+    elif args.dataset == 'TSRD':
+        process_dataset('./../../data/TSRD/Training')
+    elif args.dataset == 'BTSD':
+        process_dataset('./../../data/BTSD/Training')
+    elif args.dataset == 'ETSD':
+        process_dataset('./../../data/ETSD/Training')
     elif args.dataset == 'meta':
         # Process both datasets
         process_dataset('./../../data/GTSRB/Training')
         process_dataset('./../../data/PTSD/Training')
         process_dataset('./../../data/TSRD/Training')
         process_dataset('./../../data/BTSD/Training')
+        process_dataset('./../../data/ETSD/Training')
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
 
