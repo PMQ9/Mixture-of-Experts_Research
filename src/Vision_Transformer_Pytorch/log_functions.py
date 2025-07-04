@@ -62,14 +62,14 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_ptsd_accs,
+                 test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs, test_btsd_accs, test_etsd_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
                  meta_moe=False):
     train_epochs = list(range(plot_epochs))
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 2, figsize=(15, 18))
+        fig, axes = plt.subplots(5, 5, figsize=(45, 27))
         fig.suptitle('MetaMoE Training and Testing Metrics', fontsize=16)
 
         # Classification Loss
@@ -116,6 +116,27 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 1].set_title(f'PTSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
         axes[2, 1].legend()
         axes[2, 1].grid(True)
+
+        axes[2, 2].plot(test_epochs[:len(test_tsrd_accs)], test_tsrd_accs, label='TSRD Test Accuracy')
+        axes[2, 2].set_xlabel('Epoch')
+        axes[2, 2].set_ylabel('Accuracy')
+        axes[2, 2].set_title(f'TSRD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 2].legend()
+        axes[2, 2].grid(True)
+
+        axes[2, 3].plot(test_epochs[:len(test_btsd_accs)], test_btsd_accs, label='BTSD Test Accuracy')
+        axes[2, 3].set_xlabel('Epoch')
+        axes[2, 3].set_ylabel('Accuracy')
+        axes[2, 3].set_title(f'BTSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 3].legend()
+        axes[2, 3].grid(True)
+
+        axes[2, 4].plot(test_epochs[:len(test_etsd_accs)], test_etsd_accs, label='ETSD Test Accuracy')
+        axes[2, 4].set_xlabel('Epoch')
+        axes[2, 4].set_ylabel('Accuracy')
+        axes[2, 4].set_title(f'ETSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 4].legend()
+        axes[2, 4].grid(True)
 
         # Gating Loss
         axes[3, 0].plot(train_epochs[:len(train_gating_losses)], train_gating_losses, label='Train Gating Loss')
@@ -197,7 +218,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     plt.close(fig)
 
 # **************** Export to ONNX ****************
-def export_to_onnx(model, config, device, output_dir, dataset_name):
+def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
     print("\nExporting model to ONNX...")
     model.eval()
     
@@ -217,17 +238,11 @@ def export_to_onnx(model, config, device, output_dir, dataset_name):
                 expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
                 return (out, *expert_traces)
 
-    from vision_transformer_moe import SparseMetaMoE, DenseMetaMoE
-    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, (SparseMetaMoE, DenseMetaMoE))).to(device)
-    dummy_input = torch.randn(1, 3, 32, 32).to(device)
-    
-    if dataset_name == 'GTSRB':
-        onnx_path = os.path.join(output_dir, "vit_gtsrb_best.onnx")
-    elif dataset_name == 'PTSD':
-        onnx_path = os.path.join(output_dir, "vit_ptsd_best.onnx")
-    elif dataset_name == 'MetaMoE':
-        onnx_path = os.path.join(output_dir, "vit_meta_moe_best.onnx")
-    
+    from vision_transformer_moe import MetaMoE
+    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
+    dummy_input = torch.randn(1, 3, 32, 32).to(device)    
+    onnx_path = os.path.join(output_dir, f"{dataset_name.lower()}_{model_arch}.onnx")
+
     torch.onnx.export(
         wrapped_model,
         dummy_input,
