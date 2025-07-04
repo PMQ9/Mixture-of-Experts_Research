@@ -696,7 +696,7 @@ def main():
     if args.export_onnx:
         best_model_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"{args.model_arch}_{args.dataset.lower()}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset)
+        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch = args.model_arch)
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
 

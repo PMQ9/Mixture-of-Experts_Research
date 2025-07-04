@@ -218,7 +218,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     plt.close(fig)
 
 # **************** Export to ONNX ****************
-def export_to_onnx(model, config, device, output_dir, dataset_name):
+def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
     print("\nExporting model to ONNX...")
     model.eval()
     
@@ -240,15 +240,9 @@ def export_to_onnx(model, config, device, output_dir, dataset_name):
 
     from vision_transformer_moe import MetaMoE
     wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
-    dummy_input = torch.randn(1, 3, 32, 32).to(device)
-    
-    if dataset_name == 'GTSRB':
-        onnx_path = os.path.join(output_dir, "vit_gtsrb_best.onnx")
-    elif dataset_name == 'PTSD':
-        onnx_path = os.path.join(output_dir, "vit_ptsd_best.onnx")
-    elif dataset_name == 'MetaMoE':
-        onnx_path = os.path.join(output_dir, "vit_meta_moe_best.onnx")
-    
+    dummy_input = torch.randn(1, 3, 32, 32).to(device)    
+    onnx_path = os.path.join(output_dir, f"{model_arch}_{dataset_name.lower()}.onnx")
+
     torch.onnx.export(
         wrapped_model,
         dummy_input,
