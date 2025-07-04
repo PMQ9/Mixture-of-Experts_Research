@@ -57,7 +57,6 @@ parser.add_argument('--export_onnx', type=bool, default=True, help='Export train
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
-parser.add_argument('--router_strategy', type=str, default='sparse', choices=['sparse', 'dense'], help='Choose sparse or dense routing')
 parser.add_argument('--num_meta_experts', type=int, default=5, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
@@ -606,7 +605,10 @@ def main():
         
     for epoch in range(EPOCHS):
         start_time = time.time()
-        train_results = train(model, train_loader, optimizer, criterion, DEVICE, config.balance_loss_weight if not args.meta_moe else None, default_meta_class)
+        if args.meta_moe:
+            train_results = train(model, train_loader, optimizer, criterion, DEVICE, balance_loss_weight=None)
+        else:
+            train_results = train(model, train_loader, optimizer, criterion, DEVICE, balance_loss_weight=config.balance_loss_weight, default_meta_class=default_meta_class)
         if args.meta_moe:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc, avg_router_time, avg_experts_time, avg_post_time, avg_total_time = train_results
         else:
@@ -615,7 +617,10 @@ def main():
         test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, test_etsd_acc, test_inference_time = None, None, None, None, None, None, None, None, None, None, None
         avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
-            test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class)
+            if args.meta_moe:
+                test_results = test(model, test_loader, optimizer, criterion, DEVICE)
+            else:
+                test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
             if args.meta_moe:
                 test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, test_etsd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
