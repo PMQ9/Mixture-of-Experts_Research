@@ -2,15 +2,17 @@ from dataclasses import fields
 import ast
 
 # **************** Default Params ****************
-DEFAULT_BATCH_SIZE = 128
-DEFAULT_EPOCH = 800
-DEFAULT_LEARNING_RATE = 1e-3
-DEFAULT_CUTMIX_ALPHA = 0.4
-DEFAULT_CUTMIX_PROB = 0.2
-DEFAULT_TEST_START_EPOCH = 50
-DEFAULT_TEST_FREQUENCY = 2
-DEFAULT_WARMUP_EPOCH = 10
-DEFAULT_LABEL_SMOOTHING = 0.1
+DEFAULT_PARAMS = {
+    'batch_size': 128,
+    'epoch': 800,
+    'learning_rate': 1e-3,
+    'cutmix_alpha': 0.4,
+    'cutmix_prob': 0.2,
+    'warmup_epoch': 10,
+    'label_smoothing': 0.1,
+    'test_start_epoch': 50,
+    'test_frequency': 2
+}
 
 # **************** Normalization Values ****************
 NORM_MEAN_R_GTSRB = 0.3432482055626116
@@ -55,13 +57,19 @@ NORM_STD_R_CIFAR10 = 0.247
 NORM_STD_G_CIFAR10 = 0.243
 NORM_STD_B_CIFAR10 = 0.261
 
-# **************** Unified Normalization Values ****************
 NORM_MEAN_R_UNIFIED = 0.38879402463614293
 NORM_MEAN_G_UNIFIED = 0.36229729920994996
 NORM_MEAN_B_UNIFIED = 0.37985949886524545
 NORM_STD_R_UNIFIED = 0.2671561389170561
 NORM_STD_G_UNIFIED = 0.2490427395905567
 NORM_STD_B_UNIFIED = 0.25780709084169384
+
+GTSRB_NORM = {'mean': (NORM_MEAN_R_GTSRB, NORM_MEAN_G_GTSRB, NORM_MEAN_B_GTSRB),'std': (NORM_STD_R_GTSRB, NORM_STD_G_GTSRB, NORM_STD_B_GTSRB)}
+PTSD_NORM = {'mean': (NORM_MEAN_R_PTSD, NORM_MEAN_G_PTSD, NORM_MEAN_B_PTSD),'std': (NORM_STD_R_PTSD, NORM_STD_G_PTSD, NORM_STD_B_PTSD)}
+TSRD_NORM = {'mean': (NORM_MEAN_R_TSRD, NORM_MEAN_G_TSRD, NORM_MEAN_B_TSRD),'std': (NORM_STD_R_TSRD, NORM_STD_G_TSRD, NORM_STD_B_TSRD)}
+BTSD_NORM = {'mean': (NORM_MEAN_R_BTSD, NORM_MEAN_G_BTSD, NORM_MEAN_B_BTSD),'std': (NORM_STD_R_BTSD, NORM_STD_G_BTSD, NORM_STD_B_BTSD)}
+ETSD_NORM = {'mean': (NORM_MEAN_R_ETSD, NORM_MEAN_G_ETSD, NORM_MEAN_B_ETSD),'std': (NORM_STD_R_ETSD, NORM_STD_G_ETSD, NORM_STD_B_ETSD)}
+UNIFIED_NORM = {'mean': (NORM_MEAN_R_UNIFIED, NORM_MEAN_G_UNIFIED, NORM_MEAN_B_UNIFIED),'std': (NORM_STD_R_UNIFIED, NORM_STD_G_UNIFIED, NORM_STD_B_UNIFIED)}
 
 # **************** Overide Default Config Params ****************
 def apply_config_overrides(config, overrides_str):
