@@ -60,11 +60,11 @@ parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weigh
 parser.add_argument('--num_meta_experts', type=int, default=5, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_gtsrb_best.pth"), help='Path to pre-trained GTSRB model')
-parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_ptsd_best.pth"), help='Path to pre-trained PTSD model')
-parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_tsrd_best.pth"), help='Path to pre-trained TSRD model')
-parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_btsd_best.pth"), help='Path to pre-trained BTSD model')
-parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "convnext_tiny_etsd_best.pth"), help='Path to pre-trained ETSD model')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "ptsd_convnext_tiny_best.pth"), help='Path to pre-trained PTSD model')
+parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
+parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
+parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -672,7 +672,7 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            save_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"{args.model_arch}_{args.dataset.lower()}_best.pth")
+            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
                 state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict.pth")
@@ -699,7 +699,7 @@ def main():
         print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
     if args.export_onnx:
-        best_model_path = os.path.join(OUTPUT_DIR, "vit_meta_moe_best.pth" if args.meta_moe else f"{args.model_arch}_{args.dataset.lower()}_best.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch = args.model_arch)
     if args.archive_params:

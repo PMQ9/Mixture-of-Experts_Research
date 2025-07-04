@@ -241,7 +241,7 @@ def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
     from vision_transformer_moe import MetaMoE
     wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
     dummy_input = torch.randn(1, 3, 32, 32).to(device)    
-    onnx_path = os.path.join(output_dir, f"{model_arch}_{dataset_name.lower()}.onnx")
+    onnx_path = os.path.join(output_dir, f"{dataset_name.lower()}_{model_arch}.onnx")
 
     torch.onnx.export(
         wrapped_model,
