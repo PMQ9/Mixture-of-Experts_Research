@@ -62,7 +62,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs,
+                 test_gtsrb_accs, test_ptsd_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
                  meta_moe=False):
     train_epochs = list(range(plot_epochs))
@@ -117,12 +117,12 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 1].legend()
         axes[2, 1].grid(True)
 
-        axes[2, 2].plot(test_epochs[:len(test_tsrd_accs)], test_tsrd_accs, label='TSRD Test Accuracy')
-        axes[2, 2].set_xlabel('Epoch')
-        axes[2, 2].set_ylabel('Accuracy')
-        axes[2, 2].set_title(f'TSRD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
-        axes[2, 2].legend()
-        axes[2, 2].grid(True)
+        # axes[2, 2].plot(test_epochs[:len(test_tsrd_accs)], test_tsrd_accs, label='TSRD Test Accuracy')
+        # axes[2, 2].set_xlabel('Epoch')
+        # axes[2, 2].set_ylabel('Accuracy')
+        # axes[2, 2].set_title(f'TSRD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        # axes[2, 2].legend()
+        # axes[2, 2].grid(True)
 
         # axes[2, 3].plot(test_epochs[:len(test_btsd_accs)], test_btsd_accs, label='BTSD Test Accuracy')
         # axes[2, 3].set_xlabel('Epoch')
