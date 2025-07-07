@@ -6,19 +6,13 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Calculate the normalization values of the dataset')
-parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD'], help='Dataset to calculate')
+parser.add_argument('--dataset', type=str, default='meta', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'meta'], 
+                    help='Dataset to calculate')
 args = parser.parse_args()
 
 if __name__ == '__main__':
     # Set device to CPU for simplicity and precision in accumulation
     device = torch.device('cpu')
-
-    if args.dataset == 'GTSRB':
-        root = './data/GTSRB/Training'
-    elif args.dataset == 'PTSD':
-        root = './data/PTSD/Training'
-    else:
-        raise ValueError(f"Unknown dataset: {args.dataset}")
 
     transform = transforms.Compose([
         transforms.Resize(32),      # Resize the smaller side to 32, preserving aspect ratio
@@ -26,25 +20,49 @@ if __name__ == '__main__':
         transforms.ToTensor()       # Convert to tensor with values in [0, 1]
     ])
 
-    # Create the dataset
-    dataset = datasets.ImageFolder(root, transform=transform)
-    print(f"Number of images: {len(dataset)}")
-
-    # Create the DataLoader for batch processing
-    loader = DataLoader(dataset, batch_size=128, shuffle=False, num_workers=4)
-
     # Initialize accumulators for sum and sum of squares for each channel (R, G, B)
     sum_c = torch.zeros(3, dtype=torch.float64)
     sum_squares_c = torch.zeros(3, dtype=torch.float64)
     total_pixels = 0
 
-    # Iterate through the dataset to compute sums
-    for data, _ in tqdm(loader, desc="Processing batches"):
-        data = data.to(device)  # Shape: (batch_size, 3, 32, 32)
-        B = data.size(0)        # Number of images in the batch
-        sum_c += data.sum(dim=[0, 2, 3]).to(torch.float64)         # Sum over batch, height, width
-        sum_squares_c += (data ** 2).sum(dim=[0, 2, 3]).to(torch.float64)  # Sum of squares
-        total_pixels += B * 32 * 32  # Total pixels processed
+    def process_dataset(root_path):
+        global sum_c, sum_squares_c, total_pixels
+        
+        # Create the dataset
+        dataset = datasets.ImageFolder(root_path, transform=transform)
+        print(f"Processing dataset at: {root_path}")
+        print(f"Number of images: {len(dataset)}")
+
+        # Create the DataLoader for batch processing
+        loader = DataLoader(dataset, batch_size=128, shuffle=False, num_workers=4)
+
+        # Iterate through the dataset to compute sums
+        for data, _ in tqdm(loader, desc="Processing batches"):
+            data = data.to(device)  # Shape: (batch_size, 3, 32, 32)
+            B = data.size(0)        # Number of images in the batch
+            sum_c += data.sum(dim=[0, 2, 3]).to(torch.float64)         # Sum over batch, height, width
+            sum_squares_c += (data ** 2).sum(dim=[0, 2, 3]).to(torch.float64)  # Sum of squares
+            total_pixels += B * 32 * 32  # Total pixels processed
+
+    if args.dataset == 'GTSRB':
+        process_dataset('./../../data/GTSRB/Training')
+    elif args.dataset == 'PTSD':
+        process_dataset('./../../data/PTSD/Training')
+    elif args.dataset == 'TSRD':
+        process_dataset('./../../data/TSRD/Training')
+    elif args.dataset == 'BTSD':
+        process_dataset('./../../data/BTSD/Training')
+    elif args.dataset == 'ETSD':
+        process_dataset('./../../data/ETSD/Training')
+    elif args.dataset == 'meta':
+        # Process both datasets
+        process_dataset('./../../data/GTSRB/Training')
+        process_dataset('./../../data/PTSD/Training')
+        process_dataset('./../../data/TSRD/Training')
+        process_dataset('./../../data/BTSD/Training')
+        process_dataset('./../../data/ETSD/Training')
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
 
     # Compute mean and standard deviation
     mean_c = sum_c / total_pixels

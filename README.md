@@ -75,8 +75,8 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8408    |                       |
-| **Best testing accuracy** |**0.9221** |                       |
+| Best training accuracy    | 0.8431    |                       |
+| **Best testing accuracy** |**0.9334** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
@@ -103,8 +103,8 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8546    |                       |
-| **Best testing accuracy** |**0.8765** |                       |
+| Best training accuracy    | 0.8633    |                       |
+| **Best testing accuracy** |**0.8786** |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
 | Train balance loss        |           |                       |
@@ -118,11 +118,11 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
     ./data/
     └── GTSRB/
         ├── Training/
-        │   ├── 00000/
+        │   ├── 00/
         │   │   ├── 00000_00000.ppm
         │   │   ├── 00000_00001.ppm
         │   │   └── GT-00000.csv
-        │   ├── 00001/
+        │   ├── 01/
         │   │   ├── 00001_00000.ppm
         │   │   ├── 00001_00001.ppm
         │   │   └── GT-00001.csv
@@ -132,22 +132,22 @@ Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign
         │   │   ├── 00000.ppm
         │   │   ├── 00001.ppm
         │   │   └── ...
-        │   └── GT-final_test.csv
+        │   └── testset_with_meta_class.csv
     └── PTSD/
         ├── Training/
-        │   ├── 0_/
+        │   ├── 00/
         │   │   ├── 00_00001.jpg
         │   │   └── 00_00002.jpg
-        │   ├── 1_/
+        │   ├── 01/
         │   │   ├── 01_00001.jpg
         │   │   └── 01_00002.jpg
         │   └── ... (up to 00042)
         ├── Test/
         │   ├── Images/
-        │   │   ├── PTSD_00001.jpg
-        │   │   ├── PTSD_00002.jpg
+        │   │   ├── 00001.jpg
+        │   │   ├── 00002.jpg
         │   │   └── ...
-        │   └── testset_CSV.csv
+        │   └── testset_with_meta_class.csv
 
 ### Normalization value calculated from the test set:
 
