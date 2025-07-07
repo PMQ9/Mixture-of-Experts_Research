@@ -63,8 +63,8 @@ parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=[
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "ptsd_convnext_tiny_best.pth"), help='Path to pre-trained PTSD model')
 parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
-parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
-#parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
+# parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
+# parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -193,7 +193,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
 def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     model.eval()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = total_images = 0
-    gtsrb_correct = ptsd_correct = tsrd_correct = btsd_correct = gtsrb_total = ptsd_total = tsrd_total = btsd_total = 0
+    gtsrb_correct = ptsd_correct = tsrd_correct = gtsrb_total = ptsd_total = tsrd_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
@@ -236,8 +236,8 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 gtsrb_mask = meta_class == 0
                 ptsd_mask = meta_class == 1
                 tsrd_mask = meta_class == 2
-                btsd_mask = meta_class == 3
-                #etsd_mask = meta_class == 4
+                # btsd_mask = meta_class == 3
+                # etsd_mask = meta_class == 4
                 if gtsrb_mask.any():
                     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
                     gtsrb_total += gtsrb_mask.sum().item()
@@ -247,9 +247,9 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 if tsrd_mask.any():
                     tsrd_correct += predicted[tsrd_mask].eq(target[tsrd_mask]).sum().item()
                     tsrd_total += tsrd_mask.sum().item()
-                if btsd_mask.any():
-                    btsd_correct += predicted[btsd_mask].eq(target[btsd_mask]).sum().item()
-                    btsd_total += btsd_mask.sum().item()
+                # if btsd_mask.any():
+                #     btsd_correct += predicted[btsd_mask].eq(target[btsd_mask]).sum().item()
+                #     btsd_total += btsd_mask.sum().item()
                 # if etsd_mask.any():
                 #     etsd_correct += predicted[etsd_mask].eq(target[etsd_mask]).sum().item()
                 #     etsd_total += etsd_mask.sum().item()
@@ -262,15 +262,15 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     ptsd_accuracy = ptsd_correct / ptsd_total if ptsd_total > 0 and args.meta_moe else 0
     tsrd_accuracy = tsrd_correct / tsrd_total if tsrd_total > 0 and args.meta_moe else 0
-    btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
-    #etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
+    # btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
+    # etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
     if args.meta_moe:
         avg_router_time = total_router_time / total_images if total_images > 0 else 0
         avg_experts_time = total_experts_time / total_images if total_images > 0 else 0
         avg_post_time = total_post_time / total_images if total_images > 0 else 0
         avg_total_time = total_total_time / total_images if total_images > 0 else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_total_inference_time={avg_total_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, tsrd_accuracy, btsd_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, tsrd_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
     else:
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
@@ -304,16 +304,16 @@ def main():
             'normalization_mean': (TSRD_NORM['mean']),
             'normalization_std': (TSRD_NORM['std']),
             'default_meta_class': 2
-        },
-        'BTSD': {
-            'num_classes': 62,
-            'train_dir': './data/BTSD/Training',
-            'test_dir': './data/BTSD/Test',
-            'csv_file': './data/BTSD/Test/testset_with_meta_class.csv',
-            'normalization_mean': (BTSD_NORM['mean']),
-            'normalization_std': (BTSD_NORM['std']),
-            'default_meta_class': 3
         }
+        # 'BTSD': {
+        #     'num_classes': 62,
+        #     'train_dir': './data/BTSD/Training',
+        #     'test_dir': './data/BTSD/Test',
+        #     'csv_file': './data/BTSD/Test/testset_with_meta_class.csv',
+        #     'normalization_mean': (BTSD_NORM['mean']),
+        #     'normalization_std': (BTSD_NORM['std']),
+        #     'default_meta_class': 3
+        # }
         # 'ETSD': {
         #     'num_classes': 55,
         #     'train_dir': './data/ETSD/Training',
@@ -326,7 +326,7 @@ def main():
     }
 
     if args.meta_moe:
-        datasets = ['GTSRB', 'PTSD', 'TSRD', 'BTSD']
+        datasets = ['GTSRB', 'PTSD', 'TSRD']
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         total_classes = sum(num_classes_list)
         normalization_mean = (UNIFIED_NORM['mean'])
@@ -506,13 +506,13 @@ def main():
         tsrd_model = tsrd_model.to(DEVICE)
         print(f"Loaded {args.tsrd_model_path} as full model. Type: {type(tsrd_model)}")
 
-        btsd_model = torch.load(args.btsd_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(btsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-            raise RuntimeError(f"{args.btsd_model_path} is not a supported model type")
-        if isinstance(btsd_model, ModelWrapper):
-            btsd_model = btsd_model.model
-        btsd_model = btsd_model.to(DEVICE)
-        print(f"Loaded {args.btsd_model_path} as full model. Type: {type(btsd_model)}")
+        # btsd_model = torch.load(args.btsd_model_path, map_location=DEVICE, weights_only=False)
+        # if not isinstance(btsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+        #     raise RuntimeError(f"{args.btsd_model_path} is not a supported model type")
+        # if isinstance(btsd_model, ModelWrapper):
+        #     btsd_model = btsd_model.model
+        # btsd_model = btsd_model.to(DEVICE)
+        # print(f"Loaded {args.btsd_model_path} as full model. Type: {type(btsd_model)}")
     
         # etsd_model = torch.load(args.etsd_model_path, map_location=DEVICE, weights_only=False)
         # if not isinstance(etsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
@@ -527,8 +527,8 @@ def main():
             for model, expected_classes, name in [
                 (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                 (ptsd_model, dataset_params['PTSD']['num_classes'], "PTSD"),
-                (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD"),
-                (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD")
+                (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD")
+                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD")
                 #(etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
             ]:
                 output = model(dummy_input)
@@ -541,7 +541,7 @@ def main():
         gtsrb_model.eval()
         ptsd_model.eval()
         tsrd_model.eval()
-        btsd_model.eval()
+        # btsd_model.eval()
         # etsd_model.eval()
         for param in gtsrb_model.parameters():
             param.requires_grad = False
@@ -549,14 +549,14 @@ def main():
             param.requires_grad = False
         for param in tsrd_model.parameters():
             param.requires_grad = False
-        for param in btsd_model.parameters():
-            param.requires_grad = False
+        # for param in btsd_model.parameters():
+        #     param.requires_grad = False
         # for param in etsd_model.parameters():
         #     param.requires_grad = False    
 
         num_meta_experts = args.num_meta_experts
         meta_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
-        experts = [gtsrb_model, ptsd_model, tsrd_model, btsd_model]
+        experts = [gtsrb_model, ptsd_model, tsrd_model]
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         model = MetaMoE(
             experts=experts,
@@ -597,7 +597,7 @@ def main():
     test_gtsrb_accs = []
     test_ptsd_accs = []
     test_tsrd_accs = []
-    test_btsd_accs = []
+    # test_btsd_accs = []
     # test_etsd_accs = []
     best_acc = 0
     total_training_time = 0
@@ -614,15 +614,14 @@ def main():
         else:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, test_inference_time = None, None, None, None, None, None, None, None, None, None, None
-        avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_inference_time = None, None, None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             if args.meta_moe:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE)
             else:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
             if args.meta_moe:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, test_btsd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_tsrd_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
             else:
                 test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_ptsd_acc, test_inference_time = test_results
@@ -647,7 +646,7 @@ def main():
             test_gtsrb_accs.append(test_gtsrb_acc)
             test_ptsd_accs.append(test_ptsd_acc)
             test_tsrd_accs.append(test_tsrd_acc)
-            test_btsd_accs.append(test_btsd_acc)
+            # test_btsd_accs.append(test_btsd_acc)
             # test_etsd_accs.append(test_etsd_acc)
 
         print(f"{datetime.now()}")
@@ -661,7 +660,7 @@ def main():
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
             if args.meta_moe:
-                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}, Test TSRD Acc: {test_tsrd_acc:.4f}, Test BTSD Acc: {test_btsd_acc:.4f}")
+                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test PTSD Acc: {test_ptsd_acc:.4f}, Test TSRD Acc: {test_tsrd_acc:.4f}")
                 print(f"Test Avg Router Time per image: {avg_router_time_test:.6f} seconds")
                 print(f"Test Avg Experts Time per image: {avg_experts_time_test:.6f} seconds")
                 print(f"Test Avg Post-Experts Time per image: {avg_post_time_test:.6f} seconds")
@@ -686,7 +685,7 @@ def main():
                 train_balance_losses, test_balance_losses,
                 train_gating_losses, test_gating_losses,
                 train_gating_accs, test_gating_accs,
-                test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs, test_btsd_accs,
+                test_gtsrb_accs, test_ptsd_accs, test_tsrd_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
                 meta_moe=args.meta_moe
             )
