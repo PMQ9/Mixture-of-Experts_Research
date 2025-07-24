@@ -6,10 +6,8 @@ import torch.nn as nn
 from tqdm import tqdm
 import time
 import os
-#import sys
 from datetime import datetime
 import numpy as np
-#import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
@@ -18,6 +16,8 @@ from dataclasses import fields, asdict
 import torch.multiprocessing
 import logging
 import timm
+import matplotlib.pyplot as plt
+from scipy import stats
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
@@ -57,7 +57,7 @@ parser.add_argument('--export_onnx', type=bool, default=True, help='Export train
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
-parser.add_argument('--num_meta_experts', type=int, default=4, help='Number of experts to in MetaMoE')
+parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
@@ -82,6 +82,123 @@ TEST_FREQUENCY = args.test_frequency
 WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
+
+def visualize_robustness(model, test_loader, device, num_perturbations=1000, perturbation_scale=0.01):
+    model.eval()
+    with torch.no_grad():
+        # Collect gating probability differences to find the smallest
+        min_diff = float('inf')
+        best_x = None
+        best_output = None
+        best_gates = None
+        best_target = None
+        best_meta_class = None
+        best_image_idx = 0
+        
+        for batch_idx, (data, target, meta_class) in enumerate(test_loader):
+            data = data.to(device)
+            for i in range(data.size(0)):
+                x = data[i].unsqueeze(0)
+                output, gates = model(x)
+                gates_np = gates.cpu().numpy().squeeze()
+                gates_sorted = np.sort(gates_np)[::-1]
+                diff = gates_sorted[0] - gates_sorted[1]
+                if diff < min_diff:
+                    min_diff = diff
+                    best_x = x
+                    best_output = output
+                    best_gates = gates_np
+                    best_target = target[i].item()
+                    best_meta_class = meta_class[i].item()
+                    best_image_idx = batch_idx * test_loader.batch_size + i
+        
+        if best_x is None:
+            raise ValueError("No suitable input found in the test dataset")
+        
+        # Log and save the chosen image
+        print(f"Chosen image index: {best_image_idx}, Target class: {best_target}, Meta class: {best_meta_class}, Min gating prob difference: {min_diff:.4f}")
+        to_pil = transforms.ToPILImage()
+        pil_image = to_pil(best_x.squeeze(0).cpu())
+        pil_image.save(os.path.join(OUTPUT_DIR, f"chosen_image_{best_image_idx}.png"))
+        
+        # Generate perturbations
+        perturbations = torch.randn(num_perturbations, *best_x.shape[1:], device=device) * perturbation_scale
+        perturbed_inputs = best_x + perturbations
+        
+        # Compute outputs for dense and sparse configurations
+        dense_outputs = []
+        sparse_outputs = []
+        gating_decisions = []
+        
+        num_experts = model.num_experts
+        for pert in perturbed_inputs:
+            # Dense: all experts
+            model.meta_top_k = num_experts
+            dense_output, _ = model(pert.unsqueeze(0))
+            dense_outputs.append(dense_output.cpu().numpy())
+            
+            # Sparse: top-1 expert
+            model.meta_top_k = 1
+            sparse_output, gates_sparse = model(pert.unsqueeze(0))
+            sparse_outputs.append(sparse_output.cpu().numpy())
+            gating_decisions.append(gates_sparse.cpu().numpy())
+        
+        dense_outputs = np.array(dense_outputs).squeeze()
+        sparse_outputs = np.array(sparse_outputs).squeeze()
+        gating_decisions = np.array(gating_decisions).squeeze()
+        
+        # Calculate perturbation magnitudes and output differences
+        perturbation_magnitudes = torch.norm(perturbations.view(num_perturbations, -1), dim=1).cpu().numpy()
+        dense_diff = np.linalg.norm(dense_outputs - best_output.cpu().numpy(), axis=1)
+        sparse_diff = np.linalg.norm(sparse_outputs - best_output.cpu().numpy(), axis=1)
+        
+        # Plot output differences
+        plt.figure(figsize=(12, 5))
+        
+        # Dense plot
+        plt.subplot(1, 2, 1)
+        plt.scatter(perturbation_magnitudes, dense_diff, alpha=0.5, s=10, label='Data Points')
+        slope, intercept, r_value, _, _ = stats.linregress(perturbation_magnitudes, dense_diff)
+        trend_line = intercept + slope * perturbation_magnitudes
+        plt.plot(perturbation_magnitudes, trend_line, color='red', linestyle='--', label=f'Trend (R² = {r_value**2:.2f})')
+        plt.title(f'Dense MetaMoE (top-k={num_experts}): Output Difference')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Output Difference')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        
+        # Sparse plot
+        plt.subplot(1, 2, 2)
+        selected_expert = np.argmax(gating_decisions, axis=1)
+        for expert in np.unique(selected_expert):
+            mask = selected_expert == expert
+            plt.scatter(perturbation_magnitudes[mask], sparse_diff[mask], alpha=0.5, s=10, label=f'Expert {expert}')
+        plt.title('Sparse MetaMoE (top-k=1): Output Difference')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Output Difference')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIR, 'robustness_visualization.png'))
+        plt.close()
+        
+        # Plot gating decisions for sparse case
+        plt.figure(figsize=(8, 5))
+        plt.scatter(perturbation_magnitudes, selected_expert, alpha=0.5, s=10, label='Data Points')
+        # expert_changes = np.where(np.diff(selected_expert) != 0)[0]
+        # for change_idx in expert_changes:
+        #     plt.axvline(x=perturbation_magnitudes[change_idx], color='green', linestyle='--', alpha=0.5, 
+        #                 label='Expert Switch' if change_idx == expert_changes[0] else "")
+        plt.title('Sparse MetaMoE (top-k=1): Selected Expert')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Selected Expert Index')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.savefig(os.path.join(OUTPUT_DIR, 'gating_decisions.png'))
+        plt.close()
+        
+        print("Robustness visualization completed. Plots saved in", OUTPUT_DIR)
 
 class ModelWrapper(nn.Module):
     def __init__(self, model):
@@ -445,7 +562,8 @@ def main():
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
     if args.meta_moe:
         print(f"Meta_MoE architecture: activate {args.meta_top_k} of {args.num_meta_experts} experts")
-    print(f"Using config: {asdict(config)}")
+    else:
+        print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging(OUTPUT_DIR)
 
@@ -700,7 +818,13 @@ def main():
     if args.export_onnx:
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch = args.model_arch)
+        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
+    
+    if args.meta_moe:
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best_test.pth")
+        model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
+        visualize_robustness(model, test_loader, DEVICE)
+    
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
 
