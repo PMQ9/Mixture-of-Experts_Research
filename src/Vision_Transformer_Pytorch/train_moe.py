@@ -18,6 +18,8 @@ import logging
 import timm
 import matplotlib.pyplot as plt
 from scipy import stats
+from art.estimators.classification import PyTorchClassifier
+from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
@@ -209,6 +211,15 @@ class ModelWrapper(nn.Module):
         output = self.model(x)
         return output, [torch.tensor(0.0, device=x.device)]
 
+class MetaMoEWrapper(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        output, _ = self.model(x)
+        return output
+
 def create_model(model_arch, config):
     if model_arch == 'vit_moe':
         return VisionTransformer(config)
@@ -392,6 +403,68 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
         return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
+
+def test_adversarial_robustness(model, test_loader, device, eps=0.1):
+    """Test the MetaMoE model's robustness against adversarial examples using ART."""
+    wrapped_model = MetaMoEWrapper(model).to(device)
+    criterion = nn.CrossEntropyLoss()
+    classifier = PyTorchClassifier(
+        model=wrapped_model,
+        loss=criterion,
+        input_shape=(3, 32, 32),
+        nb_classes=model.total_classes,
+        device_type='gpu' if torch.cuda.is_available() else 'cpu'
+    )
+    
+    attack = FastGradientMethod(estimator=classifier, eps=eps)
+    # attack = ProjectedGradientDescent(estimator=classifier, eps=0.1, eps_step=0.01, max_iter=40)
+    total = correct_clean = correct_adv = gating_correct_clean = gating_correct_adv = 0
+    
+    for data, target, meta_class in tqdm(test_loader, desc="Adversarial Testing"):
+        data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
+        data.requires_grad_(True)  # Enable gradients for input
+        
+        # Clean data predictions
+        output_clean, gates_clean = model(data)
+        pred_clean = output_clean.argmax(dim=1)
+        gates_pred_clean = gates_clean.argmax(dim=1)
+        
+        # Generate adversarial examples
+        x_test_np = data.detach().cpu().numpy()
+        x_test_adv = attack.generate(x=x_test_np, y=target.cpu().numpy())
+        x_test_adv_torch = torch.from_numpy(x_test_adv).to(device).requires_grad_(True)
+        
+        # Adversarial data predictions
+        output_adv, gates_adv = model(x_test_adv_torch)
+        pred_adv = output_adv.argmax(dim=1)
+        gates_pred_adv = gates_adv.argmax(dim=1)
+        
+        total += target.size(0)
+        correct_clean += pred_clean.eq(target).sum().item()
+        correct_adv += pred_adv.eq(target).sum().item()
+        gating_correct_clean += gates_pred_clean.eq(meta_class).sum().item()
+        gating_correct_adv += gates_pred_adv.eq(meta_class).sum().item()
+        
+        # Analyze expert robustness (example for first batch)
+        if total <= BATCH_SIZE:
+            for i, expert in enumerate(model.experts):
+                expert.eval()
+                expert_output_clean = expert(data)
+                if isinstance(expert_output_clean, tuple):
+                    expert_output_clean = expert_output_clean[0]
+                expert_output_adv = expert(x_test_adv_torch)
+                if isinstance(expert_output_adv, tuple):
+                    expert_output_adv = expert_output_adv[0]
+                expert_acc_clean = (expert_output_clean.argmax(dim=1) == target).float().mean().item()
+                expert_acc_adv = (expert_output_adv.argmax(dim=1) == target).float().mean().item()
+                print(f"Expert {i}: Clean Acc: {expert_acc_clean:.4f}, Adv Acc: {expert_acc_adv:.4f}")
+    
+    acc_clean = correct_clean / total
+    acc_adv = correct_adv / total
+    gating_acc_clean = gating_correct_clean / total
+    gating_acc_adv = gating_correct_adv / total
+    print(f"Clean Accuracy: {acc_clean:.4f}, Adversarial Accuracy: {acc_adv:.4f}")
+    print(f"Clean Gating Accuracy: {gating_acc_clean:.4f}, Adversarial Gating Accuracy: {gating_acc_adv:.4f}")
 
 def main():
     dataset_params = {
@@ -821,9 +894,10 @@ def main():
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
     
     if args.meta_moe:
-        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best_test.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-        visualize_robustness(model, test_loader, DEVICE)
+        # visualize_robustness(model, test_loader, DEVICE)
+        test_adversarial_robustness(model, test_loader, DEVICE)
     
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
