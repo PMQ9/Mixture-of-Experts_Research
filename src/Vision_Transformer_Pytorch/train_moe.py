@@ -406,6 +406,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
 
 def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     """Test the MetaMoE model's robustness against adversarial examples using ART."""
+    model.eval()  # Ensure the model is in evaluation mode
     wrapped_model = MetaMoEWrapper(model).to(device)
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
@@ -419,6 +420,9 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     attack = FastGradientMethod(estimator=classifier, eps=eps)
     # attack = ProjectedGradientDescent(estimator=classifier, eps=0.1, eps_step=0.01, max_iter=40)
     total = correct_clean = correct_adv = gating_correct_clean = gating_correct_adv = 0
+    expert_correct_clean = [0] * model.num_experts
+    expert_correct_adv = [0] * model.num_experts
+    expert_total = [0] * model.num_experts
     
     for data, target, meta_class in tqdm(test_loader, desc="Adversarial Testing"):
         data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
@@ -445,19 +449,27 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
         gating_correct_clean += gates_pred_clean.eq(meta_class).sum().item()
         gating_correct_adv += gates_pred_adv.eq(meta_class).sum().item()
         
-        # Analyze expert robustness (example for first batch)
-        if total <= BATCH_SIZE:
-            for i, expert in enumerate(model.experts):
-                expert.eval()
-                expert_output_clean = expert(data)
+        # Analyze expert robustness
+        for i in range(model.num_experts):
+            mask = (meta_class == i)
+            if mask.any():
+                expert_input_clean = data[mask]
+                expert_input_adv = x_test_adv_torch[mask]
+                expert_target = target[mask] - model.class_offsets[i]
+                
+                expert_output_clean = model.experts[i](expert_input_clean)
                 if isinstance(expert_output_clean, tuple):
                     expert_output_clean = expert_output_clean[0]
-                expert_output_adv = expert(x_test_adv_torch)
+                expert_pred_clean = expert_output_clean.argmax(dim=1)
+                expert_correct_clean[i] += (expert_pred_clean == expert_target).sum().item()
+                
+                expert_output_adv = model.experts[i](expert_input_adv)
                 if isinstance(expert_output_adv, tuple):
                     expert_output_adv = expert_output_adv[0]
-                expert_acc_clean = (expert_output_clean.argmax(dim=1) == target).float().mean().item()
-                expert_acc_adv = (expert_output_adv.argmax(dim=1) == target).float().mean().item()
-                print(f"Expert {i}: Clean Acc: {expert_acc_clean:.4f}, Adv Acc: {expert_acc_adv:.4f}")
+                expert_pred_adv = expert_output_adv.argmax(dim=1)
+                expert_correct_adv[i] += (expert_pred_adv == expert_target).sum().item()
+                
+                expert_total[i] += mask.sum().item()
     
     acc_clean = correct_clean / total
     acc_adv = correct_adv / total
@@ -465,6 +477,12 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     gating_acc_adv = gating_correct_adv / total
     print(f"Clean Accuracy: {acc_clean:.4f}, Adversarial Accuracy: {acc_adv:.4f}")
     print(f"Clean Gating Accuracy: {gating_acc_clean:.4f}, Adversarial Gating Accuracy: {gating_acc_adv:.4f}")
+    
+    for i in range(model.num_experts):
+        if expert_total[i] > 0:
+            expert_acc_clean = expert_correct_clean[i] / expert_total[i]
+            expert_acc_adv = expert_correct_adv[i] / expert_total[i]
+            print(f"Expert {i}: Clean Acc: {expert_acc_clean:.4f}, Adv Acc: {expert_acc_adv:.4f}")
 
 def main():
     dataset_params = {
@@ -718,9 +736,9 @@ def main():
             for model, expected_classes, name in [
                 (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                 (ptsd_model, dataset_params['PTSD']['num_classes'], "PTSD"),
-                # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD")
-                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD")
-                #(etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
+                # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD"),
+                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD"),
+                # (etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
             ]:
                 output = model(dummy_input)
                 if isinstance(output, tuple):
@@ -896,6 +914,7 @@ def main():
     if args.meta_moe:
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
+        model.eval()  # Ensure the model is in evaluation mode
         # visualize_robustness(model, test_loader, DEVICE)
         test_adversarial_robustness(model, test_loader, DEVICE)
     
