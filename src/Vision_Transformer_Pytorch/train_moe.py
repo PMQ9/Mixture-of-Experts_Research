@@ -6,10 +6,8 @@ import torch.nn as nn
 from tqdm import tqdm
 import time
 import os
-#import sys
 from datetime import datetime
 import numpy as np
-#import csv
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
@@ -18,6 +16,10 @@ from dataclasses import fields, asdict
 import torch.multiprocessing
 import logging
 import timm
+import matplotlib.pyplot as plt
+from scipy import stats
+from art.estimators.classification import PyTorchClassifier
+from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
@@ -57,7 +59,7 @@ parser.add_argument('--export_onnx', type=bool, default=True, help='Export train
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
 parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
-parser.add_argument('--num_meta_experts', type=int, default=4, help='Number of experts to in MetaMoE')
+parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
@@ -65,6 +67,9 @@ parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAIN
 # parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
+parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
+parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
+
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -83,14 +88,162 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
+def visualize_robustness(model, test_loader, device, num_perturbations=1000, perturbation_scale=0.01):
+    model.eval()
+    with torch.no_grad():
+        # Collect gating probability differences to find the smallest
+        min_diff = float('inf')
+        best_x = None
+        best_output = None
+        best_gates = None
+        best_target = None
+        best_meta_class = None
+        best_image_idx = 0
+        
+        for batch_idx, (data, target, meta_class) in enumerate(test_loader):
+            data = data.to(device)
+            for i in range(data.size(0)):
+                x = data[i].unsqueeze(0)
+                output, gates = model(x)
+                gates_np = gates.cpu().numpy().squeeze()
+                gates_sorted = np.sort(gates_np)[::-1]
+                diff = gates_sorted[0] - gates_sorted[1]
+                if diff < min_diff:
+                    min_diff = diff
+                    best_x = x
+                    best_output = output
+                    best_gates = gates_np
+                    best_target = target[i].item()
+                    best_meta_class = meta_class[i].item()
+                    best_image_idx = batch_idx * test_loader.batch_size + i
+        
+        if best_x is None:
+            raise ValueError("No suitable input found in the test dataset")
+        
+        # Log and save the chosen image
+        print(f"Chosen image index: {best_image_idx}, Target class: {best_target}, Meta class: {best_meta_class}, Min gating prob difference: {min_diff:.4f}")
+        to_pil = transforms.ToPILImage()
+        pil_image = to_pil(best_x.squeeze(0).cpu())
+        pil_image.save(os.path.join(OUTPUT_DIR, f"chosen_image_{best_image_idx}.png"))
+        
+        # Generate perturbations
+        perturbations = torch.randn(num_perturbations, *best_x.shape[1:], device=device) * perturbation_scale
+        perturbed_inputs = best_x + perturbations
+        
+        # Compute outputs for dense and sparse configurations
+        dense_outputs = []
+        sparse_outputs = []
+        gating_decisions = []
+        
+        num_experts = model.num_experts
+        for pert in perturbed_inputs:
+            # Dense: all experts
+            model.meta_top_k = num_experts
+            dense_output, _ = model(pert.unsqueeze(0))
+            dense_outputs.append(dense_output.cpu().numpy())
+            
+            # Sparse: top-1 expert
+            model.meta_top_k = 1
+            sparse_output, gates_sparse = model(pert.unsqueeze(0))
+            sparse_outputs.append(sparse_output.cpu().numpy())
+            gating_decisions.append(gates_sparse.cpu().numpy())
+        
+        dense_outputs = np.array(dense_outputs).squeeze()
+        sparse_outputs = np.array(sparse_outputs).squeeze()
+        gating_decisions = np.array(gating_decisions).squeeze()
+        
+        # Calculate perturbation magnitudes and output differences
+        perturbation_magnitudes = torch.norm(perturbations.view(num_perturbations, -1), dim=1).cpu().numpy()
+        dense_diff = np.linalg.norm(dense_outputs - best_output.cpu().numpy(), axis=1)
+        sparse_diff = np.linalg.norm(sparse_outputs - best_output.cpu().numpy(), axis=1)
+        
+        # Plot output differences
+        plt.figure(figsize=(12, 5))
+        
+        # Dense plot
+        plt.subplot(1, 2, 1)
+        plt.scatter(perturbation_magnitudes, dense_diff, alpha=0.5, s=10, label='Data Points')
+        slope, intercept, r_value, _, _ = stats.linregress(perturbation_magnitudes, dense_diff)
+        trend_line = intercept + slope * perturbation_magnitudes
+        plt.plot(perturbation_magnitudes, trend_line, color='red', linestyle='--', label=f'Trend (R² = {r_value**2:.2f})')
+        plt.title(f'Dense MetaMoE (top-k={num_experts}): Output Difference')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Output Difference')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        
+        # Sparse plot
+        plt.subplot(1, 2, 2)
+        selected_expert = np.argmax(gating_decisions, axis=1)
+        for expert in np.unique(selected_expert):
+            mask = selected_expert == expert
+            plt.scatter(perturbation_magnitudes[mask], sparse_diff[mask], alpha=0.5, s=10, label=f'Expert {expert}')
+        plt.title('Sparse MetaMoE (top-k=1): Output Difference')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Output Difference')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIR, 'robustness_visualization.png'))
+        plt.close()
+        
+        # Plot gating decisions for sparse case
+        plt.figure(figsize=(8, 5))
+        plt.scatter(perturbation_magnitudes, selected_expert, alpha=0.5, s=10, label='Data Points')
+        # expert_changes = np.where(np.diff(selected_expert) != 0)[0]
+        # for change_idx in expert_changes:
+        #     plt.axvline(x=perturbation_magnitudes[change_idx], color='green', linestyle='--', alpha=0.5, 
+        #                 label='Expert Switch' if change_idx == expert_changes[0] else "")
+        plt.title('Sparse MetaMoE (top-k=1): Selected Expert')
+        plt.xlabel('Perturbation Magnitude')
+        plt.ylabel('Selected Expert Index')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.savefig(os.path.join(OUTPUT_DIR, 'gating_decisions.png'))
+        plt.close()
+        
+        print("Robustness visualization completed. Plots saved in", OUTPUT_DIR)
+
 class ModelWrapper(nn.Module):
+    def __init__(self, model, num_classes):
+        super().__init__()
+        self.model = model
+        self.num_classes = num_classes
+
+    def forward(self, x):
+        output = self.model(x)
+        return output, [torch.tensor(0.0, device=x.device)]
+    
+# class MetaMoEWrapper(nn.Module):
+#     def __init__(self, model):
+#         super().__init__()
+#         self.model = model
+
+#     def forward(self, x):
+#         output, _ = self.model(x)
+#         return output
+
+class LogitsWrapper(nn.Module):
     def __init__(self, model):
         super().__init__()
         self.model = model
 
     def forward(self, x):
         output = self.model(x)
-        return output, [torch.tensor(0.0, device=x.device)]
+        if isinstance(output, tuple):
+            return output[0]
+        return output
+
+def get_num_classes(model):
+    if hasattr(model, 'total_classes'):  # For MetaMoE models
+        return model.total_classes
+    elif isinstance(model, VisionTransformer):  # For VisionTransformer models
+        return model.config.num_class
+    elif isinstance(model, ModelWrapper):  # For wrapped models like convnext_tiny
+        return model.num_classes
+    else:
+        raise ValueError("Cannot determine the number of classes from the model")
 
 def create_model(model_arch, config):
     if model_arch == 'vit_moe':
@@ -102,13 +255,13 @@ def create_model(model_arch, config):
     elif model_arch == 'resnet101':
         model = models.resnet101(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, config.num_class)
-        return ModelWrapper(model)
+        return ModelWrapper(model, config.num_class)
     elif model_arch == 'convnext_tiny':
         model = timm.create_model('convnext_tiny', pretrained=True, num_classes=config.num_class)
-        return ModelWrapper(model)
+        return ModelWrapper(model, config.num_class)
     elif model_arch == 'efficientnet_b0':
         model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=config.num_class)
-        return ModelWrapper(model)
+        return ModelWrapper(model, config.num_class)
     else:
         raise ValueError(f"Unknown model architecture: {model_arch}")
 
@@ -275,6 +428,107 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
         return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
+
+def test_adversarial_robustness(model, test_loader, device, eps=0.01):
+    """
+    Test the model's robustness against adversarial examples using ART.
+    Works for both MetaMoE models and individual expert models.
+    Args:
+        model: The PyTorch model (MetaMoE or individual expert)
+    """
+    model.eval()
+    wrapped_model = LogitsWrapper(model).to(device)
+    nb_classes = get_num_classes(model)
+    criterion = nn.CrossEntropyLoss()
+    classifier = PyTorchClassifier(
+        model=wrapped_model,
+        loss=criterion,
+        input_shape=(3, 32, 32),
+        nb_classes=nb_classes,
+        device_type='gpu' if torch.cuda.is_available() else 'cpu'
+    )
+    
+    attack = FastGradientMethod(estimator=classifier, eps=eps)
+    # attack = ProjectedGradientDescent(estimator=classifier, eps=0.1, eps_step=0.01, max_iter=40)
+    total = correct_clean = correct_adv = 0
+    is_meta_moe = hasattr(model, 'meta_gating_net') and hasattr(model, 'experts')
+    if is_meta_moe:
+        gating_correct_clean = gating_correct_adv = 0
+        expert_correct_clean = [0] * model.num_experts
+        expert_correct_adv = [0] * model.num_experts
+        expert_total = [0] * model.num_experts
+    
+    for data, target, meta_class in tqdm(test_loader, desc="Adversarial Testing"):
+        data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
+        data.requires_grad_(True)  # Enable gradients for input
+        
+        # Clean data predictions
+        with torch.no_grad():
+            output_clean = wrapped_model(data)
+            pred_clean = output_clean.argmax(dim=1)
+            if is_meta_moe:
+                gates_clean = model.meta_gating_net(data)
+                gates_pred_clean = gates_clean.argmax(dim=1)
+        
+        # Generate adversarial examples
+        x_test_np = data.detach().cpu().numpy()
+        x_test_adv = attack.generate(x=x_test_np, y=target.cpu().numpy())
+        x_test_adv_torch = torch.from_numpy(x_test_adv).to(device).requires_grad_(True)
+        
+        # Adversarial data predictions
+        with torch.no_grad():
+            output_adv = wrapped_model(x_test_adv_torch)
+            pred_adv = output_adv.argmax(dim=1)
+            if is_meta_moe:
+                gates_adv = model.meta_gating_net(x_test_adv_torch)
+                gates_pred_adv = gates_adv.argmax(dim=1)
+        
+        total += target.size(0)
+        correct_clean += pred_clean.eq(target).sum().item()
+        correct_adv += pred_adv.eq(target).sum().item()
+        
+        if is_meta_moe:
+            gating_correct_clean += gates_pred_clean.eq(meta_class).sum().item()
+            gating_correct_adv += gates_pred_adv.eq(meta_class).sum().item()
+            
+            for i in range(model.num_experts):
+                mask = (meta_class == i)
+                if mask.any():
+                    expert_input_clean = data[mask]
+                    expert_input_adv = x_test_adv_torch[mask]
+                    expert_target = target[mask] - model.class_offsets[i]
+                    
+                    expert_model = model.experts[i]
+                    expert_output_clean = expert_model(expert_input_clean)
+                    if isinstance(expert_output_clean, tuple):
+                        expert_output_clean = expert_output_clean[0]
+                    expert_pred_clean = expert_output_clean.argmax(dim=1)
+                    expert_correct_clean[i] += (expert_pred_clean == expert_target).sum().item()
+                    
+                    expert_output_adv = expert_model(expert_input_adv)
+                    if isinstance(expert_output_adv, tuple):
+                        expert_output_adv = expert_output_adv[0]
+                    expert_pred_adv = expert_output_adv.argmax(dim=1)
+                    expert_correct_adv[i] += (expert_pred_adv == expert_target).sum().item()
+                    
+                    expert_total[i] += mask.sum().item()
+    
+    # Calculate and print overall accuracies
+    acc_clean = correct_clean / total
+    acc_adv = correct_adv / total
+    print(f"Clean Accuracy: {acc_clean:.4f}, Adversarial Accuracy: {acc_adv:.4f}")
+    
+    # MetaMoE-specific metrics
+    if is_meta_moe:
+        gating_acc_clean = gating_correct_clean / total
+        gating_acc_adv = gating_correct_adv / total
+        print(f"Clean Gating Accuracy: {gating_acc_clean:.4f}, Adversarial Gating Accuracy: {gating_acc_adv:.4f}")
+        
+        for i in range(model.num_experts):
+            if expert_total[i] > 0:
+                expert_acc_clean = expert_correct_clean[i] / expert_total[i]
+                expert_acc_adv = expert_correct_adv[i] / expert_total[i]
+                print(f"Expert {i}: Clean Acc: {expert_acc_clean:.4f}, Adv Acc: {expert_acc_adv:.4f}")
 
 def main():
     dataset_params = {
@@ -445,7 +699,8 @@ def main():
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
     if args.meta_moe:
         print(f"Meta_MoE architecture: activate {args.meta_top_k} of {args.num_meta_experts} experts")
-    print(f"Using config: {asdict(config)}")
+    else:
+        print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging(OUTPUT_DIR)
 
@@ -527,9 +782,9 @@ def main():
             for model, expected_classes, name in [
                 (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                 (ptsd_model, dataset_params['PTSD']['num_classes'], "PTSD"),
-                # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD")
-                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD")
-                #(etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
+                # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD"),
+                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD"),
+                # (etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
             ]:
                 output = model(dummy_input)
                 if isinstance(output, tuple):
@@ -700,7 +955,28 @@ def main():
     if args.export_onnx:
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch = args.model_arch)
+        export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
+    
+    # if args.meta_moe:
+    #     best_model_path = os.path.join(PRETRAINED_MODEL_DIR, f"meta_moe_{args.model_arch}_best_test_2of2.pth")
+    #     model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
+    #     model.eval()  # Ensure the model is in evaluation mode
+    #     if args.visualize_robustness:
+    #         visualize_robustness(model, test_loader, DEVICE)
+    
+    if args.art_attack:
+        if args.meta_moe:
+            best_model_path = os.path.join(PRETRAINED_MODEL_DIR, f"meta_moe_{args.model_arch}_best_test_1of2.pth")
+        else:
+            best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best.pth")
+        model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
+        model.eval()  # Ensure the model is in evaluation mode
+        test_adversarial_robustness(model, test_loader, DEVICE)
+    
+    if args.meta_moe and args.visualize_robustness:
+        # Assuming the model is still in scope and loaded above
+        visualize_robustness(model, test_loader, DEVICE)
+        
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
 
