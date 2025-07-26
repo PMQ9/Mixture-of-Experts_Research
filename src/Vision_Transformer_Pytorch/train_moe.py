@@ -67,6 +67,9 @@ parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAIN
 # parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
+parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
+parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
+
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -404,7 +407,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
         return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
 
-def test_adversarial_robustness(model, test_loader, device, eps=0.1):
+def test_adversarial_robustness(model, test_loader, device, eps=0.01):
     """Test the MetaMoE model's robustness against adversarial examples using ART."""
     model.eval()  # Ensure the model is in evaluation mode
     wrapped_model = MetaMoEWrapper(model).to(device)
@@ -915,8 +918,10 @@ def main():
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         model.eval()  # Ensure the model is in evaluation mode
-        # visualize_robustness(model, test_loader, DEVICE)
-        test_adversarial_robustness(model, test_loader, DEVICE)
+        if args.visualize_robustness:
+            visualize_robustness(model, test_loader, DEVICE)
+        if args.art_attack:
+            test_adversarial_robustness(model, test_loader, DEVICE)
     
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
