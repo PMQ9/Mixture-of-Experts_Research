@@ -68,6 +68,7 @@ parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAIN
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
+parser.add_argument('--art_attack_mode', type=str, default='FGM', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
 
 
@@ -91,7 +92,6 @@ GATING_LOSS_WEIGHT = args.gating_loss_weight
 def visualize_robustness(model, test_loader, device, num_perturbations=1000, perturbation_scale=0.01):
     model.eval()
     with torch.no_grad():
-        # Collect gating probability differences to find the smallest
         min_diff = float('inf')
         best_x = None
         best_output = None
@@ -99,7 +99,6 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         best_target = None
         best_meta_class = None
         best_image_idx = 0
-        
         for batch_idx, (data, target, meta_class) in enumerate(test_loader):
             data = data.to(device)
             for i in range(data.size(0)):
@@ -119,30 +118,25 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         
         if best_x is None:
             raise ValueError("No suitable input found in the test dataset")
-        
-        # Log and save the chosen image
+
         print(f"Chosen image index: {best_image_idx}, Target class: {best_target}, Meta class: {best_meta_class}, Min gating prob difference: {min_diff:.4f}")
         to_pil = transforms.ToPILImage()
         pil_image = to_pil(best_x.squeeze(0).cpu())
         pil_image.save(os.path.join(OUTPUT_DIR, f"chosen_image_{best_image_idx}.png"))
         
-        # Generate perturbations
         perturbations = torch.randn(num_perturbations, *best_x.shape[1:], device=device) * perturbation_scale
         perturbed_inputs = best_x + perturbations
         
-        # Compute outputs for dense and sparse configurations
         dense_outputs = []
         sparse_outputs = []
         gating_decisions = []
         
         num_experts = model.num_experts
         for pert in perturbed_inputs:
-            # Dense: all experts
             model.meta_top_k = num_experts
             dense_output, _ = model(pert.unsqueeze(0))
             dense_outputs.append(dense_output.cpu().numpy())
             
-            # Sparse: top-1 expert
             model.meta_top_k = 1
             sparse_output, gates_sparse = model(pert.unsqueeze(0))
             sparse_outputs.append(sparse_output.cpu().numpy())
@@ -152,15 +146,11 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         sparse_outputs = np.array(sparse_outputs).squeeze()
         gating_decisions = np.array(gating_decisions).squeeze()
         
-        # Calculate perturbation magnitudes and output differences
         perturbation_magnitudes = torch.norm(perturbations.view(num_perturbations, -1), dim=1).cpu().numpy()
         dense_diff = np.linalg.norm(dense_outputs - best_output.cpu().numpy(), axis=1)
         sparse_diff = np.linalg.norm(sparse_outputs - best_output.cpu().numpy(), axis=1)
         
-        # Plot output differences
         plt.figure(figsize=(12, 5))
-        
-        # Dense plot
         plt.subplot(1, 2, 1)
         plt.scatter(perturbation_magnitudes, dense_diff, alpha=0.5, s=10, label='Data Points')
         slope, intercept, r_value, _, _ = stats.linregress(perturbation_magnitudes, dense_diff)
@@ -171,8 +161,6 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         plt.ylabel('Output Difference')
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.7)
-        
-        # Sparse plot
         plt.subplot(1, 2, 2)
         selected_expert = np.argmax(gating_decisions, axis=1)
         for expert in np.unique(selected_expert):
@@ -187,14 +175,8 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         plt.tight_layout()
         plt.savefig(os.path.join(OUTPUT_DIR, 'robustness_visualization.png'))
         plt.close()
-        
-        # Plot gating decisions for sparse case
         plt.figure(figsize=(8, 5))
         plt.scatter(perturbation_magnitudes, selected_expert, alpha=0.5, s=10, label='Data Points')
-        # expert_changes = np.where(np.diff(selected_expert) != 0)[0]
-        # for change_idx in expert_changes:
-        #     plt.axvline(x=perturbation_magnitudes[change_idx], color='green', linestyle='--', alpha=0.5, 
-        #                 label='Expert Switch' if change_idx == expert_changes[0] else "")
         plt.title('Sparse MetaMoE (top-k=1): Selected Expert')
         plt.xlabel('Perturbation Magnitude')
         plt.ylabel('Selected Expert Index')
@@ -202,7 +184,6 @@ def visualize_robustness(model, test_loader, device, num_perturbations=1000, per
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.savefig(os.path.join(OUTPUT_DIR, 'gating_decisions.png'))
         plt.close()
-        
         print("Robustness visualization completed. Plots saved in", OUTPUT_DIR)
 
 class ModelWrapper(nn.Module):
@@ -429,13 +410,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
         return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, ptsd_accuracy, avg_inference_time
 
-def test_adversarial_robustness(model, test_loader, device, eps=0.01):
-    """
-    Test the model's robustness against adversarial examples using ART.
-    Works for both MetaMoE models and individual expert models.
-    Args:
-        model: The PyTorch model (MetaMoE or individual expert)
-    """
+def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     model.eval()
     wrapped_model = LogitsWrapper(model).to(device)
     nb_classes = get_num_classes(model)
@@ -448,8 +423,12 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.01):
         device_type='gpu' if torch.cuda.is_available() else 'cpu'
     )
     
-    attack = FastGradientMethod(estimator=classifier, eps=eps)
-    # attack = ProjectedGradientDescent(estimator=classifier, eps=0.1, eps_step=0.01, max_iter=40)
+    if args.art_attack_mode == 'FGM':
+        attack = FastGradientMethod(estimator=classifier, eps=eps)
+    elif args.art_attack_mode == 'PGD':
+        attack = ProjectedGradientDescent(estimator=classifier, eps=0.1, eps_step=0.01, max_iter=40)
+    else:
+        print("Attack mode unknown")
     total = correct_clean = correct_adv = 0
     is_meta_moe = hasattr(model, 'meta_gating_net') and hasattr(model, 'experts')
     if is_meta_moe:
@@ -966,7 +945,7 @@ def main():
     
     if args.art_attack:
         if args.meta_moe:
-            best_model_path = os.path.join(PRETRAINED_MODEL_DIR, f"meta_moe_{args.model_arch}_best_test_1of2.pth")
+            best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
         else:
             best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
