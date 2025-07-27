@@ -1,13 +1,13 @@
+import os
+import time
+import numpy as np
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms, models
-import torch.nn as nn
 from tqdm import tqdm
-import time
-import os
 from datetime import datetime
-import numpy as np
 from PIL import Image
 from torch.cuda.amp import autocast, GradScaler
 from torchvision.transforms import RandAugment
@@ -16,8 +16,6 @@ from dataclasses import fields, asdict
 import torch.multiprocessing
 import logging
 import timm
-import matplotlib.pyplot as plt
-from scipy import stats
 from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
@@ -25,6 +23,7 @@ from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, L
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
+from visualize_robustness import visualize_robustness
 from config import (
     DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, TSRD_NORM, BTSD_NORM, ETSD_NORM, UNIFIED_NORM
 )
@@ -71,7 +70,6 @@ parser.add_argument('--art_attack', action='store_true', help='Initiate Adversar
 parser.add_argument('--art_attack_mode', type=str, default='FGM', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
 
-
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
 parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
@@ -89,103 +87,6 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
-def visualize_robustness(model, test_loader, device, num_perturbations=1000, perturbation_scale=0.01):
-    model.eval()
-    with torch.no_grad():
-        min_diff = float('inf')
-        best_x = None
-        best_output = None
-        best_gates = None
-        best_target = None
-        best_meta_class = None
-        best_image_idx = 0
-        for batch_idx, (data, target, meta_class) in enumerate(test_loader):
-            data = data.to(device)
-            for i in range(data.size(0)):
-                x = data[i].unsqueeze(0)
-                output, gates = model(x)
-                gates_np = gates.cpu().numpy().squeeze()
-                gates_sorted = np.sort(gates_np)[::-1]
-                diff = gates_sorted[0] - gates_sorted[1]
-                if diff < min_diff:
-                    min_diff = diff
-                    best_x = x
-                    best_output = output
-                    best_gates = gates_np
-                    best_target = target[i].item()
-                    best_meta_class = meta_class[i].item()
-                    best_image_idx = batch_idx * test_loader.batch_size + i
-        
-        if best_x is None:
-            raise ValueError("No suitable input found in the test dataset")
-
-        print(f"Chosen image index: {best_image_idx}, Target class: {best_target}, Meta class: {best_meta_class}, Min gating prob difference: {min_diff:.4f}")
-        to_pil = transforms.ToPILImage()
-        pil_image = to_pil(best_x.squeeze(0).cpu())
-        pil_image.save(os.path.join(OUTPUT_DIR, f"chosen_image_{best_image_idx}.png"))
-        
-        perturbations = torch.randn(num_perturbations, *best_x.shape[1:], device=device) * perturbation_scale
-        perturbed_inputs = best_x + perturbations
-        
-        dense_outputs = []
-        sparse_outputs = []
-        gating_decisions = []
-        
-        num_experts = model.num_experts
-        for pert in perturbed_inputs:
-            model.meta_top_k = num_experts
-            dense_output, _ = model(pert.unsqueeze(0))
-            dense_outputs.append(dense_output.cpu().numpy())
-            
-            model.meta_top_k = 1
-            sparse_output, gates_sparse = model(pert.unsqueeze(0))
-            sparse_outputs.append(sparse_output.cpu().numpy())
-            gating_decisions.append(gates_sparse.cpu().numpy())
-        
-        dense_outputs = np.array(dense_outputs).squeeze()
-        sparse_outputs = np.array(sparse_outputs).squeeze()
-        gating_decisions = np.array(gating_decisions).squeeze()
-        
-        perturbation_magnitudes = torch.norm(perturbations.view(num_perturbations, -1), dim=1).cpu().numpy()
-        dense_diff = np.linalg.norm(dense_outputs - best_output.cpu().numpy(), axis=1)
-        sparse_diff = np.linalg.norm(sparse_outputs - best_output.cpu().numpy(), axis=1)
-        
-        plt.figure(figsize=(12, 5))
-        plt.subplot(1, 2, 1)
-        plt.scatter(perturbation_magnitudes, dense_diff, alpha=0.5, s=10, label='Data Points')
-        slope, intercept, r_value, _, _ = stats.linregress(perturbation_magnitudes, dense_diff)
-        trend_line = intercept + slope * perturbation_magnitudes
-        plt.plot(perturbation_magnitudes, trend_line, color='red', linestyle='--', label=f'Trend (R² = {r_value**2:.2f})')
-        plt.title(f'Dense MetaMoE (top-k={num_experts}): Output Difference')
-        plt.xlabel('Perturbation Magnitude')
-        plt.ylabel('Output Difference')
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.subplot(1, 2, 2)
-        selected_expert = np.argmax(gating_decisions, axis=1)
-        for expert in np.unique(selected_expert):
-            mask = selected_expert == expert
-            plt.scatter(perturbation_magnitudes[mask], sparse_diff[mask], alpha=0.5, s=10, label=f'Expert {expert}')
-        plt.title('Sparse MetaMoE (top-k=1): Output Difference')
-        plt.xlabel('Perturbation Magnitude')
-        plt.ylabel('Output Difference')
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(OUTPUT_DIR, 'robustness_visualization.png'))
-        plt.close()
-        plt.figure(figsize=(8, 5))
-        plt.scatter(perturbation_magnitudes, selected_expert, alpha=0.5, s=10, label='Data Points')
-        plt.title('Sparse MetaMoE (top-k=1): Selected Expert')
-        plt.xlabel('Perturbation Magnitude')
-        plt.ylabel('Selected Expert Index')
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.savefig(os.path.join(OUTPUT_DIR, 'gating_decisions.png'))
-        plt.close()
-        print("Robustness visualization completed. Plots saved in", OUTPUT_DIR)
-
 class ModelWrapper(nn.Module):
     def __init__(self, model, num_classes):
         super().__init__()
@@ -195,15 +96,6 @@ class ModelWrapper(nn.Module):
     def forward(self, x):
         output = self.model(x)
         return output, [torch.tensor(0.0, device=x.device)]
-    
-# class MetaMoEWrapper(nn.Module):
-#     def __init__(self, model):
-#         super().__init__()
-#         self.model = model
-
-#     def forward(self, x):
-#         output, _ = self.model(x)
-#         return output
 
 class LogitsWrapper(nn.Module):
     def __init__(self, model):
@@ -217,11 +109,11 @@ class LogitsWrapper(nn.Module):
         return output
 
 def get_num_classes(model):
-    if hasattr(model, 'total_classes'):  # For MetaMoE models
+    if hasattr(model, 'total_classes'):
         return model.total_classes
-    elif isinstance(model, VisionTransformer):  # For VisionTransformer models
+    elif isinstance(model, VisionTransformer):
         return model.config.num_class
-    elif isinstance(model, ModelWrapper):  # For wrapped models like convnext_tiny
+    elif isinstance(model, ModelWrapper):
         return model.num_classes
     else:
         raise ValueError("Cannot determine the number of classes from the model")
@@ -935,14 +827,7 @@ def main():
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
-    
-    # if args.meta_moe:
-    #     best_model_path = os.path.join(PRETRAINED_MODEL_DIR, f"meta_moe_{args.model_arch}_best_test_2of2.pth")
-    #     model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-    #     model.eval()  # Ensure the model is in evaluation mode
-    #     if args.visualize_robustness:
-    #         visualize_robustness(model, test_loader, DEVICE)
-    
+
     if args.art_attack:
         if args.meta_moe:
             best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
@@ -954,7 +839,7 @@ def main():
     
     if args.meta_moe and args.visualize_robustness:
         # Assuming the model is still in scope and loaded above
-        visualize_robustness(model, test_loader, DEVICE)
+        visualize_robustness(model, test_loader, DEVICE, OUTPUT_DIR)
         
     if args.archive_params:
         archive_params(args, config, OUTPUT_DIR)
