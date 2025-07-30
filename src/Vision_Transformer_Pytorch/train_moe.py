@@ -67,8 +67,9 @@ parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAIN
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
-parser.add_argument('--art_attack_mode', type=str, default='FGM', choices=['FGM', 'PGD'], help='Attack mode in ART')
+parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
+parser.add_argument('--adversarial_training', action='store_true', help='Enable adversarial training for individual experts')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -138,6 +139,28 @@ def create_model(model_arch, config):
     else:
         raise ValueError(f"Unknown model architecture: {model_arch}")
 
+def pgd_attack(model, data, target, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
+    model.eval()
+    data_adv = data.clone().detach().to(device)
+    original_data = data.clone().detach().to(device)
+    for _ in range(num_iter):
+        data_adv.requires_grad_(True)
+        with torch.enable_grad():
+            output = model(data_adv)
+            if isinstance(output, tuple):
+                output = output[0]
+            loss = nn.CrossEntropyLoss()(output, target)
+            loss.backward()
+            grad = data_adv.grad.detach()
+        with torch.no_grad():
+            data_adv = data_adv + alpha * grad.sign()
+            perturbation = data_adv - original_data
+            perturbation = torch.clamp(perturbation, min=-epsilon, max=epsilon)
+            data_adv = original_data + perturbation
+        data_adv = data_adv.detach()
+    model.train()
+    return data_adv
+
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = 0
@@ -170,16 +193,25 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                 total_images += data.size(0)
             else:
                 if apply_cutmix:
-                    data, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
-                    output, balance_losses = model(data)
+                    data_cutmix, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
+                    output, balance_losses = model(data_cutmix)
                     loss_a = criterion(output, target_a)
                     loss_b = criterion(output, target_b)
-                    cls_loss = lam * loss_a + (1 - lam) * loss_b
+                    loss_clean = lam * loss_a + (1 - lam) * loss_b
                 else:
                     output, balance_losses = model(data)
-                    cls_loss = criterion(output, target)
-            
-                balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
+                    loss_clean = criterion(output, target)
+                
+                if not args.meta_moe and args.adversarial_training:
+                    data_adv = pgd_attack(model, data, target)
+                    output_adv, balance_losses_adv = model(data_adv)
+                    loss_adv = criterion(output_adv, target)
+                    cls_loss = (loss_clean + loss_adv) / 2
+                    balance_loss = (sum(balance_losses) + sum(balance_losses_adv)) / (2 * len(balance_losses)) if balance_losses else 0
+                else:
+                    cls_loss = loss_clean
+                    balance_loss = sum(balance_losses) / len(balance_losses) if balance_losses else 0
+                
                 total_loss_combined = cls_loss + balance_loss_weight * balance_loss
         
         scaler.scale(total_loss_combined).backward()
@@ -797,10 +829,11 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
+            suffix = "_robust" if args.adversarial_training else "_og"
+            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
-                state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict.pth")
+                state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict{suffix}.pth")
                 torch.save(model.state_dict(), state_dict_path)         
             print(f"New best accuracy: {best_acc:.4f}")
         print()
@@ -824,7 +857,7 @@ def main():
         print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
     if args.export_onnx:
-        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
 
@@ -832,7 +865,7 @@ def main():
         if args.meta_moe:
             best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
         else:
-            best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best.pth")
+            best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         model.eval()  # Ensure the model is in evaluation mode
         test_adversarial_robustness(model, test_loader, DEVICE)
