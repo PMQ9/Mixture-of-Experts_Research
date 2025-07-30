@@ -138,14 +138,6 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         # axes[2, 4].legend()
         # axes[2, 4].grid(True)
 
-        axes[2, 2].plot(test_epochs[:len(test_one_accs)], test_one_accs, label='One Model Test Accuracy')
-        axes[2, 2].set_xlabel('Epoch')
-        axes[2, 2].set_ylabel('Accuracy')
-        axes[2, 2].set_title(f'One Model Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
-        axes[2, 2].legend()
-        axes[2, 2].grid(True)
-
-
         # Gating Loss
         axes[3, 0].plot(train_epochs[:len(train_gating_losses)], train_gating_losses, label='Train Gating Loss')
         axes[3, 0].set_xlabel('Epoch')
