@@ -60,7 +60,7 @@ parser.add_argument('--save_state_dict', action='store_true', help='Additionally
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0'], help='Model architecture to use')
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "ptsd_convnext_tiny_best.pth"), help='Path to pre-trained PTSD model')
 # parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
@@ -125,7 +125,7 @@ def create_model(model_arch, config):
     elif model_arch == 'resnet50':
         model = models.resnet50(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, config.num_class)
-        return ModelWrapper(model)
+        return ModelWrapper(model, config.num_class)
     elif model_arch == 'resnet101':
         model = models.resnet101(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, config.num_class)
@@ -135,6 +135,9 @@ def create_model(model_arch, config):
         return ModelWrapper(model, config.num_class)
     elif model_arch == 'efficientnet_b0':
         model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'vit_base':
+        model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=config.num_class, img_size=config.img_size)
         return ModelWrapper(model, config.num_class)
     else:
         raise ValueError(f"Unknown model architecture: {model_arch}")
