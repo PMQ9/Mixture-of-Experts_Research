@@ -25,7 +25,7 @@ from log_functions import setup_logging, archive_params, plot_metrics, export_to
 from augmentation_functions import cutmix
 from visualize_robustness import visualize_robustness
 from config import (
-    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, TSRD_NORM, BTSD_NORM, ETSD_NORM, CIFAR10_NORM, UNIFIED_NORM
+    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, TSRD_NORM, BTSD_NORM, ETSD_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
 )
 from config import apply_config_overrides
 
@@ -43,7 +43,7 @@ if os.name != 'nt':
     torch.multiprocessing.set_sharing_strategy('file_system')
 
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
-parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10'], help='Dataset to train')
+parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10', 'MNIST'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_PARAMS['batch_size'], help='Batch size for training')
 parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_PARAMS['epoch'])), help='Number of epochs to train')
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_PARAMS['learning_rate'], help='Learning rate for optimizer')
@@ -63,6 +63,7 @@ parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top exp
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
+parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
 # parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
@@ -254,7 +255,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
 def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     model.eval()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = total_images = 0
-    gtsrb_correct = cifar10_correct = gtsrb_total = cifar10_total = 0
+    gtsrb_correct = cifar10_correct = gtsrb_total = cifar10_total = mnist_correct = mnist_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
@@ -296,6 +297,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 gating_correct += gating_pred.eq(meta_class).sum().item()
                 gtsrb_mask = meta_class == 0
                 cifar10_mask = meta_class == 1
+                mnist_mask = meta_class == 2
                 # tsrd_mask = meta_class == 2
                 # btsd_mask = meta_class == 3
                 # etsd_mask = meta_class == 4
@@ -305,6 +307,9 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 if cifar10_mask.any():
                     cifar10_correct += predicted[cifar10_mask].eq(target[cifar10_mask]).sum().item()
                     cifar10_total += cifar10_mask.sum().item()
+                if mnist_mask.any():
+                    mnist_correct += predicted[mnist_mask].eq(target[mnist_mask]).sum().item()
+                    mnist_total += mnist_mask.sum().item()
                 # if tsrd_mask.any():
                 #     tsrd_correct += predicted[tsrd_mask].eq(target[tsrd_mask]).sum().item()
                 #     tsrd_total += tsrd_mask.sum().item()
@@ -322,6 +327,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gating_accuracy = gating_correct / total if args.meta_moe else 0
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     cifar10_accuracy = cifar10_correct / cifar10_total if cifar10_total > 0 and args.meta_moe else 0
+    mnist_accuracy = mnist_correct / mnist_total if mnist_total > 0 and args.meta_moe else 0
     # tsrd_accuracy = tsrd_correct / tsrd_total if tsrd_total > 0 and args.meta_moe else 0
     # btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
     # etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
@@ -331,11 +337,11 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         avg_post_time = total_post_time / total_images if total_images > 0 else 0
         avg_total_time = total_total_time / total_images if total_images > 0 else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_total_inference_time={avg_total_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, mnist_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
     else:
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, avg_inference_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, mnist_accuracy, avg_inference_time
 
 def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     model.eval()
@@ -483,6 +489,15 @@ def main():
         #     'normalization_std': (ETSD_NORM['std']),
         #     'default_meta_class': 4
         # }
+        'MNIST': {
+            'num_classes': 10,
+            'train_dir': './data/MNIST/Training',
+            'test_dir': './data/MNIST/Test',
+            'csv_file': './data/MNIST/Test/testset_with_meta_class.csv',
+            'normalization_mean': (MNIST_NORM['mean']),
+            'normalization_std': (MNIST_NORM['std']),
+            'default_meta_class': 2
+        }
     }
 
     if args.meta_moe:
@@ -659,6 +674,14 @@ def main():
         cifar10_model = cifar10_model.to(DEVICE)
         print(f"Loaded {args.cifar10_model_path} as full model. Type: {type(cifar10_model)}")
 
+        mnist_model = torch.load(args.mnist_model_path, map_location=DEVICE, weights_only=False)
+        if not isinstance(mnist_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            raise RuntimeError(f"{args.mnist_model_path} is not a supported model type")
+        if isinstance(mnist_model, ModelWrapper):
+            mnist_model = mnist_model.model
+        mnist_model = mnist_model.to(DEVICE)
+        print(f"Loaded {args.mnist_model_path} as full model. Type: {type(mnist_model)}")
+
         # tsrd_model = torch.load(args.tsrd_model_path, map_location=DEVICE, weights_only=False)
         # if not isinstance(tsrd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
         #     raise RuntimeError(f"{args.tsrd_model_path} is not a supported model type")
@@ -688,6 +711,7 @@ def main():
             for model, expected_classes, name in [
                 (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                 (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
+                (mnist_model, dataset_params['CIFAR10']['num_classes'], "MNIST"),
                 # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD"),
                 # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD"),
                 # (etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
@@ -701,12 +725,15 @@ def main():
 
         gtsrb_model.eval()
         cifar10_model.eval()
+        mnist_model.eval()
         # tsrd_model.eval()
         # btsd_model.eval()
         # etsd_model.eval()
         for param in gtsrb_model.parameters():
             param.requires_grad = False
         for param in cifar10_model.parameters():
+            param.requires_grad = False
+        for param in mnist_model.parameters():
             param.requires_grad = False
         # for param in tsrd_model.parameters():
         #     param.requires_grad = False
@@ -757,6 +784,7 @@ def main():
     test_gating_accs = []
     test_gtsrb_accs = []
     test_cifar10_accs = []
+    test_mnist_accs = []
     # test_tsrd_accs = []
     # test_btsd_accs = []
     # test_etsd_accs = []
@@ -775,17 +803,17 @@ def main():
         else:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_inference_time = None, None, None, None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, test_inference_time = None, None, None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             if args.meta_moe:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE)
             else:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
-            if args.meta_moe:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+            if args.meta_moe or args.meta_moe_fine_tune:
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
             else:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_inference_time = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, test_inference_time = test_results
             test_inference_times.append(test_inference_time)
     
         scheduler.step()
@@ -806,6 +834,7 @@ def main():
             test_gating_accs.append(test_gating_acc)
             test_gtsrb_accs.append(test_gtsrb_acc)
             test_cifar10_accs.append(test_cifar10_acc)
+            test_mnist_accs.append(test_mnist_acc)
             # test_tsrd_accs.append(test_tsrd_acc)
             # test_btsd_accs.append(test_btsd_acc)
             # test_etsd_accs.append(test_etsd_acc)
@@ -820,8 +849,8 @@ def main():
             print(f"Train Avg Total Inference Time per image: {avg_total_time:.6f} seconds")
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
-            if args.meta_moe:
-                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test CIFAR10 Acc: {test_cifar10_acc:.4f}")
+            if args.meta_moe or args.meta_moe_fine_tune:
+                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test CIFAR10 Acc: {test_cifar10_acc:.4f}, Test MNIST Acc: {test_mnist_acc:.4f}")
                 print(f"Test Avg Router Time per image: {avg_router_time_test:.6f} seconds")
                 print(f"Test Avg Experts Time per image: {avg_experts_time_test:.6f} seconds")
                 print(f"Test Avg Post-Experts Time per image: {avg_post_time_test:.6f} seconds")
