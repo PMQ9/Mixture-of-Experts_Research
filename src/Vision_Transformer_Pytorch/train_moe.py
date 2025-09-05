@@ -16,6 +16,7 @@ from dataclasses import fields, asdict
 import torch.multiprocessing
 import logging
 import timm
+import math
 from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
@@ -54,18 +55,24 @@ parser.add_argument('--test_frequency', type=int, default=DEFAULT_PARAMS['test_f
 parser.add_argument('--warmup_epochs', type=int, default=DEFAULT_PARAMS['warmup_epoch'], help='Number of warmup epochs')
 parser.add_argument('--label_smoothing', type=float, default=DEFAULT_PARAMS['label_smoothing'], help='Label smoothing factor')
 parser.add_argument('--archive_params', type=bool, default=True, help='Save full training params')
-parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
-parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
-parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
 parser.add_argument('--gating_loss_weight', type=float, default=1.0, help='Weight for MetaGatingNet supervision loss')
+# training
+parser.add_argument('--export_onnx', type=bool, default=True, help='Export trained model to ONNX')
+parser.add_argument('--save_state_dict', action='store_true', help='Additionally save state_dict for non-MetaMoE models')
+# meta_moe
+parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
+parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
+# loading
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
+parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
 # parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
 # parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
 # parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
+# robustness
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
@@ -456,6 +463,15 @@ def main():
             'normalization_std': (CIFAR10_NORM['std']),
             'default_meta_class': 1
         },
+        'MNIST': {  # Added MNIST params
+            'num_classes': 10,
+            'train_dir': './data/MNIST/Training',
+            'test_dir': './data/MNIST/Test',
+            'csv_file': './data/MNIST/Test/testset_with_meta_class.csv',
+            'normalization_mean': (CIFAR10_NORM['mean']),  # Placeholder; update with MNIST-specific norms later
+            'normalization_std': (CIFAR10_NORM['std']),
+            'default_meta_class': 2
+        },
         # 'TSRD': {
         #     'num_classes': 58,
         #     'train_dir': './data/TSRD/Training',
@@ -486,7 +502,12 @@ def main():
     }
 
     if args.meta_moe:
-        datasets = ['GTSRB', 'CIFAR10']
+        if args.fine_tune_meta_moe:
+            datasets = ['GTSRB', 'CIFAR10', 'MNIST']
+            num_meta_experts = 3
+        else:
+            datasets = ['GTSRB', 'CIFAR10']
+            num_meta_experts = args.num_meta_experts
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         total_classes = sum(num_classes_list)
         normalization_mean = (UNIFIED_NORM['mean'])
@@ -643,94 +664,113 @@ def main():
     )
 
     if args.meta_moe:
-        gtsrb_model = torch.load(args.gtsrb_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-            raise RuntimeError(f"{args.gtsrb_model_path} is not a supported model type")
-        if isinstance(gtsrb_model, ModelWrapper):
-            gtsrb_model = gtsrb_model.model
-        gtsrb_model = gtsrb_model.to(DEVICE)
-        print(f"Loaded {args.gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
-        
-        cifar10_model = torch.load(args.cifar10_model_path, map_location=DEVICE, weights_only=False)
-        if not isinstance(cifar10_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-            raise RuntimeError(f"{args.cifar10_model_path} is not a supported model type")
-        if isinstance(cifar10_model, ModelWrapper):
-            cifar10_model = cifar10_model.model
-        cifar10_model = cifar10_model.to(DEVICE)
-        print(f"Loaded {args.cifar10_model_path} as full model. Type: {type(cifar10_model)}")
+        if args.fine_tune_meta_moe:
+            # Load existing MetaMoE model
+            existing_model_path = os.path.join(PRETRAINED_MODEL_DIR, f"meta_moe_convnext_tiny_best.pth")
+            existing_model = torch.load(existing_model_path, map_location=DEVICE, weights_only=False)
+            if not isinstance(existing_model, MetaMoE):
+                raise RuntimeError(f"Loaded model from {existing_model_path} is not a MetaMoE instance")
+            
+            # Load new MNIST expert
+            mnist_model = torch.load(args.mnist_model_path, map_location=DEVICE, weights_only=False)
+            if isinstance(mnist_model, ModelWrapper):
+                mnist_model = mnist_model.model
+            mnist_model = mnist_model.to(DEVICE)
+            mnist_model.eval()
+            for param in mnist_model.parameters():
+                param.requires_grad = False
+            
+            # Expand gating network
+            old_gating_net = existing_model.meta_gating_net
+            new_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
+            
+            # Copy old fc weights and expand
+            old_fc_linear = old_gating_net.fc[0]  # Linear layer
+            new_fc_linear = new_gating_net.fc[0]
+            
+            with torch.no_grad():
+                new_fc_linear.weight[:old_fc_linear.out_features] = old_fc_linear.weight
+                new_fc_linear.bias[:old_fc_linear.out_features] = old_fc_linear.bias
+                
+                # Initialize new weights with Kaiming uniform (versatile for linear -> softmax)
+                new_weight_slice = new_fc_linear.weight[old_fc_linear.out_features:]
+                nn.init.kaiming_uniform_(new_weight_slice, a=math.sqrt(5))
+                
+                fan_in, _ = nn.init._calculate_fan_in_and_fan_out(new_fc_linear.weight)
+                bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+                new_bias_slice = new_fc_linear.bias[old_fc_linear.out_features:]
+                nn.init.uniform_(new_bias_slice, -bound, bound)
+            
+            # Use existing experts + new one
+            experts = existing_model.experts + [mnist_model]  # Append MNIST
+            
+            model = MetaMoE(
+                experts=experts,
+                num_classes_list=num_classes_list,
+                meta_gating_net=new_gating_net,
+                meta_top_k=args.meta_top_k
+            ).to(DEVICE)
+            
+            # Optimizer on new gating net only
+            optimizer = optim.AdamW(
+                new_gating_net.parameters(),
+                lr=LEARNING_RATE,
+                weight_decay=0.05,
+                fused=torch.cuda.is_available()
+            )
+        # Old code here               
+        else:
+            gtsrb_model = torch.load(args.gtsrb_model_path, map_location=DEVICE, weights_only=False)
+            if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+                raise RuntimeError(f"{args.gtsrb_model_path} is not a supported model type")
+            if isinstance(gtsrb_model, ModelWrapper):
+                gtsrb_model = gtsrb_model.model
+            gtsrb_model = gtsrb_model.to(DEVICE)
+            print(f"Loaded {args.gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+            
+            cifar10_model = torch.load(args.cifar10_model_path, map_location=DEVICE, weights_only=False)
+            if not isinstance(cifar10_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+                raise RuntimeError(f"{args.cifar10_model_path} is not a supported model type")
+            if isinstance(cifar10_model, ModelWrapper):
+                cifar10_model = cifar10_model.model
+            cifar10_model = cifar10_model.to(DEVICE)
+            print(f"Loaded {args.cifar10_model_path} as full model. Type: {type(cifar10_model)}")
 
-        # tsrd_model = torch.load(args.tsrd_model_path, map_location=DEVICE, weights_only=False)
-        # if not isinstance(tsrd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-        #     raise RuntimeError(f"{args.tsrd_model_path} is not a supported model type")
-        # if isinstance(tsrd_model, ModelWrapper):
-        #     tsrd_model = tsrd_model.model
-        # tsrd_model = tsrd_model.to(DEVICE)
-        # print(f"Loaded {args.tsrd_model_path} as full model. Type: {type(tsrd_model)}")
+            with torch.no_grad():
+                dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
+                for model, expected_classes, name in [
+                    (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
+                    (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
+                ]:
+                    output = model(dummy_input)
+                    if isinstance(output, tuple):
+                        output = output[0]
+                    if output.shape[1] != expected_classes:
+                        raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
+                    print(f"{name} model output shape: {output.shape}")
 
-        # btsd_model = torch.load(args.btsd_model_path, map_location=DEVICE, weights_only=False)
-        # if not isinstance(btsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-        #     raise RuntimeError(f"{args.btsd_model_path} is not a supported model type")
-        # if isinstance(btsd_model, ModelWrapper):
-        #     btsd_model = btsd_model.model
-        # btsd_model = btsd_model.to(DEVICE)
-        # print(f"Loaded {args.btsd_model_path} as full model. Type: {type(btsd_model)}")
-    
-        # etsd_model = torch.load(args.etsd_model_path, map_location=DEVICE, weights_only=False)
-        # if not isinstance(etsd_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-        #     raise RuntimeError(f"{args.etsd_model_path} is not a supported model type")
-        # if isinstance(etsd_model, ModelWrapper):
-        #     etsd_model = etsd_model.model
-        # etsd_model = etsd_model.to(DEVICE)
-        # print(f"Loaded {args.etsd_model_path} as full model. Type: {type(etsd_model)}")
+            gtsrb_model.eval()
+            cifar10_model.eval()
+            for param in gtsrb_model.parameters():
+                param.requires_grad = False
+            for param in cifar10_model.parameters():
+                param.requires_grad = False
 
-        with torch.no_grad():
-            dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
-            for model, expected_classes, name in [
-                (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
-                (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
-                # (tsrd_model, dataset_params['TSRD']['num_classes'], "TSRD"),
-                # (btsd_model, dataset_params['BTSD']['num_classes'], "BTSD"),
-                # (etsd_model, dataset_params['ETSD']['num_classes'], "ETSD")
-            ]:
-                output = model(dummy_input)
-                if isinstance(output, tuple):
-                    output = output[0]
-                if output.shape[1] != expected_classes:
-                    raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
-                print(f"{name} model output shape: {output.shape}")
-
-        gtsrb_model.eval()
-        cifar10_model.eval()
-        # tsrd_model.eval()
-        # btsd_model.eval()
-        # etsd_model.eval()
-        for param in gtsrb_model.parameters():
-            param.requires_grad = False
-        for param in cifar10_model.parameters():
-            param.requires_grad = False
-        # for param in tsrd_model.parameters():
-        #     param.requires_grad = False
-        # for param in btsd_model.parameters():
-        #     param.requires_grad = False
-        # for param in etsd_model.parameters():
-        #     param.requires_grad = False    
-
-        num_meta_experts = args.num_meta_experts
-        meta_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
-        experts = [gtsrb_model, cifar10_model]
-        num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
-        model = MetaMoE(
-            experts=experts,
-            num_classes_list=num_classes_list,
-            meta_gating_net=meta_gating_net,
-            meta_top_k=args.meta_top_k
-        ).to(DEVICE)
-        optimizer = optim.AdamW(
-            meta_gating_net.parameters(),
-            lr=LEARNING_RATE,
-            weight_decay=0.05,
-            fused=torch.cuda.is_available()
-        )
+            meta_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
+            experts = [gtsrb_model, cifar10_model]
+            # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
+            model = MetaMoE(
+                experts=experts,
+                num_classes_list=num_classes_list,
+                meta_gating_net=meta_gating_net,
+                meta_top_k=args.meta_top_k
+            ).to(DEVICE)
+            optimizer = optim.AdamW(
+                meta_gating_net.parameters(),
+                lr=LEARNING_RATE,
+                weight_decay=0.05,
+                fused=torch.cuda.is_available()
+            )
     else:
         model = create_model(args.model_arch, config).to(DEVICE)
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05, fused=torch.cuda.is_available())
@@ -833,7 +873,9 @@ def main():
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
             suffix = "_robust" if args.adversarial_training else "_og"
-            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
+            if args.fine_tune_meta_moe:
+                suffix += "_finetuned"
+            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")            
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
                 state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict{suffix}.pth")
