@@ -44,7 +44,7 @@ if os.name != 'nt':
     torch.multiprocessing.set_sharing_strategy('file_system')
 
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
-parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10'], help='Dataset to train')
+parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10', 'OneModel'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_PARAMS['batch_size'], help='Batch size for training')
 parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_PARAMS['epoch'])), help='Number of epochs to train')
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_PARAMS['learning_rate'], help='Learning rate for optimizer')
@@ -261,7 +261,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
 def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     model.eval()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = total_images = 0
-    gtsrb_correct = cifar10_correct = gtsrb_total = cifar10_total = 0
+    gtsrb_correct = cifar10_correct = gtsrb_total = cifar10_total = onemodel_correct = onemodel_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
@@ -329,6 +329,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gating_accuracy = gating_correct / total if args.meta_moe else 0
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     cifar10_accuracy = cifar10_correct / cifar10_total if cifar10_total > 0 and args.meta_moe else 0
+    onemodel_accuracy = onemodel_correct / onemodel_total if onemodel_total > 0 and args.meta_moe else 0
     # tsrd_accuracy = tsrd_correct / tsrd_total if tsrd_total > 0 and args.meta_moe else 0
     # btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
     # etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
@@ -342,7 +343,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     else:
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, avg_inference_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, onemodel_accuracy, avg_inference_time
 
 def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     model.eval()
@@ -499,6 +500,15 @@ def main():
         #     'normalization_std': (ETSD_NORM['std']),
         #     'default_meta_class': 4
         # }
+        'OneModel': {
+            'num_classes': 53, # add this manually for now
+            'train_dir': './data/OneModel1/Training',
+            'test_dir': './data/OneModel1/Test',
+            'csv_file': './data/OneModel1/Test/testset_with_meta_class.csv',
+            'normalization_mean': (UNIFIED_NORM['mean']),
+            'normalization_std': (UNIFIED_NORM['std']),
+            'default_meta_class': 0
+        }
     }
 
     if args.meta_moe:
@@ -736,11 +746,20 @@ def main():
             cifar10_model = cifar10_model.to(DEVICE)
             print(f"Loaded {args.cifar10_model_path} as full model. Type: {type(cifar10_model)}")
 
+            one_model = torch.load(args.one_model_path, map_location=DEVICE, weights_only=False)
+            if not isinstance(one_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+                raise RuntimeError(f"{args.one_model_path} is not a supported model type")
+            if isinstance(one_model, ModelWrapper):
+                one_model = one_model.model
+            one_model = one_model.to(DEVICE)
+            print(f"Loaded {args.one_model_path} as full model. Type: {type(one_model)}")
+
             with torch.no_grad():
                 dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
                 for model, expected_classes, name in [
                     (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                     (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
+                    (one_model, dataset_params['OneModel']['num_classes'], "OneModel")
                 ]:
                     output = model(dummy_input)
                     if isinstance(output, tuple):
@@ -751,13 +770,16 @@ def main():
 
             gtsrb_model.eval()
             cifar10_model.eval()
+            one_model.eval()
             for param in gtsrb_model.parameters():
                 param.requires_grad = False
             for param in cifar10_model.parameters():
                 param.requires_grad = False
+            for param in one_model.parameters():
+                param.requires_grad = False                
 
             meta_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
-            experts = [gtsrb_model, cifar10_model]
+            experts = [gtsrb_model, cifar10_model, one_model]
             # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
             model = MetaMoE(
                 experts=experts,
@@ -797,6 +819,7 @@ def main():
     test_gating_accs = []
     test_gtsrb_accs = []
     test_cifar10_accs = []
+    test_one_accs = []
     # test_tsrd_accs = []
     # test_btsd_accs = []
     # test_etsd_accs = []
@@ -815,17 +838,17 @@ def main():
         else:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_inference_time = None, None, None, None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_one_acc, test_inference_time = None, None, None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             if args.meta_moe:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE)
             else:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
             if args.meta_moe:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_one_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
             else:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_inference_time = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_one_acc, test_inference_time = test_results
             test_inference_times.append(test_inference_time)
     
         scheduler.step()
@@ -846,6 +869,7 @@ def main():
             test_gating_accs.append(test_gating_acc)
             test_gtsrb_accs.append(test_gtsrb_acc)
             test_cifar10_accs.append(test_cifar10_acc)
+            test_one_accs.append(test_one_acc)
             # test_tsrd_accs.append(test_tsrd_acc)
             # test_btsd_accs.append(test_btsd_acc)
             # test_etsd_accs.append(test_etsd_acc)
@@ -889,7 +913,7 @@ def main():
                 train_balance_losses, test_balance_losses,
                 train_gating_losses, test_gating_losses,
                 train_gating_accs, test_gating_accs,
-                test_gtsrb_accs, test_cifar10_accs,
+                test_gtsrb_accs, test_cifar10_accs, test_one_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
                 meta_moe=args.meta_moe
             )
