@@ -501,10 +501,10 @@ def main():
         #     'default_meta_class': 4
         # }
         'OneModel': {
-            'num_classes': 53, # add this manually for now
-            'train_dir': './data/OneModel1/Training',
-            'test_dir': './data/OneModel1/Test',
-            'csv_file': './data/OneModel1/Test/testset_with_meta_class.csv',
+            'num_classes': 63, # add this manually for now
+            'train_dir': './data/OneModel2/Training',
+            'test_dir': './data/OneModel2/Test',
+            'csv_file': './data/OneModel2/Test/testset_with_meta_class.csv',
             'normalization_mean': (UNIFIED_NORM['mean']),
             'normalization_std': (UNIFIED_NORM['std']),
             'default_meta_class': 0
