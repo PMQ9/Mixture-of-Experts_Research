@@ -625,7 +625,7 @@ def main():
     apply_config_overrides(config, args.config_overrides)
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
     if args.meta_moe:
-        print(f"Meta_MoE architecture: activate {args.meta_top_k} of {args.num_meta_experts} experts")
+        print(f"Meta_MoE architecture: activate {args.meta_top_k} of {num_meta_experts} experts")
     else:
         print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
