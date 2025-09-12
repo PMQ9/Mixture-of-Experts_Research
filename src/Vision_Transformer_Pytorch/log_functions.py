@@ -62,7 +62,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_cifar10_accs,
+                 test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
                  meta_moe=False):
     train_epochs = list(range(plot_epochs))
