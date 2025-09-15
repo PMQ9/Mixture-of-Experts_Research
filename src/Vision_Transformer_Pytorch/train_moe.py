@@ -19,6 +19,7 @@ import timm
 import math
 from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
+from torch.nn import KLDivLoss
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
@@ -69,14 +70,13 @@ parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=[
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
-# parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
-# parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
-# parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 # robustness
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
+parser.add_argument('--at_mode', type=str, default='PGD', choices=['PGD', 'TRADES'], help='Attack modes')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
 parser.add_argument('--adversarial_training', action='store_true', help='Enable adversarial training for individual experts')
+parser.add_argument('--trades_beta', type=float, default=6.0, help='Beta for TRADES regularization')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -215,8 +215,14 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                 if not args.meta_moe and args.adversarial_training:
                     data_adv = pgd_attack(model, data, target)
                     output_adv, balance_losses_adv = model(data_adv)
-                    loss_adv = criterion(output_adv, target)
-                    cls_loss = (loss_clean + loss_adv) / 2
+                    if args.at_mode == 'trades':
+                        kl_loss = KLDivLoss(reduction='batchmean')
+                        adv_ce_loss = criterion(output_adv, target)
+                        kl_div = kl_loss(F.log_softmax(output_adv, dim=1), F.softmax(output, dim=1))  # Note: Use clean output here
+                        cls_loss = adv_ce_loss + args.trades_beta * kl_div
+                    else:
+                        loss_adv = criterion(output_adv, target)
+                        cls_loss = (loss_clean + loss_adv) / 2
                     balance_loss = (sum(balance_losses) + sum(balance_losses_adv)) / (2 * len(balance_losses)) if balance_losses else 0
                 else:
                     cls_loss = loss_clean
