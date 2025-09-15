@@ -10,6 +10,7 @@ from torchvision import models
 import logging
 from torchvision.models.resnet import ResNet18_Weights
 import timm
+import math
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -302,6 +303,18 @@ class MetaMoE(nn.Module):
         self.meta_top_k = min(max(meta_top_k, 1), self.num_experts)
         self.class_offsets = [0] + [sum(num_classes_list[:i+1]) for i in range(self.num_experts)]
 
+        # Basic architecture check: Ensure all experts handle the same input shape
+        # dummy_input = torch.randn(1, 3, 32, 32)  # Assuming 3x32x32 RGB
+        # for i, expert in enumerate(self.experts):
+        #     try:
+        #         output = expert(dummy_input)
+        #         if isinstance(output, tuple):
+        #             output = output[0]
+        #         if output.shape != torch.Size([1, num_classes_list[i]]):
+        #             raise ValueError(f"Expert {i} output shape {output.shape} does not match expected [1, {num_classes_list[i]}]")
+        #     except Exception as e:
+        #         raise ValueError(f"Expert {i} failed input compatibility check: {str(e)}")
+            
     def forward(self, x):
         gates = self.meta_gating_net(x)  # [batch_size, num_experts], probabilities
         batch_size = x.shape[0]

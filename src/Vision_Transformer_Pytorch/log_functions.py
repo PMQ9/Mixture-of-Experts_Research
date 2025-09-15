@@ -62,7 +62,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_ptsd_accs,
+                 test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
                  meta_moe=False):
     train_epochs = list(range(plot_epochs))
@@ -110,10 +110,10 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 0].legend()
         axes[2, 0].grid(True)
 
-        axes[2, 1].plot(test_epochs[:len(test_ptsd_accs)], test_ptsd_accs, label='PTSD Test Accuracy')
+        axes[2, 1].plot(test_epochs[:len(test_cifar10_accs)], test_cifar10_accs, label='CIFAR10 Test Accuracy')
         axes[2, 1].set_xlabel('Epoch')
         axes[2, 1].set_ylabel('Accuracy')
-        axes[2, 1].set_title(f'PTSD Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 1].set_title(f'CIFAR10 Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
         axes[2, 1].legend()
         axes[2, 1].grid(True)
 
