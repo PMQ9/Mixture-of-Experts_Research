@@ -66,7 +66,8 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
-# loading
+parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0'], help='Backbone architecture for the MetaGatingNet router')
+# loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
@@ -601,20 +602,24 @@ def main():
             
             # Expand gating network
             old_gating_net = existing_model.meta_gating_net
-            new_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
+            new_gating_net = MetaGatingNet(num_experts=num_meta_experts, backbone=args.gating_backbone).to(DEVICE)
             
-            # Copy old fc weights and expand
+            # Updated weight copying to handle potential dim mismatch
             old_fc_linear = old_gating_net.fc[0]  # Linear layer
             new_fc_linear = new_gating_net.fc[0]
+            old_feature_dim = old_fc_linear.in_features
+            new_feature_dim = new_fc_linear.in_features
             
             with torch.no_grad():
-                new_fc_linear.weight[:old_fc_linear.out_features] = old_fc_linear.weight
-                new_fc_linear.bias[:old_fc_linear.out_features] = old_fc_linear.bias
-                
-                # Initialize new weights with Kaiming uniform (versatile for linear -> softmax)
-                new_weight_slice = new_fc_linear.weight[old_fc_linear.out_features:]
+                if old_feature_dim == new_feature_dim:
+                    new_fc_linear.weight[:old_fc_linear.out_features] = old_fc_linear.weight
+                    new_fc_linear.bias[:old_fc_linear.out_features] = old_fc_linear.bias
+                    logger.info("Copied old gating weights successfully.")
+                else:
+                    logger.warning(f"Feature dimensions mismatch ({old_feature_dim} vs {new_feature_dim}); initializing new weights randomly.") # todo: check what happens if dimension mismatch
+
+                new_weight_slice = new_fc_linear.weight[old_fc_linear.out_features:]                
                 nn.init.kaiming_uniform_(new_weight_slice, a=math.sqrt(5))
-                
                 fan_in, _ = nn.init._calculate_fan_in_and_fan_out(new_fc_linear.weight)
                 bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
                 new_bias_slice = new_fc_linear.bias[old_fc_linear.out_features:]
@@ -687,7 +692,7 @@ def main():
             for param in mnist_model.parameters():
                 param.requires_grad = False
 
-            meta_gating_net = MetaGatingNet(num_experts=num_meta_experts).to(DEVICE)
+            meta_gating_net = MetaGatingNet(num_experts=num_meta_experts, backbone=args.gating_backbone).to(DEVICE)
             experts = [gtsrb_model, cifar10_model]
             # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
             model = MetaMoE(
@@ -829,13 +834,13 @@ def main():
         print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
     if args.export_onnx:
-        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
 
     if args.art_attack:
         if args.meta_moe:
-            best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
+            best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth")
         else:
             best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)

@@ -278,11 +278,13 @@ class VisionTransformer(nn.Module):
         return x, balance_losses
 
 class MetaGatingNet(nn.Module):
-    def __init__(self, num_experts=2, temperature=0.025):
+    def __init__(self, num_experts=2, backbone='convnext_tiny', temperature=0.025):
         super().__init__()
-        self.model = timm.create_model('convnext_tiny', pretrained=True, num_classes=0)
+        self.backbone = backbone
+        self.model = timm.create_model(self.backbone, pretrained=True, num_classes=0)
+        feature_dim = self.model.num_features
         self.fc = nn.Sequential(
-            nn.Linear(768, num_experts),
+            nn.Linear(feature_dim, num_experts),
             nn.Softmax(dim=1)
         )
         self.temperature = temperature
