@@ -19,14 +19,16 @@ import timm
 import math
 from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
+from torch.nn import KLDivLoss
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
 from log_functions import setup_logging, archive_params, plot_metrics, export_to_onnx
 from augmentation_functions import cutmix
 from visualize_robustness import visualize_robustness
+from model_wrapper import ModelWrapper, LogitsWrapper, create_model, get_num_classes
 from config import (
-    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, TSRD_NORM, BTSD_NORM, ETSD_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
+    DEFAULT_PARAMS, GTSRB_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
 )
 from config import apply_config_overrides
 
@@ -69,14 +71,13 @@ parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=[
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
-# parser.add_argument('--tsrd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "tsrd_convnext_tiny_best.pth"), help='Path to pre-trained TSRD model')
-# parser.add_argument('--btsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "btsd_convnext_tiny_best.pth"), help='Path to pre-trained BTSD model')
-# parser.add_argument('--etsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "etsd_convnext_tiny_best.pth"), help='Path to pre-trained ETSD model')
 # robustness
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
+parser.add_argument('--at_mode', type=str, default='PGD', choices=['PGD', 'TRADES'], help='Attack modes')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
 parser.add_argument('--adversarial_training', action='store_true', help='Enable adversarial training for individual experts')
+parser.add_argument('--trades_beta', type=float, default=6.0, help='Beta for TRADES regularization')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -95,59 +96,6 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
-class ModelWrapper(nn.Module):
-    def __init__(self, model, num_classes):
-        super().__init__()
-        self.model = model
-        self.num_classes = num_classes
-
-    def forward(self, x):
-        output = self.model(x)
-        return output, [torch.tensor(0.0, device=x.device)]
-
-class LogitsWrapper(nn.Module):
-    def __init__(self, model):
-        super().__init__()
-        self.model = model
-
-    def forward(self, x):
-        output = self.model(x)
-        if isinstance(output, tuple):
-            return output[0]
-        return output
-
-def get_num_classes(model):
-    if hasattr(model, 'total_classes'):
-        return model.total_classes
-    elif isinstance(model, VisionTransformer):
-        return model.config.num_class
-    elif isinstance(model, ModelWrapper):
-        return model.num_classes
-    else:
-        raise ValueError("Cannot determine the number of classes from the model")
-
-def create_model(model_arch, config):
-    if model_arch == 'vit_moe':
-        return VisionTransformer(config)
-    elif model_arch == 'resnet50':
-        model = models.resnet50(pretrained=False)
-        model.fc = nn.Linear(model.fc.in_features, config.num_class)
-        return ModelWrapper(model, config.num_class)
-    elif model_arch == 'resnet101':
-        model = models.resnet101(pretrained=False)
-        model.fc = nn.Linear(model.fc.in_features, config.num_class)
-        return ModelWrapper(model, config.num_class)
-    elif model_arch == 'convnext_tiny':
-        model = timm.create_model('convnext_tiny', pretrained=True, num_classes=config.num_class)
-        return ModelWrapper(model, config.num_class)
-    elif model_arch == 'efficientnet_b0':
-        model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=config.num_class)
-        return ModelWrapper(model, config.num_class)
-    elif model_arch == 'vit_base':
-        model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=config.num_class, img_size=config.img_size)
-        return ModelWrapper(model, config.num_class)
-    else:
-        raise ValueError(f"Unknown model architecture: {model_arch}")
 
 def pgd_attack(model, data, target, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
     model.eval()
@@ -215,8 +163,14 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                 if not args.meta_moe and args.adversarial_training:
                     data_adv = pgd_attack(model, data, target)
                     output_adv, balance_losses_adv = model(data_adv)
-                    loss_adv = criterion(output_adv, target)
-                    cls_loss = (loss_clean + loss_adv) / 2
+                    if args.at_mode == 'trades':
+                        kl_loss = KLDivLoss(reduction='batchmean')
+                        adv_ce_loss = criterion(output_adv, target)
+                        kl_div = kl_loss(F.log_softmax(output_adv, dim=1), F.softmax(output, dim=1))  # Note: Use clean output here
+                        cls_loss = adv_ce_loss + args.trades_beta * kl_div
+                    else:
+                        loss_adv = criterion(output_adv, target)
+                        cls_loss = (loss_clean + loss_adv) / 2
                     balance_loss = (sum(balance_losses) + sum(balance_losses_adv)) / (2 * len(balance_losses)) if balance_losses else 0
                 else:
                     cls_loss = loss_clean
@@ -316,15 +270,6 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 if mnist_mask.any():
                     mnist_correct += predicted[mnist_mask].eq(target[mnist_mask]).sum().item()
                     mnist_total += mnist_mask.sum().item()
-                # if tsrd_mask.any():
-                #     tsrd_correct += predicted[tsrd_mask].eq(target[tsrd_mask]).sum().item()
-                #     tsrd_total += tsrd_mask.sum().item()
-                # if btsd_mask.any():
-                #     btsd_correct += predicted[btsd_mask].eq(target[btsd_mask]).sum().item()
-                #     btsd_total += btsd_mask.sum().item()
-                # if etsd_mask.any():
-                #     etsd_correct += predicted[etsd_mask].eq(target[etsd_mask]).sum().item()
-                #     etsd_total += etsd_mask.sum().item()
         
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
@@ -334,9 +279,6 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
     cifar10_accuracy = cifar10_correct / cifar10_total if cifar10_total > 0 and args.meta_moe else 0
     mnist_accuracy = mnist_correct / mnist_total if mnist_total > 0 and args.meta_moe else 0
-    # tsrd_accuracy = tsrd_correct / tsrd_total if tsrd_total > 0 and args.meta_moe else 0
-    # btsd_accuracy = btsd_correct / btsd_total if btsd_total > 0 and args.meta_moe else 0
-    # etsd_accuracy = etsd_correct / etsd_total if etsd_total > 0 and args.meta_moe else 0
     if args.meta_moe:
         avg_router_time = total_router_time / total_images if total_images > 0 else 0
         avg_experts_time = total_experts_time / total_images if total_images > 0 else 0
@@ -431,7 +373,6 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
                     
                     expert_total[i] += mask.sum().item()
     
-    # Calculate and print overall accuracies
     acc_clean = correct_clean / total
     acc_adv = correct_adv / total
     print(f"Clean Accuracy: {acc_clean:.4f}, Adversarial Accuracy: {acc_adv:.4f}")
@@ -468,42 +409,6 @@ def main():
             'normalization_std': (CIFAR10_NORM['std']),
             'default_meta_class': 1
         },
-        'MNIST': {  # Added MNIST params
-            'num_classes': 10,
-            'train_dir': './data/MNIST/Training',
-            'test_dir': './data/MNIST/Test',
-            'csv_file': './data/MNIST/Test/testset_with_meta_class.csv',
-            'normalization_mean': (CIFAR10_NORM['mean']),  # Placeholder; update with MNIST-specific norms later
-            'normalization_std': (CIFAR10_NORM['std']),
-            'default_meta_class': 2
-        },
-        # 'TSRD': {
-        #     'num_classes': 58,
-        #     'train_dir': './data/TSRD/Training',
-        #     'test_dir': './data/TSRD/Test',
-        #     'csv_file': './data/TSRD/Test/testset_with_meta_class.csv',
-        #     'normalization_mean': (TSRD_NORM['mean']),
-        #     'normalization_std': (TSRD_NORM['std']),
-        #     'default_meta_class': 2
-        # }
-        # 'BTSD': {
-        #     'num_classes': 62,
-        #     'train_dir': './data/BTSD/Training',
-        #     'test_dir': './data/BTSD/Test',
-        #     'csv_file': './data/BTSD/Test/testset_with_meta_class.csv',
-        #     'normalization_mean': (BTSD_NORM['mean']),
-        #     'normalization_std': (BTSD_NORM['std']),
-        #     'default_meta_class': 3
-        # }
-        # 'ETSD': {
-        #     'num_classes': 55,
-        #     'train_dir': './data/ETSD/Training',
-        #     'test_dir': './data/ETSD/Test',
-        #     'csv_file': './data/ETSD/Test/testset_with_meta_class.csv',
-        #     'normalization_mean': (ETSD_NORM['mean']),
-        #     'normalization_std': (ETSD_NORM['std']),
-        #     'default_meta_class': 4
-        # }
         'MNIST': {
             'num_classes': 10,
             'train_dir': './data/MNIST/Training',
@@ -824,9 +729,6 @@ def main():
     test_gtsrb_accs = []
     test_cifar10_accs = []
     test_mnist_accs = []
-    # test_tsrd_accs = []
-    # test_btsd_accs = []
-    # test_etsd_accs = []
     best_acc = 0
     total_training_time = 0
     test_inference_times = []
@@ -874,9 +776,6 @@ def main():
             test_gtsrb_accs.append(test_gtsrb_acc)
             test_cifar10_accs.append(test_cifar10_acc)
             test_mnist_accs.append(test_mnist_acc)
-            # test_tsrd_accs.append(test_tsrd_acc)
-            # test_btsd_accs.append(test_btsd_acc)
-            # test_etsd_accs.append(test_etsd_acc)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
@@ -940,11 +839,10 @@ def main():
         else:
             best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
-        model.eval()  # Ensure the model is in evaluation mode
+        model.eval()
         test_adversarial_robustness(model, test_loader, DEVICE)
     
     if args.meta_moe and args.visualize_robustness:
-        # Assuming the model is still in scope and loaded above
         visualize_robustness(model, test_loader, DEVICE, OUTPUT_DIR)
         
     if args.archive_params:
