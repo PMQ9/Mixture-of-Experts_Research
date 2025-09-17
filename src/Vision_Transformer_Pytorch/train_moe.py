@@ -834,13 +834,13 @@ def main():
         print(f"Average inference time per image across test epochs: {avg_test_inference_time:.6f} seconds")
     
     if args.export_onnx:
-        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
+        best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
 
     if args.art_attack:
         if args.meta_moe:
-            best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best.pth")
+            best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth")
         else:
             best_model_path = os.path.join(OUTPUT_DIR, f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
