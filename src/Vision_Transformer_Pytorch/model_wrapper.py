@@ -39,6 +39,12 @@ def create_model(model_arch, config):
     elif model_arch == 'convnext_tiny':
         model = timm.create_model('convnext_tiny', pretrained=True, num_classes=config.num_class)
         return ModelWrapper(model, config.num_class)
+    elif model_arch == 'convnextv2_tiny':
+        model = timm.create_model('convnextv2_tiny', pretrained=True, num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'convnext_small':
+        model = timm.create_model('convnext_small', pretrained=True, num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
     elif model_arch == 'efficientnet_b0':
         model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=config.num_class)
         return ModelWrapper(model, config.num_class)
