@@ -98,8 +98,17 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
+if args.dataset == 'GTSRB' or 'CIFAR10':
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_cifar_gtsrb']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter']
+elif args.dataset == 'MNIST':
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_cifar_gtsrb']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter']
+else:
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_default']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter_default']
 
-def pgd_attack(model, data, target, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
+def pgd_attack(model, data, target, epsilon=pgd_epsilon, alpha=0.01, num_iter=pgd_iter, device=DEVICE):
     model.eval()
     data_adv = data.clone().detach().to(device)
     original_data = data.clone().detach().to(device)

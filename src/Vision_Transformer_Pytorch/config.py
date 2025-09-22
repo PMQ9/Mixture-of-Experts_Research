@@ -11,7 +11,12 @@ DEFAULT_PARAMS = {
     'warmup_epoch': 10,
     'label_smoothing': 0.1,
     'test_start_epoch': 50,
-    'test_frequency': 2
+    'test_frequency': 2,
+    'gpd_attack_epsilon_default': 0.1,
+    'gpd_attack_epsilon_cifar_gtsrb': 0.031,
+    'gpd_attack_epsilon_mnist': 0.3,
+    'gpd_attack_iter': 20,
+    'gpd_attack_iter_default': 10
 }
 
 # **************** Normalization Values ****************
