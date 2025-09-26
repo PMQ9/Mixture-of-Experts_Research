@@ -67,8 +67,9 @@ parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of e
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
 parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0'], help='Backbone architecture for the MetaGatingNet router')
+parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base'], help='Model architecture to use')
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base', 'convnextv2_tiny', 'convnext_small'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
@@ -77,7 +78,7 @@ parser.add_argument('--art_attack', action='store_true', help='Initiate Adversar
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--at_mode', type=str, default='PGD', choices=['PGD', 'TRADES'], help='Attack modes')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
-parser.add_argument('--adversarial_training', action='store_true', help='Enable adversarial training for individual experts')
+parser.add_argument('--adv_training', action='store_true', help='Enable adversarial training for individual experts')
 parser.add_argument('--trades_beta', type=float, default=6.0, help='Beta for TRADES regularization')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
@@ -97,8 +98,17 @@ WARMUP_EPOCHS = args.warmup_epochs
 LABEL_SMOOTHING = args.label_smoothing
 GATING_LOSS_WEIGHT = args.gating_loss_weight
 
+if args.dataset == 'GTSRB' or 'CIFAR10':
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_cifar_gtsrb']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter']
+elif args.dataset == 'MNIST':
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_cifar_gtsrb']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter']
+else:
+    pgd_epsilon = DEFAULT_PARAMS['gpd_attack_epsilon_default']
+    pgd_iter = DEFAULT_PARAMS['gpd_attack_iter_default']
 
-def pgd_attack(model, data, target, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
+def pgd_attack(model, data, target, epsilon=pgd_epsilon, alpha=0.01, num_iter=pgd_iter, device=DEVICE):
     model.eval()
     data_adv = data.clone().detach().to(device)
     original_data = data.clone().detach().to(device)
@@ -109,6 +119,28 @@ def pgd_attack(model, data, target, epsilon=0.1, alpha=0.01, num_iter=10, device
             if isinstance(output, tuple):
                 output = output[0]
             loss = nn.CrossEntropyLoss()(output, target)
+            loss.backward()
+            grad = data_adv.grad.detach()
+        with torch.no_grad():
+            data_adv = data_adv + alpha * grad.sign()
+            perturbation = data_adv - original_data
+            perturbation = torch.clamp(perturbation, min=-epsilon, max=epsilon)
+            data_adv = original_data + perturbation
+        data_adv = data_adv.detach()
+    model.train()
+    return data_adv
+
+def pgd_gating_attack(model, data, meta_class, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
+    model.eval()
+    data_adv = data.clone().detach().to(device)
+    original_data = data.clone().detach().to(device)
+    gating_criterion = nn.CrossEntropyLoss()
+    
+    for _ in range(num_iter):
+        data_adv.requires_grad_(True)
+        with torch.enable_grad():
+            output_adv, gates_adv = model(data_adv)
+            loss = gating_criterion(gates_adv, meta_class)
             loss.backward()
             grad = data_adv.grad.detach()
         with torch.no_grad():
@@ -150,6 +182,20 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                 total_post_time += post_time
                 total_total_time += total_time
                 total_images += data.size(0)
+
+                if args.adv_gating_train:
+                    data_adv = pgd_gating_attack(model, data, meta_class)
+                    output_adv, gates_adv = model(data_adv)
+                    gating_loss_adv = gating_criterion(gates_adv, meta_class)
+                    
+                    if args.at_mode == 'trades':
+                        kl_loss = KLDivLoss(reduction='batchmean')
+                        kl_div = kl_loss(F.log_softmax(gates_adv, dim=1), F.softmax(gates, dim=1))
+                        gating_total_adv = gating_loss_adv + args.trades_beta * kl_div
+                        total_loss_combined = (total_loss_combined + GATING_LOSS_WEIGHT * gating_total_adv) / 2
+                    else:  # PGD
+                        total_loss_combined = (total_loss_combined + GATING_LOSS_WEIGHT * gating_loss_adv) / 2
+                
             else:
                 if apply_cutmix:
                     data_cutmix, target_a, target_b, lam = cutmix(data, target, CUTMIX_ALPHA)
@@ -161,7 +207,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                     output, balance_losses = model(data)
                     loss_clean = criterion(output, target)
                 
-                if not args.meta_moe and args.adversarial_training:
+                if not args.meta_moe and args.adv_training:
                     data_adv = pgd_attack(model, data, target)
                     output_adv, balance_losses_adv = model(data_adv)
                     if args.at_mode == 'trades':
@@ -804,7 +850,7 @@ def main():
 
         if test_acc is not None and test_acc > best_acc:
             best_acc = test_acc
-            suffix = "_robust" if args.adversarial_training else "_og"
+            suffix = "_robust" if args.adv_training else "_og"
             if args.fine_tune_meta_moe:
                 suffix += "_finetuned"
             save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")            
