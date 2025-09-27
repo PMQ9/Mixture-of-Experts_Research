@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from dataclasses import asdict
 import matplotlib.pyplot as plt
+from vision_transformer_moe import MetaMoE
 
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 
@@ -244,10 +245,9 @@ def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
                 expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
                 return (out, *expert_traces)
 
-    from vision_transformer_moe import MetaMoE
+    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
     img_size = config.img_size
     batch_size = wrapped_model.num_experts if wrapped_model.is_meta_moe else 1
-    wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
     dummy_input = torch.randn(batch_size, 3, img_size, img_size).to(device)  
     onnx_path = os.path.join(output_dir, f"{dataset_name.lower()}_{model_arch}.onnx")
 
