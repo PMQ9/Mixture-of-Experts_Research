@@ -227,34 +227,46 @@ def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
             super().__init__()
             self.model = model
             self.is_meta_moe = is_meta_moe
-            self.num_experts = config.num_experts if not is_meta_moe else 2  # MetaMoE has 2 experts (GTSRB, PTSD)
+            if self.is_meta_moe:
+                self.num_experts = self.model.num_experts  # Dynamically fetch from model
+            else:
+                self.num_experts = config.num_experts  # Use config for non-MoE
         def forward(self, x):
             if self.is_meta_moe:
-                out, gates = self.model(x)
-                expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
-                return (out, *expert_traces)
+                    original_top_k = self.model.meta_top_k
+                    self.model.meta_top_k = self.model.num_experts  # Force dense mode for tracing
+                    out, gates = self.model(x)
+                    self.model.meta_top_k = original_top_k  # Restore original value
+                    expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
+                    return (out, gates, *expert_traces)  # Include gates in output for completeness
             else:
                 out, balance_losses = self.model(x)
                 expert_traces = [torch.zeros_like(out) for _ in range(self.num_experts)]
                 return (out, *expert_traces)
 
     from vision_transformer_moe import MetaMoE
+    img_size = config.img_size
+    batch_size = wrapped_model.num_experts if wrapped_model.is_meta_moe else 1
     wrapped_model = ExpertTracer(model, is_meta_moe=isinstance(model, MetaMoE)).to(device)
-    dummy_input = torch.randn(1, 3, 32, 32).to(device)    
+    dummy_input = torch.randn(batch_size, 3, img_size, img_size).to(device)  
     onnx_path = os.path.join(output_dir, f"{dataset_name.lower()}_{model_arch}.onnx")
+
+    output_names = ["output"] + ["gates"] + [f"trace_{i}" for i in range(wrapped_model.num_experts)]
+    if not wrapped_model.is_meta_moe:
+        output_names = ["output"] + [f"trace_{i}" for i in range(wrapped_model.num_experts)]
 
     torch.onnx.export(
         wrapped_model,
         dummy_input,
         onnx_path,
         input_names=["input"],
-        output_names=["output"],
+        output_names=output_names,
         opset_version=14,
         dynamic_axes={
             "input": {0: "batch_size"},
-            "output": {0: "batch_size"}
+            **{name: {0: "batch_size"} for name in output_names}
         },
-        verbose=False,
+        verbose=True,
         do_constant_folding=True,
     )
     print(f"ONNX model saved to: {onnx_path}")
