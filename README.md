@@ -3,26 +3,11 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 # To do list
  **DevOps**
-- [x] Python automation test
-- [x] Jenkins/GitLab pipeline
-- [ ] Fine tune training params
+- [ ] Add Unit Test
+- [ ] Reactivate Gitlab Runner. Use Golang, because
 
  **Performance**
-- [x] Add Stiochastic Depth
-- [x] Add L2 Regularization
-- [x] Add CutMix
-- [x] Start testing after N epochs, once every M epochs.
-- [x] Add Attention mechanism for Router improvement
-- [x] Add RandAugment
-- [x] Add Label Smoothing 
-- [x] Add Warmup
-- [x] Add Args
-- [ ] Gradient clipping
-- [ ] Add DEBUG mode
-
- **Inter-Model Performance**
-- [x] Add PTSD
-- [ ] TBD
+- [ ] Add GNNV
 
 
 # User Manual
@@ -31,8 +16,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 - Python 3.10
 - `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
-- `pip install tqdm matplotlib netron onnx`
-- `pip install adversarial-robustness-toolbox`
+- `pip install tqdm matplotlib netron onnx adversarial-robustness-toolbox`
 
  **Instruction**
 
@@ -40,11 +24,6 @@ Research MoE application in safety-critical system at Institute of Software Inte
     `python .\src\Vision_Transformer_Pytorch\train_moe.py`
 - Argument:
     `python .\src\Vision_Transformer_Pytorch\train_moe.py --batch_size 256 --epochs 500 --config_overrides "img_size=48,patch_size=8,embed_dim=256,num_class=10"`
-- List of most used arguments:
-    - `--batch_size`
-    - `--epochs`
-    - `--learning-rate`
-    - `--test_star_epoch`
     - to see all options run `python .\src\Vision_Transformer_Pytorch\train_moe.py --help`
 
 - Calculate normalization value for the dataset:
@@ -54,14 +33,19 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 | Criteria                                  | Value       | Note    |
 |-------------------------------------------|-------------|---------|
-| Number of experts:                        | 7           |         |
-| Top K (number of experts active per token)| 3           |         |
-| Number of embedded layers                 | 9           |         |
-| Parameters                                | 18.756.846  |         |
+| Number of experts:                        | 2 or 3         |         |
+| Top K (number of experts active per token)| 1 (sparse) or 3 (dense)         |         |
+| Parameters                                | 60,530,371 |         |
 
 Architecture:
 
-<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" width="25%"/>
+Block Diagram architecture:
+
+<img src="utils/doc/block_diagram_moe_architecture.png" alt="Alt Text" width="45%"/>
+
+Netron architecture with 2 Experts (open in new tab to view)
+
+<img src="utils/doc/netron_onnx_architecture.jpg" alt="Alt Text" length="50%"/>
 
 
 # Performance with GTSRB
@@ -76,14 +60,12 @@ Reference: https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-tra
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8431    |                       |
-| **Best testing accuracy** |**0.9334** |                       |
+| Best training accuracy    |     |                       |
+| **Best testing accuracy** | |                       |
 | Best training loss        |           |                       |
 | Best testing loss         |           |                       |
-| Train balance loss        |           |                       |
-| Test balance loss         |           |                       |
 
-<img src="utils/doc/training_metrics_gtsrb.png" alt="Alt Text" width="70%"/>
+<img src="utils/doc/training_metrics_gtsrb_cnn_nat.png" alt="Alt Text" width="70%"/>
 
 Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/published-archive.html
 
@@ -93,83 +75,6 @@ Download the dataset from: https://sid.erda.dk/public/archives/daaeac0d7ce1152ae
 
 - Test Annotations: GTSRB_Final_Test_GT.zip
 
-
-# Performance with PTSD
-
-Full Name: Persian Traffic Sign Database
-
-Content: 14,000 images for 43 dfferent traffc sign classes, vary in size and include real-world distortions.
-
-Reference: https://www.kaggle.com/datasets/saraparsaseresht/persian-traffic-sign-dataset-ptsd
-
-| Criteria                  | Result    | Note                  |
-|---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.8633    |                       |
-| **Best testing accuracy** |**0.8786** |                       |
-| Best training loss        |           |                       |
-| Best testing loss         |           |                       |
-| Train balance loss        |           |                       |
-| Test balance loss         |           |                       |
-
-<img src="utils/doc/training_metrics_ptsd.png" alt="Alt Text" width="70%"/>
-
-## Dataset folder structure: 
-
-### Folder structure
-    ./data/
-    └── GTSRB/
-        ├── Training/
-        │   ├── 00/
-        │   │   ├── 00000_00000.ppm
-        │   │   ├── 00000_00001.ppm
-        │   │   └── GT-00000.csv
-        │   ├── 01/
-        │   │   ├── 00001_00000.ppm
-        │   │   ├── 00001_00001.ppm
-        │   │   └── GT-00001.csv
-        │   └── ... (up to 00042)
-        ├── Test/
-        │   ├── Images/
-        │   │   ├── 00000.ppm
-        │   │   ├── 00001.ppm
-        │   │   └── ...
-        │   └── testset_with_meta_class.csv
-    └── PTSD/
-        ├── Training/
-        │   ├── 00/
-        │   │   ├── 00_00001.jpg
-        │   │   └── 00_00002.jpg
-        │   ├── 01/
-        │   │   ├── 01_00001.jpg
-        │   │   └── 01_00002.jpg
-        │   └── ... (up to 00042)
-        ├── Test/
-        │   ├── Images/
-        │   │   ├── 00001.jpg
-        │   │   ├── 00002.jpg
-        │   │   └── ...
-        │   └── testset_with_meta_class.csv
-
-### Normalization value calculated from the test set:
-
-| Normalization             | GTSRB                 | PTSD                  |
-|---------------------------|-----------------------|-----------------------|
-| Red mean                  | 0.3432482055626116    | 0.42227414577051153   |
-| Green mean                | 0.31312152061376486   | 0.40389899174730964   |
-| Blue mean                 | 0.32248030768500435   | 0.42392441068660547   |
-| Red standard              | 0.27380229614172485   | 0.2550717671385188    |
-| Green standard            | 0.26033050034131744   | 0.2273784047793104    |
-| Blue standard             | 0.2660272789537349    | 0.22533597220675006   |
-
-### Modification with PTSD test classes:
-
-Make the following change to the .csv file downloaded for PTSD dataset:
-
-<img src="utils/doc/modify_ptsd_dataset.png" alt="Alt Text" width="15%"/>
-
-Run the following script to modify all PTSD testset files
-
-- `python .\utils\process_ptsd_data\process_ptsd_data.py`
 
 # Performance with CIFAR-10
 
@@ -183,21 +88,55 @@ Reference: https://www.cs.toronto.edu/~kriz/cifar.html
 
 | Criteria                  | Result    | Note                  |
 |---------------------------|-----------|-----------------------|
-| Best training accuracy    | 0.7056    |                       |
-| **Best testing accuracy** | **0.7821**|last train: 7e86c261   |
-| Best training loss        | 0.7975    |                       |
-| Best testing loss         | 0.7461    |                       |
-| Train balance loss        | 1.0004    |                       |
-| Test balance loss         | 1.0004    |                       |
+| Best training accuracy    |    |                       |
+| **Best testing accuracy** | |                       |
+| Best training loss        |           |                       |
+| Best testing loss         |           |                       |
 
-<img src="utils/doc/training_metrics.png" alt="Alt Text" width="75%"/>
+<img src="utils/doc/training_metrics_cifar10_cnn_nat.png" alt="Alt Text" width="70%"/>
+
+# Performance with MNIST
+
+Full Name: 
+
+Content: 
+
+Reference: 
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    |    |                       |
+| **Best testing accuracy** | |                       |
+| Best training loss        |           |                       |
+| Best testing loss         |           |                       |
+
+<img src="utils/doc/training_metrics_mnist_cnn_nat.png" alt="Alt Text" width="70%"/>
+
+# Performance with Mixture-of-Experts initial training
+
+Initial training with 2 experts: GTSRB and CIFAR10
+
+<img src="utils/doc/performance_of_initial_training.png" alt="Alt Text" width="70%"/>
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    |    |                       |
+| **Best testing accuracy** | |                       |
+
+# Performance with Mixture-of-Experts fine-tune training
+
+Fine-tine the initial MoE to integrate MNIST expert
+
+<img src="utils/doc/performance_of_fine_tune_training.png" alt="Alt Text" width="70%"/>
+
+| Criteria                  | Result    | Note                  |
+|---------------------------|-----------|-----------------------|
+| Best training accuracy    |    |                       |
+| **Best testing accuracy** | |                       |
 
 # GitLab CI/CD DevOps Pipeline
 *Why do you a CI/CD pipeline for this? -> Yes👍*
 
 <img src="utils/doc/cicd_pipeline.png" alt="Alt Text" width="75%"/>
 
-Benefit of a CI/CD pipeline is freeing up your machine from building/testing/compiling. You can make changes on your slim and light laptop, push changes to be compiled/built/test on your server or more powerful home PC and don't have to worry about lugging around a clunky and power hungry workstation. 
-
-One method to do this is to remotely connect to your PC over the internet. This poses some security risks, since you are exposing your PC to the entire internet to find. Using GitLab Runner or Jenkins Agent is safer (knock on wood).
 
