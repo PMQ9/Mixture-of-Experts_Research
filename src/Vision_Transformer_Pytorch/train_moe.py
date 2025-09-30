@@ -69,7 +69,8 @@ parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fi
 parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base', 'convnextv2_tiny', 'convnext_small'], help='Model architecture to use')
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base', 
+                                                                                'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
