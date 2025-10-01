@@ -51,6 +51,12 @@ def create_model(model_arch, config):
     elif model_arch == 'vit_base':
         model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=config.num_class, img_size=config.img_size)
         return ModelWrapper(model, config.num_class)
+    elif model_arch == 'convnext_large':
+        model = timm.create_model('convnext_large.fb_in22k_ft_in1k', pretrained=True, num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'vit_large':
+        model = timm.create_model('vit_large_patch16_224', pretrained=True, num_classes=config.num_class, img_size=config.img_size)
+        return ModelWrapper(model, config.num_class)
     else:
         raise ValueError(f"Unknown model architecture: {model_arch}")
     
