@@ -7,8 +7,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - [ ] Reactivate Gitlab Runner. Use Golang, because
 
  **Performance**
-- [ ] Add GNNV
-
+- [x] Add GNNV
 
 # User Manual
 

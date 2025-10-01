@@ -4,13 +4,13 @@ import ast
 # **************** Default Params ****************
 DEFAULT_PARAMS = {
     'batch_size': 128,
-    'epoch': 800,
+    'epoch': 200,
     'learning_rate': 1e-3,
     'cutmix_alpha': 0.4,
     'cutmix_prob': 0.2,
     'warmup_epoch': 10,
     'label_smoothing': 0.1,
-    'test_start_epoch': 50,
+    'test_start_epoch': 0,
     'test_frequency': 2,
     'gpd_attack_epsilon_default': 0.1,
     'gpd_attack_epsilon_cifar_gtsrb': 0.031,
