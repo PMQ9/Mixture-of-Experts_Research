@@ -1,0 +1,33 @@
+# Test outputs
+test_output.txt
+*.log
+
+# Reports
+reports/*.pdf
+
+# Test data (optional - keep structure but ignore generated data)
+# testdata/baselines/*.json
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+coverage.out
+coverage.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

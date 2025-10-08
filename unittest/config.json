@@ -1,0 +1,14 @@
+{
+  "python_executable": "python",
+  "project_root": "..",
+  "models_to_test": [
+    "artifacts/results/gtsrb_small_cnn_best.pth",
+    "artifacts/results/cifar10_tiny_cnn_best.pth",
+    "artifacts/meta_moe_small_cnn_best.pth"
+  ],
+  "test_images": [
+    "unittest/testdata/images/test_sample.png"
+  ],
+  "regression_tolerance": 1e-5,
+  "report_output_dir": "reports"
+}
