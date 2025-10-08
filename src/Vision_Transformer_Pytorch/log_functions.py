@@ -59,19 +59,27 @@ def archive_params(args, config, output_dir):
     return artifacts_dir
 
 # **************** Plot training metrics ****************
-def plot_metrics(train_losses, test_losses, train_accs, test_accs, 
+def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
                  test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
                  plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
-                 meta_moe=False):
+                 meta_moe=False, model_arch='', adv_training=False,
+                 best_train_acc=0.0, best_test_acc=0.0, adv_test_acc=None, dataset_name=''):
     train_epochs = list(range(plot_epochs))
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
         fig, axes = plt.subplots(5, 4, figsize=(45, 27))
-        fig.suptitle('MetaMoE Training and Testing Metrics', fontsize=16)
+
+        # Build title with key metrics
+        title_parts = ['MetaMoE Training and Testing Metrics']
+        title_parts.append(f'Architecture: {model_arch}')
+        if adv_training:
+            title_parts.append('(Adversarial Training)')
+        title = ' - '.join(title_parts)
+        fig.suptitle(title, fontsize=16, fontweight='bold')
 
         # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
@@ -102,6 +110,17 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[1, 1].set_title(f'Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
         axes[1, 1].legend()
         axes[1, 1].grid(True)
+
+        # Add text box with key metrics in the test accuracy plot
+        metrics_text = f'Best Train Acc: {best_train_acc:.4f}\nBest Test Acc: {best_test_acc:.4f}'
+        if adv_training and adv_test_acc is not None:
+            metrics_text += f'\nAdv Test Acc: {adv_test_acc:.4f}'
+
+        axes[1, 1].text(0.02, 0.02, metrics_text,
+                       transform=axes[1, 1].transAxes,
+                       fontsize=10,
+                       verticalalignment='bottom',
+                       bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
         # Per-Meta-Class Accuracy
         axes[2, 0].plot(test_epochs[:len(test_gtsrb_accs)], test_gtsrb_accs, label='GTSRB Test Accuracy')
@@ -169,9 +188,25 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[4, 1].grid(True)
 
     else:
-        fig, axes = plt.subplots(3, 2, figsize=(15, 18))
-        fig.suptitle('Training and Testing Metrics', fontsize=16)
+        # Check if balance loss plots are needed (only for vit_moe architecture)
+        show_balance_loss = (model_arch == 'vit_moe')
 
+        if show_balance_loss:
+            fig, axes = plt.subplots(3, 2, figsize=(15, 18))
+        else:
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+        # Build title with key metrics
+        title_parts = ['Training and Testing Metrics']
+        if dataset_name:
+            title_parts.append(f'Dataset: {dataset_name.upper()}')
+        title_parts.append(f'Architecture: {model_arch}')
+        if adv_training:
+            title_parts.append('(Adversarial Training)')
+        title = ' - '.join(title_parts)
+        fig.suptitle(title, fontsize=16, fontweight='bold')
+
+        # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
         axes[0, 0].set_xlabel('Epoch')
         axes[0, 0].set_ylabel('Loss')
@@ -186,6 +221,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[0, 1].legend()
         axes[0, 1].grid(True)
 
+        # Classification Accuracy
         axes[1, 0].plot(train_epochs[:len(train_accs)], train_accs, label='Train Accuracy')
         axes[1, 0].set_xlabel('Epoch')
         axes[1, 0].set_ylabel('Accuracy')
@@ -200,19 +236,32 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[1, 1].legend()
         axes[1, 1].grid(True)
 
-        axes[2, 0].plot(train_epochs[:len(train_balance_losses)], train_balance_losses, label='Train Balance Loss')
-        axes[2, 0].set_xlabel('Epoch')
-        axes[2, 0].set_ylabel('Balance Loss')
-        axes[2, 0].set_title('Training Balance Loss')
-        axes[2, 0].legend()
-        axes[2, 0].grid(True)
+        # Add text box with key metrics in the test accuracy plot
+        metrics_text = f'Best Train Acc: {best_train_acc:.4f}\nBest Test Acc: {best_test_acc:.4f}'
+        if adv_training and adv_test_acc is not None:
+            metrics_text += f'\nAdv Test Acc: {adv_test_acc:.4f}'
 
-        axes[2, 1].plot(test_epochs[:len(test_balance_losses)], test_balance_losses, label='Test Balance Loss')
-        axes[2, 1].set_xlabel('Epoch')
-        axes[2, 1].set_ylabel('Balance Loss')
-        axes[2, 1].set_title(f'Test Balance Loss (Starting from Epoch {plot_test_start_epoch})')
-        axes[2, 1].legend()
-        axes[2, 1].grid(True)
+        axes[1, 1].text(0.02, 0.02, metrics_text,
+                       transform=axes[1, 1].transAxes,
+                       fontsize=10,
+                       verticalalignment='bottom',
+                       bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+        # Balance Loss (only for vit_moe)
+        if show_balance_loss:
+            axes[2, 0].plot(train_epochs[:len(train_balance_losses)], train_balance_losses, label='Train Balance Loss')
+            axes[2, 0].set_xlabel('Epoch')
+            axes[2, 0].set_ylabel('Balance Loss')
+            axes[2, 0].set_title('Training Balance Loss')
+            axes[2, 0].legend()
+            axes[2, 0].grid(True)
+
+            axes[2, 1].plot(test_epochs[:len(test_balance_losses)], test_balance_losses, label='Test Balance Loss')
+            axes[2, 1].set_xlabel('Epoch')
+            axes[2, 1].set_ylabel('Balance Loss')
+            axes[2, 1].set_title(f'Test Balance Loss (Starting from Epoch {plot_test_start_epoch})')
+            axes[2, 1].legend()
+            axes[2, 1].grid(True)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.savefig(os.path.join(output_dir, "training_metrics.png"))

@@ -791,6 +791,7 @@ def main():
     test_cifar10_accs = []
     test_mnist_accs = []
     best_acc = 0
+    best_train_acc = 0
     total_training_time = 0
     test_inference_times = []
         
@@ -827,6 +828,10 @@ def main():
         train_balance_losses.append(train_balance_loss)
         train_gating_losses.append(train_gating_loss)
         train_gating_accs.append(train_gating_acc)
+
+        # Track best train accuracy
+        if train_acc > best_train_acc:
+            best_train_acc = train_acc
 
         if test_loss is not None:
             test_losses.append(test_loss)
@@ -879,7 +884,12 @@ def main():
                 train_gating_accs, test_gating_accs,
                 test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
-                meta_moe=args.meta_moe
+                meta_moe=args.meta_moe,
+                model_arch=args.model_arch,
+                adv_training=args.adv_training,
+                best_train_acc=best_train_acc,
+                best_test_acc=best_acc,
+                dataset_name=args.dataset if not args.meta_moe else ''
             )
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
