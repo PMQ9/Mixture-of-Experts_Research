@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
+from small_expert import SmallExpertCNN, TinyExpertCNN, MicroExpertCNN
 
 class ModelWrapper(nn.Module):
     def __init__(self, model, num_classes):
@@ -28,6 +29,15 @@ class LogitsWrapper(nn.Module):
 def create_model(model_arch, config):
     if model_arch == 'vit_moe':
         return VisionTransformer(config)
+    elif model_arch == 'small_cnn':
+        model = SmallExpertCNN(num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'tiny_cnn':
+        model = TinyExpertCNN(num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'micro_cnn':
+        model = MicroExpertCNN(num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
     elif model_arch == 'resnet50':
         model = models.resnet50(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, config.num_class)

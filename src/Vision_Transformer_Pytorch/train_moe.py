@@ -31,6 +31,7 @@ from config import (
     DEFAULT_PARAMS, GTSRB_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
 )
 from config import apply_config_overrides
+from model_utils import resolve_model_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +42,11 @@ PRETRAINED_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+# Only set expandable_segments if PyTorch version supports it (2.1+)
+if hasattr(torch.version, 'cuda') and torch.version.cuda:
+    torch_version = tuple(map(int, torch.__version__.split('.')[:2]))
+    if torch_version >= (2, 1):
+        os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 if os.name != 'nt':
     torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -69,11 +74,11 @@ parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fi
 parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base', 
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_convnext_tiny_best.pth"), help='Path to pre-trained GTSRB model')
-parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_convnext_tiny_best.pth"), help='Path to pre-trained CIFAR10 model')
-parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_convnext_tiny_best.pth"), help='Path to pre-trained MNIST model')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
+parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_*_best.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
 parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
@@ -156,7 +161,7 @@ def pgd_gating_attack(model, data, meta_class, epsilon=0.1, alpha=0.01, num_iter
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = 0
-    scaler = torch.amp.GradScaler(enabled=True)
+    scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
     gating_criterion = nn.CrossEntropyLoss()
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     total_images = 0
@@ -639,7 +644,8 @@ def main():
                 raise RuntimeError(f"Loaded model from {existing_model_path} is not a MetaMoE instance")
             
             # Load new MNIST expert
-            mnist_model = torch.load(args.mnist_model_path, map_location=DEVICE, weights_only=False)
+            mnist_model_path = resolve_model_path(args.mnist_model_path)
+            mnist_model = torch.load(mnist_model_path, map_location=DEVICE, weights_only=False)
             if isinstance(mnist_model, ModelWrapper):
                 mnist_model = mnist_model.model
             mnist_model = mnist_model.to(DEVICE)
@@ -689,31 +695,34 @@ def main():
                 weight_decay=0.05,
                 fused=torch.cuda.is_available()
             )
-        # Old code here               
+        # Old code here
         else:
-            gtsrb_model = torch.load(args.gtsrb_model_path, map_location=DEVICE, weights_only=False)
+            gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
+            gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
             if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{args.gtsrb_model_path} is not a supported model type")
+                raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
             if isinstance(gtsrb_model, ModelWrapper):
                 gtsrb_model = gtsrb_model.model
             gtsrb_model = gtsrb_model.to(DEVICE)
-            print(f"Loaded {args.gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
-            
-            cifar10_model = torch.load(args.cifar10_model_path, map_location=DEVICE, weights_only=False)
+            print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+
+            cifar10_model_path = resolve_model_path(args.cifar10_model_path)
+            cifar10_model = torch.load(cifar10_model_path, map_location=DEVICE, weights_only=False)
             if not isinstance(cifar10_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{args.cifar10_model_path} is not a supported model type")
+                raise RuntimeError(f"{cifar10_model_path} is not a supported model type")
             if isinstance(cifar10_model, ModelWrapper):
                 cifar10_model = cifar10_model.model
             cifar10_model = cifar10_model.to(DEVICE)
-            print(f"Loaded {args.cifar10_model_path} as full model. Type: {type(cifar10_model)}")
+            print(f"Loaded {cifar10_model_path} as full model. Type: {type(cifar10_model)}")
 
-            mnist_model = torch.load(args.mnist_model_path, map_location=DEVICE, weights_only=False)
+            mnist_model_path = resolve_model_path(args.mnist_model_path)
+            mnist_model = torch.load(mnist_model_path, map_location=DEVICE, weights_only=False)
             if not isinstance(mnist_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{args.mnist_model_path} is not a supported model type")
+                raise RuntimeError(f"{mnist_model_path} is not a supported model type")
             if isinstance(mnist_model, ModelWrapper):
                 mnist_model = mnist_model.model
             mnist_model = mnist_model.to(DEVICE)
-            print(f"Loaded {args.mnist_model_path} as full model. Type: {type(mnist_model)}")
+            print(f"Loaded {mnist_model_path} as full model. Type: {type(mnist_model)}")
 
             with torch.no_grad():
                 dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
@@ -782,6 +791,7 @@ def main():
     test_cifar10_accs = []
     test_mnist_accs = []
     best_acc = 0
+    best_train_acc = 0
     total_training_time = 0
     test_inference_times = []
         
@@ -818,6 +828,10 @@ def main():
         train_balance_losses.append(train_balance_loss)
         train_gating_losses.append(train_gating_loss)
         train_gating_accs.append(train_gating_acc)
+
+        # Track best train accuracy
+        if train_acc > best_train_acc:
+            best_train_acc = train_acc
 
         if test_loss is not None:
             test_losses.append(test_loss)
@@ -870,7 +884,12 @@ def main():
                 train_gating_accs, test_gating_accs,
                 test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
                 EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
-                meta_moe=args.meta_moe
+                meta_moe=args.meta_moe,
+                model_arch=args.model_arch,
+                adv_training=args.adv_training,
+                best_train_acc=best_train_acc,
+                best_test_acc=best_acc,
+                dataset_name=args.dataset if not args.meta_moe else ''
             )
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
