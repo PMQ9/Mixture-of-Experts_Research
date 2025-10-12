@@ -215,6 +215,185 @@ class MicroExpertCNN(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
+# Feature extractor variants for use as gating network backbones
+class SmallExpertCNN_Features(nn.Module):
+    """
+    Feature extractor variant of SmallExpertCNN
+    Returns features instead of class predictions
+    Feature dimension: 512
+    """
+
+    def __init__(self):
+        super(SmallExpertCNN_Features, self).__init__()
+        self.num_features = 512
+
+        # Block 1: 32x32x3 -> 16x16x64
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 2: 16x16x64 -> 8x8x128
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(128)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 3: 8x8x128 -> 4x4x256
+        self.conv3 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(256)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 4: 4x4x256 -> 2x2x256
+        self.conv4 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.bn4 = nn.BatchNorm2d(256)
+        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Feature layer (no dropout for feature extraction)
+        self.fc1 = nn.Linear(256 * 2 * 2, 512)
+
+    def forward(self, x):
+        # Block 1
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.pool1(x)
+
+        # Block 2
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.pool2(x)
+
+        # Block 3
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = F.relu(x)
+        x = self.pool3(x)
+
+        # Block 4
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = F.relu(x)
+        x = self.pool4(x)
+
+        # Flatten
+        x = x.view(x.size(0), -1)
+
+        # Return features
+        x = self.fc1(x)
+        x = F.relu(x)
+
+        return x
+
+
+class TinyExpertCNN_Features(nn.Module):
+    """
+    Feature extractor variant of TinyExpertCNN
+    Returns features instead of class predictions
+    Feature dimension: 256
+    """
+
+    def __init__(self):
+        super(TinyExpertCNN_Features, self).__init__()
+        self.num_features = 256
+
+        # Block 1: 32x32x3 -> 16x16x32
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 2: 16x16x32 -> 8x8x64
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 3: 8x8x64 -> 4x4x128
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(128)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Feature layer
+        self.fc1 = nn.Linear(128 * 4 * 4, 256)
+
+    def forward(self, x):
+        # Block 1
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.pool1(x)
+
+        # Block 2
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.pool2(x)
+
+        # Block 3
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = F.relu(x)
+        x = self.pool3(x)
+
+        # Flatten
+        x = x.view(x.size(0), -1)
+
+        # Return features
+        x = self.fc1(x)
+        x = F.relu(x)
+
+        return x
+
+
+class MicroExpertCNN_Features(nn.Module):
+    """
+    Feature extractor variant of MicroExpertCNN
+    Returns features instead of class predictions
+    Feature dimension: 1024 (flattened conv features)
+    """
+
+    def __init__(self):
+        super(MicroExpertCNN_Features, self).__init__()
+        self.num_features = 1024  # 64 * 4 * 4
+
+        # Block 1: 32x32x3 -> 16x16x32
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 2: 16x16x32 -> 8x8x64
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Block 3: 8x8x64 -> 4x4x64
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+        # Block 1
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.pool1(x)
+
+        # Block 2
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.pool2(x)
+
+        # Block 3
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = F.relu(x)
+        x = self.pool3(x)
+
+        # Flatten and return features
+        x = x.view(x.size(0), -1)
+
+        return x
+
+
 def print_model_info(model, model_name):
     """Print detailed model information"""
     print(f"\n{'='*60}")
