@@ -1,21 +1,30 @@
 # Formal Neural Network Verification
 
-This directory contains tools and scripts for formally verifying the robustness of expert models using NNV (Neural Network Verification Tool).
+This directory contains tools and scripts for formally verifying both **individual experts** and the complete **MetaMoE system** using NNV (Neural Network Verification Tool).
 
 ## 📁 Directory Structure
 
 ```
 Formal_Neural_Network_Verification/
-├── README.md                      # This file
-├── NNV_SETUP_GUIDE.md            # Comprehensive setup and usage guide
-├── export_to_onnx.py             # PyTorch → ONNX converter
-├── verify_expert_nnv.m           # Main MATLAB verification script
-├── quick_verify_example.m         # Quick test script
-├── File_Conversion/               # Legacy conversion attempts (not fully functional)
+├── README.md                           # This file
+├── QUICKSTART.md                       # 5-minute quick start guide
+├── NNV_SETUP_GUIDE.md                  # Detailed NNV setup and usage
+├── MOE_VERIFICATION_GUIDE.md          # ⭐ MetaMoE compositional verification guide
+│
+├── export_to_onnx.py                   # Export individual experts to ONNX
+├── export_router_to_onnx.py           # Export MetaMoE router to ONNX
+├── test_onnx_export.py                # Validate ONNX export correctness
+│
+├── verify_expert_nnv.m                # Verify individual expert (Level 1)
+├── verify_router_nnv.m                # Verify MetaMoE router (Level 2)
+├── verify_metamoe_compositional.m     # ⭐ Full MetaMoE verification (Level 3)
+├── quick_verify_example.m             # Quick test script
+│
+├── File_Conversion/                    # Legacy conversion scripts (not functional)
 │   ├── pth_to_mat.py
 │   ├── onnx_to_mat.py
 │   └── check_model_architecture.py
-└── sample_moe_io.py              # Sample I/O testing
+└── sample_moe_io.py                   # Sample I/O testing
 ```
 
 ## 🚀 Quick Start
@@ -52,12 +61,15 @@ verify_expert_nnv
 
 ## 📚 Documentation
 
-See **[NNV_SETUP_GUIDE.md](NNV_SETUP_GUIDE.md)** for:
-- Detailed installation instructions
-- Step-by-step verification workflow
-- Parameter tuning guidelines
-- Troubleshooting tips
-- Advanced topics (MetaMoE verification, compositional verification)
+### Getting Started
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup and first verification
+- **[NNV_SETUP_GUIDE.md](NNV_SETUP_GUIDE.md)** - Comprehensive NNV guide for individual experts
+
+### MetaMoE Verification ⭐
+- **[MOE_VERIFICATION_GUIDE.md](MOE_VERIFICATION_GUIDE.md)** - Complete guide for verifying the full MetaMoE system
+  - Router verification
+  - Compositional verification
+  - End-to-end guarantees
 
 ## 🔧 Tools Overview
 
@@ -290,10 +302,20 @@ When adding new verification scripts:
 4. Generate visualizations
 5. Update this README
 
+## 🎯 Verification Levels
+
+| Level | What | Scripts | Use Case |
+|-------|------|---------|----------|
+| **Level 1** ⭐ | Individual Expert | `verify_expert_nnv.m` | Component testing, expert robustness |
+| **Level 2** ⭐⭐ | Router Only | `verify_router_nnv.m` | Routing stability, misrouting detection |
+| **Level 3** ⭐⭐⭐ | **Full MetaMoE** | `verify_metamoe_compositional.m` | **End-to-end certification** |
+
+See **[MOE_VERIFICATION_GUIDE.md](MOE_VERIFICATION_GUIDE.md)** for compositional verification details.
+
 ## 📝 Notes
 
 - **File_Conversion/** contains legacy scripts for direct PyTorch→MATLAB conversion. These are not fully functional. Use ONNX workflow instead.
-- For MetaMoE verification, individual experts must be verified separately (compositional verification).
+- For **complete MetaMoE verification**, use compositional approach (Level 3) - verifies both router and experts together.
 - NNV supports many layer types, but custom/complex layers may require manual handling.
 
 ## 📧 Support
