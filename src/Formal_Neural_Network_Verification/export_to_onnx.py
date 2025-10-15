@@ -14,6 +14,7 @@ Usage:
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import os
 import sys
 import argparse
@@ -24,6 +25,133 @@ SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Vision_
 sys.path.append(SRC_DIR)
 
 from small_expert import MicroExpertCNN, TinyExpertCNN, SmallExpertCNN
+
+
+class NNVCompatibleWrapper(nn.Module):
+    """
+    Wrapper to make models NNV-compatible by replacing dynamic view operations
+    with static reshape operations that MATLAB's ONNX importer can handle.
+
+    The issue: PyTorch's x.view() creates Shape+Gather+Reshape operators in ONNX
+    which MATLAB's importONNXNetwork cannot parse (ONNXParams error).
+
+    The solution: Override forward() to use static flatten/reshape operations.
+    """
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+        # Determine the model type and set flatten size
+        model_type = type(model).__name__
+
+        if model_type == 'MicroExpertCNN':
+            # MicroExpertCNN: after conv3+pool3, we have [B, 64, 4, 4]
+            self.flatten_size = 64 * 4 * 4  # 1024
+        elif model_type == 'TinyExpertCNN':
+            # TinyExpertCNN: after conv3+pool3, we have [B, 128, 4, 4]
+            self.flatten_size = 128 * 4 * 4  # 2048
+        elif model_type == 'SmallExpertCNN':
+            # SmallExpertCNN: after conv4+pool4, we have [B, 256, 2, 2]
+            self.flatten_size = 256 * 2 * 2  # 1024
+        else:
+            raise ValueError(f"Unsupported model type for NNV export: {model_type}")
+
+        self.model_type = model_type
+        self.num_classes = model.num_classes
+
+    def forward(self, x):
+        """
+        Forward pass with static reshaping instead of dynamic view()
+        This recreates the forward pass without using x.view()
+        """
+        if self.model_type == 'MicroExpertCNN':
+            # Block 1: Conv + BN + ReLU + Pool
+            x = self.model.conv1(x)
+            x = self.model.bn1(x)
+            x = F.relu(x)
+            x = self.model.pool1(x)
+
+            # Block 2: Conv + BN + ReLU + Pool
+            x = self.model.conv2(x)
+            x = self.model.bn2(x)
+            x = F.relu(x)
+            x = self.model.pool2(x)
+
+            # Block 3: Conv + BN + ReLU + Pool
+            x = self.model.conv3(x)
+            x = self.model.bn3(x)
+            x = F.relu(x)
+            x = self.model.pool3(x)
+
+            # Static flatten (no dynamic Shape operation)
+            x = torch.flatten(x, 1)  # Flatten from dim 1 onwards
+
+            # FC layer
+            x = self.model.fc(x)
+
+        elif self.model_type == 'TinyExpertCNN':
+            # Block 1
+            x = self.model.conv1(x)
+            x = self.model.bn1(x)
+            x = F.relu(x)
+            x = self.model.pool1(x)
+
+            # Block 2
+            x = self.model.conv2(x)
+            x = self.model.bn2(x)
+            x = F.relu(x)
+            x = self.model.pool2(x)
+
+            # Block 3
+            x = self.model.conv3(x)
+            x = self.model.bn3(x)
+            x = F.relu(x)
+            x = self.model.pool3(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layers
+            x = self.model.fc1(x)
+            x = F.relu(x)
+            x = self.model.dropout(x)
+            x = self.model.fc2(x)
+
+        elif self.model_type == 'SmallExpertCNN':
+            # Block 1
+            x = self.model.conv1(x)
+            x = self.model.bn1(x)
+            x = F.relu(x)
+            x = self.model.pool1(x)
+
+            # Block 2
+            x = self.model.conv2(x)
+            x = self.model.bn2(x)
+            x = F.relu(x)
+            x = self.model.pool2(x)
+
+            # Block 3
+            x = self.model.conv3(x)
+            x = self.model.bn3(x)
+            x = F.relu(x)
+            x = self.model.pool3(x)
+
+            # Block 4
+            x = self.model.conv4(x)
+            x = self.model.bn4(x)
+            x = F.relu(x)
+            x = self.model.pool4(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layers
+            x = self.model.fc1(x)
+            x = F.relu(x)
+            x = self.model.dropout(x)
+            x = self.model.fc2(x)
+
+        return x
 
 
 def export_model_to_onnx(model_path, output_path, input_size=(1, 3, 32, 32), opset_version=11):
@@ -62,6 +190,15 @@ def export_model_to_onnx(model_path, output_path, input_size=(1, 3, 32, 32), ops
 
     # Set to evaluation mode
     model.eval()
+
+    # Wrap model for NNV compatibility (replaces dynamic view with static flatten)
+    model_type = type(model).__name__
+    if model_type in ['MicroExpertCNN', 'TinyExpertCNN', 'SmallExpertCNN']:
+        print(f"Wrapping {model_type} for NNV compatibility (static reshape)...")
+        model = NNVCompatibleWrapper(model)
+        model.eval()
+    else:
+        print(f"Warning: {model_type} may not be NNV-compatible. Consider adding support.")
 
     # Create dummy input
     dummy_input = torch.randn(input_size, device=device)

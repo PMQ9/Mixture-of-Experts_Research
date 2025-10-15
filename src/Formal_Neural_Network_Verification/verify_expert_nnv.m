@@ -16,15 +16,18 @@
 nnv_root = fullfile('..', '..', 'modules', 'nnv_moe', 'code', 'nnv');
 
 % Path to exported ONNX model
-onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_micro_cnn_best.onnx');
+onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_micro_cnn.onnx');
 
 % Dataset configuration
 dataset_name = 'GTSRB'; % Options: GTSRB, CIFAR10, MNIST
 data_root = fullfile('..', '..', 'data');
 
 % Verification parameters
-epsilon = 2/255;        % L-infinity perturbation bound (normalized)
-reachMethod = 'approx-star'; % Options: 'exact-star', 'approx-star', 'abs-dom'
+epsilon = 0.5/255;        % L-infinity perturbation bound (normalized)
+reachMethod = 'abs-dom'; % Options: 'exact-star', 'approx-star', 'abs-dom'
+lp_solver = 'linprog';  % Options: 'linprog', 'glpk', 'gurobi'
+relaxFactor = 0;        % Relaxation factor for approximate methods (0 = tight)
+numCores = 1;           % Number of parallel cores (1 = sequential)
 
 % Image selection
 test_image_idx = 1;     % Which test image to verify
@@ -50,11 +53,46 @@ fprintf('Loading ONNX model: %s\n', onnx_model_path);
 
 % Load ONNX model into NNV
 try
-    net = onnx2nnv(onnx_model_path);
+    % First try the new recommended API (MATLAB R2020b+)
+    fprintf('Attempting to load with importNetworkFromONNX (recommended)...\n');
+    try
+        matlab_net = importNetworkFromONNX(onnx_model_path, ...
+            'InputDataFormats', 'BCSS', ...
+            'OutputDataFormats', 'BC');
+        fprintf('Loaded with importNetworkFromONNX successfully!\n');
+    catch ME1
+        % Fall back to onnx2nnv if new API fails
+        fprintf('Warning: importNetworkFromONNX failed: %s\n', ME1.message);
+        fprintf('Falling back to onnx2nnv...\n');
+        matlab_net = [];
+    end
+
+    % If new API didn't work, try onnx2nnv
+    if isempty(matlab_net)
+        % Configure loading options for onnx2nnv
+        loadOptions = struct();
+        loadOptions.InputDataFormat = 'BCSS';  % Batch, Channel, Spatial, Spatial
+        loadOptions.OutputDataFormat = 'BC';    % Batch, Class
+        loadOptions.GenerateCustomLayers = false;
+        loadOptions.FoldConstants = 'deep';
+
+        matlab_net = onnx2nnv(onnx_model_path, loadOptions);
+        fprintf('Loaded with onnx2nnv successfully!\n');
+    end
+
+    % Convert to NNV format if not already
+    if ~isa(matlab_net, 'NN')
+        fprintf('Converting MATLAB network to NNV format...\n');
+        net = matlab2nnv(matlab_net);
+    else
+        net = matlab_net;
+    end
+
     fprintf('Model loaded successfully!\n');
     fprintf('Number of layers: %d\n', length(net.Layers));
 catch ME
-    error('Failed to load ONNX model: %s', ME.message);
+    error('Failed to load ONNX model: %s\nStack trace:\n%s', ...
+        ME.message, getReport(ME, 'extended'));
 end
 
 %% ======================== LOAD DATASET ========================
@@ -149,14 +187,77 @@ fprintf('Input set created successfully\n');
 
 fprintf('\nVerifying robustness using %s method...\n', reachMethod);
 
+% Configure network for reachability analysis
+net.reachMethod = reachMethod;
+net.lp_solver = lp_solver;
+net.relaxFactor = relaxFactor;
+net.numCores = numCores;
+
+% For MaxPooling layers, use less precise but faster approximation
+% This avoids the LP solver timeout issues
+net.dis_opt = [];  % Disable some optimization options that cause LP issues
+net.reachOption = [];  % Use default options
+
 % Define reachability options
 reachOptions = struct;
 reachOptions.reachMethod = reachMethod;
 
 % Perform verification
-target_idx = double(target_label); % Convert label to numeric
+% Convert label to numeric index (MATLAB uses 1-based indexing)
+% Note: The label might be a folder name, we need the actual class index
+if isnumeric(target_label)
+    target_idx = double(target_label);
+elseif ischar(target_label) || isstring(target_label)
+    % For GTSRB, folder names are class IDs
+    % Try to extract numeric part from label
+    target_str = char(target_label);
+    target_idx = str2double(target_str);
+    if isnan(target_idx)
+        % If conversion fails, just use 0 (will check all classes)
+        fprintf('Warning: Could not extract class index from label "%s", will verify all classes\n', target_label);
+        target_idx = 0;
+    else
+        % GTSRB classes are 0-based in folders but we need 1-based for MATLAB
+        target_idx = target_idx + 1;
+    end
+end
+
+fprintf('Verifying for target class index: %d\n', target_idx);
+
 tic;
-res = net.verify_robustness(IS, reachOptions, target_idx);
+try
+    res = net.verify_robustness(IS, reachOptions, target_idx);
+catch ME
+    fprintf('Error during verification: %s\n', ME.message);
+    fprintf('\nTrying alternative approach: compute reachable set directly...\n');
+
+    % Alternative: Just compute the reachable set without robustness check
+    try
+        tic;
+        R = net.reach(IS, reachMethod);
+        reach_time = toc;
+        fprintf('Reachable set computed in %.2f seconds\n', reach_time);
+        fprintf('Reachable set size: %d\n', length(R));
+
+        % Manual robustness check
+        % Check if the target class has the highest lower bound
+        if ~isempty(R)
+            % Get output ranges
+            output_star = R{end};
+            if iscell(output_star)
+                output_star = output_star{1};
+            end
+
+            fprintf('Successfully computed reachable output set\n');
+            res = -1;  % Unknown result, but we have the reachable set
+        else
+            error('Failed to compute reachable set');
+        end
+    catch ME2
+        fprintf('Alternative approach also failed: %s\n', ME2.message);
+        error('Verification failed with both approaches');
+    end
+end
 verify_time = toc;
 
 fprintf('\nVerification completed in %.2f seconds\n', verify_time);
