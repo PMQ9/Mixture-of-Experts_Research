@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
-from small_expert import SmallExpertCNN, TinyExpertCNN, MicroExpertCNN
+from small_expert import SmallExpertCNN, TinyExpertCNN, MicroExpertCNN, NNVCompatibleCNN
 
 class ModelWrapper(nn.Module):
     def __init__(self, model, num_classes):
@@ -37,6 +37,9 @@ def create_model(model_arch, config):
         return ModelWrapper(model, config.num_class)
     elif model_arch == 'micro_cnn':
         model = MicroExpertCNN(num_classes=config.num_class)
+        return ModelWrapper(model, config.num_class)
+    elif model_arch == 'nnv_cnn':
+        model = NNVCompatibleCNN(num_classes=config.num_class)
         return ModelWrapper(model, config.num_class)
     elif model_arch == 'resnet50':
         model = models.resnet50(pretrained=False)

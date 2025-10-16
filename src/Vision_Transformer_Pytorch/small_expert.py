@@ -163,24 +163,120 @@ class MicroExpertCNN(nn.Module):
     Optimized for formal verification tools (fewer layers, simpler structure)
     """
 
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, use_maxpool=True):
         super(MicroExpertCNN, self).__init__()
         self.num_classes = num_classes
+        self.use_maxpool = use_maxpool
 
-        # Block 1: 32x32x3 -> 16x16x32
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
+        if use_maxpool:
+            # Original architecture with MaxPooling
+            # Block 1: 32x32x3 -> 16x16x32
+            self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
+            self.bn1 = nn.BatchNorm2d(32)
+            self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+            # Block 2: 16x16x32 -> 8x8x64
+            self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+            self.bn2 = nn.BatchNorm2d(64)
+            self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+            # Block 3: 8x8x64 -> 4x4x64
+            self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1)
+            self.bn3 = nn.BatchNorm2d(64)
+            self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        else:
+            # NNV-compatible: Strided convolutions instead of MaxPool
+            # Block 1: 32x32x3 -> 16x16x32
+            self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=2, padding=1)
+            self.bn1 = nn.BatchNorm2d(32)
+
+            # Block 2: 16x16x32 -> 8x8x64
+            self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1)
+            self.bn2 = nn.BatchNorm2d(64)
+
+            # Block 3: 8x8x64 -> 4x4x64
+            self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1)
+            self.bn3 = nn.BatchNorm2d(64)
+
+        # Fully connected layer
+        self.fc = nn.Linear(64 * 4 * 4, num_classes)
+
+    def forward(self, x):
+        if self.use_maxpool:
+            # Block 1
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = F.relu(x)
+            x = self.pool1(x)
+
+            # Block 2
+            x = self.conv2(x)
+            x = self.bn2(x)
+            x = F.relu(x)
+            x = self.pool2(x)
+
+            # Block 3
+            x = self.conv3(x)
+            x = self.bn3(x)
+            x = F.relu(x)
+            x = self.pool3(x)
+        else:
+            # NNV-compatible forward pass (no pooling)
+            # Block 1
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = F.relu(x)
+
+            # Block 2
+            x = self.conv2(x)
+            x = self.bn2(x)
+            x = F.relu(x)
+
+            # Block 3
+            x = self.conv3(x)
+            x = self.bn3(x)
+            x = F.relu(x)
+
+        # Flatten and classify
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+
+        return x
+
+    def count_parameters(self):
+        """Count total trainable parameters"""
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+
+class NNVCompatibleCNN(nn.Module):
+    """
+    NNV-Compatible CNN Expert - NO MaxPooling
+    Input: 32x32x3 RGB images
+    Architecture: 3 strided conv blocks + 1 FC layer
+    Parameters: ~67K (optimized for formal verification)
+
+    Key features for NNV compatibility:
+    - Strided convolutions instead of MaxPooling
+    - BatchNorm (foldable into conv layers)
+    - ReLU activation (piecewise linear)
+    - Single FC layer (minimal complexity)
+    """
+
+    def __init__(self, num_classes=10):
+        super(NNVCompatibleCNN, self).__init__()
+        self.num_classes = num_classes
+
+        # Block 1: 32x32x3 -> 16x16x32 (stride-2 conv)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=2, padding=1)
         self.bn1 = nn.BatchNorm2d(32)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Block 2: 16x16x32 -> 8x8x64
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        # Block 2: 16x16x32 -> 8x8x64 (stride-2 conv)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1)
         self.bn2 = nn.BatchNorm2d(64)
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Block 3: 8x8x64 -> 4x4x64
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1)
+        # Block 3: 8x8x64 -> 4x4x64 (stride-2 conv)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1)
         self.bn3 = nn.BatchNorm2d(64)
-        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         # Fully connected layer
         self.fc = nn.Linear(64 * 4 * 4, num_classes)
@@ -190,19 +286,16 @@ class MicroExpertCNN(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = F.relu(x)
-        x = self.pool1(x)
 
         # Block 2
         x = self.conv2(x)
         x = self.bn2(x)
         x = F.relu(x)
-        x = self.pool2(x)
 
         # Block 3
         x = self.conv3(x)
         x = self.bn3(x)
         x = F.relu(x)
-        x = self.pool3(x)
 
         # Flatten and classify
         x = x.view(x.size(0), -1)
