@@ -250,13 +250,13 @@ class MicroExpertCNN(nn.Module):
 
 class NNVCompatibleCNN(nn.Module):
     """
-    NNV-Compatible CNN Expert - NO MaxPooling
+    NNV-Compatible CNN Expert - Uses AvgPool instead of MaxPool
     Input: 32x32x3 RGB images
-    Architecture: 3 strided conv blocks + 1 FC layer
+    Architecture: 3 conv blocks + 1 FC layer (matches MicroExpertCNN)
     Parameters: ~67K (optimized for formal verification)
 
     Key features for NNV compatibility:
-    - Strided convolutions instead of MaxPooling
+    - AvgPool instead of MaxPooling (linear operation, NNV-friendly)
     - BatchNorm (foldable into conv layers)
     - ReLU activation (piecewise linear)
     - Single FC layer (minimal complexity)
@@ -266,17 +266,20 @@ class NNVCompatibleCNN(nn.Module):
         super(NNVCompatibleCNN, self).__init__()
         self.num_classes = num_classes
 
-        # Block 1: 32x32x3 -> 16x16x32 (stride-2 conv)
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=2, padding=1)
+        # Block 1: 32x32x3 -> 16x16x32
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
         self.bn1 = nn.BatchNorm2d(32)
+        self.pool1 = nn.AvgPool2d(kernel_size=2, stride=2)
 
-        # Block 2: 16x16x32 -> 8x8x64 (stride-2 conv)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1)
+        # Block 2: 16x16x32 -> 8x8x64
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(64)
+        self.pool2 = nn.AvgPool2d(kernel_size=2, stride=2)
 
-        # Block 3: 8x8x64 -> 4x4x64 (stride-2 conv)
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1)
+        # Block 3: 8x8x64 -> 4x4x64
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.bn3 = nn.BatchNorm2d(64)
+        self.pool3 = nn.AvgPool2d(kernel_size=2, stride=2)
 
         # Fully connected layer
         self.fc = nn.Linear(64 * 4 * 4, num_classes)
@@ -286,16 +289,19 @@ class NNVCompatibleCNN(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = F.relu(x)
+        x = self.pool1(x)
 
         # Block 2
         x = self.conv2(x)
         x = self.bn2(x)
         x = F.relu(x)
+        x = self.pool2(x)
 
         # Block 3
         x = self.conv3(x)
         x = self.bn3(x)
         x = F.relu(x)
+        x = self.pool3(x)
 
         # Flatten and classify
         x = x.view(x.size(0), -1)

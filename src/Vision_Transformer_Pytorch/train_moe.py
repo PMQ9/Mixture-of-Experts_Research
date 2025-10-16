@@ -904,6 +904,28 @@ def main():
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
 
+        # Export to NNV-compatible ONNX for verification (individual experts only)
+        if not args.meta_moe and args.model_arch in ['nnv_cnn', 'micro_cnn', 'tiny_cnn', 'small_cnn']:
+            import subprocess
+            nnv_export_script = os.path.join(os.path.dirname(__file__), '..', 'Formal_Neural_Network_Verification', 'export_to_onnx.py')
+            nnv_output_dir = os.path.join(OUTPUT_DIR, 'nnv_models')
+            os.makedirs(nnv_output_dir, exist_ok=True)
+
+            print(f"\nExporting to NNV-compatible ONNX format...")
+            try:
+                result = subprocess.run([
+                    'python', nnv_export_script,
+                    '--model_path', best_model_path,
+                    '--output_dir', nnv_output_dir
+                ], capture_output=True, text=True, timeout=60)
+
+                if result.returncode == 0:
+                    print(f"NNV ONNX export successful! Output directory: {nnv_output_dir}")
+                else:
+                    print(f"NNV ONNX export failed: {result.stderr}")
+            except Exception as e:
+                print(f"Error during NNV ONNX export: {e}")
+
     if args.art_attack:
         if args.meta_moe:
             best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth")
