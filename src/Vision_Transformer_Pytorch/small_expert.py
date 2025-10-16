@@ -318,88 +318,89 @@ class UltraVerifiableCNN(nn.Module):
     """
     Ultra-Verifiable CNN - Designed specifically for formal verification tools
 
+    **V2 UPDATE:** Increased capacity for better accuracy while maintaining verifiability
+    - Channels: 20→28→40→56 (balanced growth, ~85% of NNVCompatibleCNN width)
+    - Added 4th conv layer for better feature extraction
+    - Small FC hidden layer (64 features for lightweight classification)
+    - Verification-friendly: 96K params (4% smaller than NNVCompatibleCNN)
+
     Design principles from verification literature:
-    1. SMALL WIDTH: 16-24 channels max (exponential complexity in width)
-    2. MINIMAL DEPTH: 4-5 layers total (linear complexity in depth)
-    3. STRIDED CONV: Replace pooling entirely (fewer layer types)
-    4. NO BATCHNORM: Already folded in at export, but keep simple
-    5. DIRECT FC: One hidden layer max
+    1. MODERATE WIDTH: 20-56 channels (smaller than 32-64-64, but sufficient)
+    2. CONTROLLED DEPTH: 4 conv + 2 FC (one more conv, better features)
+    3. AVGPOOL: Use average pooling (linear, LP-friendly)
+    4. SMALL FC: 64-unit hidden layer (lightweight classifier)
 
     Input: 32x32x3 RGB images
-    Architecture: 2 strided conv + 1 conv + 2 FC
-    Parameters: ~20K (minimal for fast verification)
+    Architecture: 4 conv blocks + 2 FC layers
+    Parameters: ~96K (4% smaller than NNVCompatibleCNN)
 
-    Expected NNV layers: 5-6 (vs 13 before)
-    Expected verification time: <5 minutes (vs 20+ minutes)
-    Expected accuracy: 85-90% (vs 95%+ for larger models)
+    Expected NNV layers: 9-10 (vs 13 before, still 23-31% reduction)
+    Expected verification time: 10-15 minutes (vs 20+ minutes)
+    Expected accuracy: 88-94% (vs 95%+ for larger models, 58% for V1)
 
-    Trade-off: Sacrifices 5-10% accuracy for 10x+ faster verification
+    Trade-off: Balanced accuracy vs verifiability
     """
 
     def __init__(self, num_classes=43):
         super(UltraVerifiableCNN, self).__init__()
         self.num_classes = num_classes
 
-        # Layer 1: 32x32x3 -> 16x16x16 (strided conv, no pooling)
-        self.conv1 = nn.Conv2d(
-            in_channels=3,
-            out_channels=16,
-            kernel_size=4,
-            stride=2,
-            padding=1
-        )
-        self.bn1 = nn.BatchNorm2d(16)
+        # Block 1: 32x32x3 -> 16x16x20
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=20, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(20)
+        self.pool1 = nn.AvgPool2d(kernel_size=2, stride=2)
 
-        # Layer 2: 16x16x16 -> 8x8x24 (strided conv, no pooling)
-        self.conv2 = nn.Conv2d(
-            in_channels=16,
-            out_channels=24,
-            kernel_size=4,
-            stride=2,
-            padding=1
-        )
-        self.bn2 = nn.BatchNorm2d(24)
+        # Block 2: 16x16x20 -> 8x8x28
+        self.conv2 = nn.Conv2d(in_channels=20, out_channels=28, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(28)
+        self.pool2 = nn.AvgPool2d(kernel_size=2, stride=2)
 
-        # Layer 3: 8x8x24 -> 8x8x32 (regular conv, maintain spatial size)
-        self.conv3 = nn.Conv2d(
-            in_channels=24,
-            out_channels=32,
-            kernel_size=3,
-            stride=1,
-            padding=1
-        )
-        self.bn3 = nn.BatchNorm2d(32)
+        # Block 3: 8x8x28 -> 4x4x40
+        self.conv3 = nn.Conv2d(in_channels=28, out_channels=40, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(40)
+        self.pool3 = nn.AvgPool2d(kernel_size=2, stride=2)
 
-        # Global Average Pooling: 8x8x32 -> 1x1x32
-        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        # Block 4: 4x4x40 -> 4x4x56
+        self.conv4 = nn.Conv2d(in_channels=40, out_channels=56, kernel_size=3, stride=1, padding=1)
+        self.bn4 = nn.BatchNorm2d(56)
 
-        # Fully connected: 32 -> num_classes
-        self.fc = nn.Linear(32, num_classes)
+        # Fully connected layers (reduced size for verification)
+        self.fc1 = nn.Linear(56 * 4 * 4, 64)  # Small hidden layer (56 channels from conv4)
+        self.dropout = nn.Dropout(p=0.3)  # Light dropout
+        self.fc2 = nn.Linear(64, num_classes)
 
     def forward(self, x):
-        # Conv block 1
+        # Block 1
         x = self.conv1(x)
         x = self.bn1(x)
         x = F.relu(x)
+        x = self.pool1(x)
 
-        # Conv block 2
+        # Block 2
         x = self.conv2(x)
         x = self.bn2(x)
         x = F.relu(x)
+        x = self.pool2(x)
 
-        # Conv block 3
+        # Block 3
         x = self.conv3(x)
         x = self.bn3(x)
         x = F.relu(x)
+        x = self.pool3(x)
 
-        # Global pooling
-        x = self.global_avg_pool(x)
+        # Block 4 (no pooling)
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = F.relu(x)
 
         # Flatten
         x = x.view(x.size(0), -1)
 
-        # Classify
-        x = self.fc(x)
+        # Classifier
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
 
         return x
 

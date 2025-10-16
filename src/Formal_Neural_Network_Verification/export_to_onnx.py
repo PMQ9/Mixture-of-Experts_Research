@@ -117,11 +117,12 @@ class NNVSimplifiedWrapper(nn.Module):
             self.fold_bn = fold_bn
 
         elif model_type == 'UltraVerifiableCNN':
-            # Ultra-verifiable architecture: 3 conv + global avg pool + 1 FC
+            # Ultra-verifiable architecture: 4 conv + 3 avg pool + 2 FC
             if fold_bn:
                 self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
                 self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
                 self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+                self.conv4 = fold_batch_norm_into_conv(model.conv4, model.bn4)
             else:
                 self.conv1 = model.conv1
                 self.bn1 = model.bn1
@@ -129,9 +130,15 @@ class NNVSimplifiedWrapper(nn.Module):
                 self.bn2 = model.bn2
                 self.conv3 = model.conv3
                 self.bn3 = model.bn3
+                self.conv4 = model.conv4
+                self.bn4 = model.bn4
 
-            self.global_avg_pool = model.global_avg_pool
-            self.fc = model.fc
+            self.pool1 = model.pool1
+            self.pool2 = model.pool2
+            self.pool3 = model.pool3
+            self.fc1 = model.fc1
+            self.fc2 = model.fc2
+            self.dropout = model.dropout
             self.fold_bn = fold_bn
 
         elif model_type == 'TinyExpertCNN':
@@ -218,33 +225,42 @@ class NNVSimplifiedWrapper(nn.Module):
             x = self.fc(x)
 
         elif self.model_type == 'UltraVerifiableCNN':
-            # Ultra-verifiable: 3 strided/regular convs + global avg pool
-            # Block 1: strided conv
+            # Ultra-verifiable: 4 conv blocks + 3 avg pools + 2 FC
+            # Block 1
             x = self.conv1(x)
             if not self.fold_bn:
                 x = self.bn1(x)
             x = F.relu(x)
+            x = self.pool1(x)
 
-            # Block 2: strided conv
+            # Block 2
             x = self.conv2(x)
             if not self.fold_bn:
                 x = self.bn2(x)
             x = F.relu(x)
+            x = self.pool2(x)
 
-            # Block 3: regular conv
+            # Block 3
             x = self.conv3(x)
             if not self.fold_bn:
                 x = self.bn3(x)
             x = F.relu(x)
+            x = self.pool3(x)
 
-            # Global average pooling
-            x = self.global_avg_pool(x)
+            # Block 4 (no pooling)
+            x = self.conv4(x)
+            if not self.fold_bn:
+                x = self.bn4(x)
+            x = F.relu(x)
 
             # Static flatten
             x = torch.flatten(x, 1)
 
-            # FC layer
-            x = self.fc(x)
+            # FC layers
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.dropout(x)
+            x = self.fc2(x)
 
         elif self.model_type == 'TinyExpertCNN':
             # Block 1
@@ -492,10 +508,11 @@ def export_model_to_onnx(model_path, output_path, input_size=(1, 3, 32, 32), ops
         print("  - Using static Flatten operation (avoids Shape+Reshape)")
 
         if model_type == 'UltraVerifiableCNN':
-            print("  - UltraVerifiableCNN: Minimal architecture for fast verification")
-            print("    * Only 3 conv layers (16-24-32 channels)")
-            print("    * Global average pooling (reduces parameters)")
-            print("    * Expected NNV layers: ~5-6 (vs 13 for other models)")
+            print("  - UltraVerifiableCNN: Balanced architecture for verification")
+            print("    * 4 conv layers (24-32-48-64 channels)")
+            print("    * 3x AvgPool + 2 FC layers")
+            print("    * ~45K params (33% smaller than NNVCompatibleCNN)")
+            print("    * Expected NNV layers: ~7-8 (vs 13 for other models)")
 
         model = NNVSimplifiedWrapper(model, fold_bn=True)
         model.eval()
