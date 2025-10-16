@@ -237,7 +237,10 @@ catch ME
     % Alternative: Just compute the reachable set without robustness check
     try
         tic;
-        R = net.reach(IS, reachMethod);
+        % net.reach expects a struct with reachMethod field, not just the string
+        reach_opts = struct();
+        reach_opts.reachMethod = reachMethod;
+        R = net.reach(IS, reach_opts);
         reach_time = toc;
         fprintf('Reachable set computed in %.2f seconds\n', reach_time);
 
@@ -278,12 +281,17 @@ catch ME
         fprintf('Sampling result: %d/%d samples consistent (%.1f%%)\n', ...
             robust_count, num_samples, 100.0 * robust_count / num_samples);
 
+        % Use -1 (unknown) but provide sampling evidence
+        % This is not a formal proof, just sampling-based evidence
         if robust_count == num_samples
-            res = 1;  % Likely robust
+            res = -1;  % Unknown, but all samples suggest robust
+            fprintf('Note: All samples suggest robustness, but no formal guarantee.\n');
         elseif robust_count < num_samples * 0.5
-            res = 0;  % Likely not robust
+            res = -1;  % Unknown, samples suggest not robust
+            fprintf('Note: Samples suggest network may not be robust.\n');
         else
             res = -1;  % Unknown
+            fprintf('Note: Mixed results from sampling.\n');
         end
     end
 end
@@ -305,25 +313,110 @@ fprintf('Method: %s\n', reachMethod);
 fprintf('----------------------------------------\n');
 
 if res == 1
-    fprintf('RESULT: VERIFIED ROBUST\n');
+    fprintf('RESULT: VERIFIED ROBUST (Formal Proof)\n');
     fprintf('All inputs within epsilon ball are correctly classified.\n');
 elseif res == 0
-    fprintf('RESULT: NOT ROBUST\n');
+    fprintf('RESULT: NOT ROBUST (Formal Proof)\n');
     fprintf('Found counterexample within epsilon ball.\n');
 else
-    fprintf('RESULT: UNKNOWN\n');
-    fprintf('Could not determine robustness.\n');
-    fprintf('Note: Formal verification failed, but sampling-based test was performed.\n');
+    fprintf('RESULT: UNKNOWN (Formal Verification Failed)\n');
+    fprintf('Could not complete formal verification due to LP solver issues.\n');
+
+    % Check if we have sampling results to report
+    if exist('robust_count', 'var') && exist('num_samples', 'var')
+        fprintf('\nSampling-based evidence:\n');
+        fprintf('  - Tested: %d random perturbations\n', num_samples);
+        fprintf('  - Consistent predictions: %d/%d (%.1f%%)\n', ...
+            robust_count, num_samples, 100.0 * robust_count / num_samples);
+
+        if robust_count == num_samples
+            fprintf('  - Interpretation: Strong evidence of robustness\n');
+        elseif robust_count >= num_samples * 0.95
+            fprintf('  - Interpretation: Evidence of robustness (a few edge cases)\n');
+        elseif robust_count >= num_samples * 0.5
+            fprintf('  - Interpretation: Moderate robustness\n');
+        else
+            fprintf('  - Interpretation: Network appears vulnerable to perturbations\n');
+        end
+
+        fprintf('\nNote: This is empirical evidence, not a formal guarantee.\n');
+        fprintf('Consider using verify_expert_nnv_simple.m for more detailed sampling analysis.\n');
+    else
+        fprintf('No sampling-based results available.\n');
+    end
 end
 
 fprintf('========================================\n\n');
 
 %% ======================== VISUALIZE OUTPUT RANGES ========================
 
-fprintf('Visualizing output ranges...\n');
+% Only visualize if we have a reachable set (not just sampling)
+if exist('output_set', 'var') && ~isempty(output_set)
+    fprintf('Visualizing output ranges...\n');
 
-% Get output reachable set
-R = net.reachSet{end};
+    % Get output reachable set
+    R = output_set{end};
+elseif res == 1 || res == 0
+    % We have formal verification result, try to get reachable set
+    try
+        R = net.reachSet{end};
+    catch
+        fprintf('Note: Reachable set not available for visualization.\n');
+        fprintf('Using sampling-based visualization instead.\n');
+        R = [];
+    end
+else
+    fprintf('Note: Using sampling-based result, formal reachable set not available.\n');
+    R = [];
+end
+
+if isempty(R)
+    fprintf('Skipping detailed output range visualization.\n');
+    fprintf('Creating simplified visualization...\n');
+
+    % Create simplified visualization with sampling results
+    figure('Position', [100, 100, 1000, 600]);
+
+    % Plot 1: Original image
+    subplot(1, 2, 1);
+    if numChannels == 3
+        img_vis = img;
+        for c = 1:3
+            img_vis(:,:,c) = img_vis(:,:,c) * stdNorm(c) + meanNorm(c);
+        end
+        imshow(img_vis);
+    else
+        img_vis = img * stdNorm + meanNorm;
+        imshow(img_vis, []);
+    end
+    title(sprintf('Test Image (Label: %s)', string(target_label)));
+
+    % Plot 2: Output predictions
+    subplot(1, 2, 2);
+    Y_original = net.evaluate(img);
+    bar(Y_original);
+    xlabel('Output Class Index');
+    ylabel('Output Value');
+    title('Network Output (Clean Image)');
+    grid on;
+    hold on;
+    xline(target_idx, 'r--', 'LineWidth', 2, 'Label', 'True Class');
+
+    sgtitle(sprintf('Verification Results - %s (Sampling-Based)', dataset_name), ...
+        'FontSize', 14, 'FontWeight', 'bold');
+
+    % Save figure
+    output_fig = fullfile(fileparts(mfilename('fullpath')), ...
+        sprintf('verification_result_%s_img%d_sampling.png', dataset_name, test_image_idx));
+    saveas(gcf, output_fig);
+    fprintf('Saved visualization to: %s\n', output_fig);
+
+    fprintf('\nVerification script completed successfully!\n');
+    return;  % Exit here since we don't have formal reachable set
+end
+
+% Continue with formal reachable set visualization
+fprintf('Visualizing formal reachable set...\n');
 
 % Get ranges for each output class
 if strcmp(reachMethod, 'exact-star')
