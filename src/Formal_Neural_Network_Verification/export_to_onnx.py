@@ -24,7 +24,7 @@ from pathlib import Path
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Vision_Transformer_Pytorch'))
 sys.path.append(SRC_DIR)
 
-from small_expert import MicroExpertCNN, TinyExpertCNN, SmallExpertCNN
+from small_expert import MicroExpertCNN, TinyExpertCNN, SmallExpertCNN, NNVCompatibleCNN
 
 
 class NNVCompatibleWrapper(nn.Module):
@@ -47,6 +47,9 @@ class NNVCompatibleWrapper(nn.Module):
         if model_type == 'MicroExpertCNN':
             # MicroExpertCNN: after conv3+pool3, we have [B, 64, 4, 4]
             self.flatten_size = 64 * 4 * 4  # 1024
+        elif model_type == 'NNVCompatibleCNN':
+            # NNVCompatibleCNN: same structure as MicroExpertCNN but with AvgPool
+            self.flatten_size = 64 * 4 * 4  # 1024
         elif model_type == 'TinyExpertCNN':
             # TinyExpertCNN: after conv3+pool3, we have [B, 128, 4, 4]
             self.flatten_size = 128 * 4 * 4  # 2048
@@ -64,7 +67,8 @@ class NNVCompatibleWrapper(nn.Module):
         Forward pass with static reshaping instead of dynamic view()
         This recreates the forward pass without using x.view()
         """
-        if self.model_type == 'MicroExpertCNN':
+        if self.model_type == 'MicroExpertCNN' or self.model_type == 'NNVCompatibleCNN':
+            # Both MicroExpertCNN and NNVCompatibleCNN have the same structure
             # Block 1: Conv + BN + ReLU + Pool
             x = self.model.conv1(x)
             x = self.model.bn1(x)
@@ -193,7 +197,7 @@ def export_model_to_onnx(model_path, output_path, input_size=(1, 3, 32, 32), ops
 
     # Wrap model for NNV compatibility (replaces dynamic view with static flatten)
     model_type = type(model).__name__
-    if model_type in ['MicroExpertCNN', 'TinyExpertCNN', 'SmallExpertCNN']:
+    if model_type in ['MicroExpertCNN', 'TinyExpertCNN', 'SmallExpertCNN', 'NNVCompatibleCNN']:
         print(f"Wrapping {model_type} for NNV compatibility (static reshape)...")
         model = NNVCompatibleWrapper(model)
         model.eval()

@@ -6,3 +6,4 @@ data/
 artifacts/training_*/
 tbxmanager/*
 src/Formal_Neural_Network_Verification/**/*.m
+gurobi.log
