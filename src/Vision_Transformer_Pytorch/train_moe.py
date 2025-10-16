@@ -74,7 +74,7 @@ parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fi
 parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
@@ -905,7 +905,7 @@ def main():
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
 
         # Export to NNV-compatible ONNX for verification (individual experts only)
-        if not args.meta_moe and args.model_arch in ['nnv_cnn', 'micro_cnn', 'tiny_cnn', 'small_cnn']:
+        if not args.meta_moe and args.model_arch in ['nnv_cnn', 'micro_cnn', 'tiny_cnn', 'small_cnn', 'ultra_verifiable_cnn']:
             import subprocess
             nnv_export_script = os.path.join(os.path.dirname(__file__), '..', 'Formal_Neural_Network_Verification', 'export_to_onnx.py')
             nnv_output_dir = os.path.join(OUTPUT_DIR, 'nnv_models')

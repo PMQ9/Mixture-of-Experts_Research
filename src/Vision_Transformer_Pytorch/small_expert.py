@@ -314,6 +314,100 @@ class NNVCompatibleCNN(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
+class UltraVerifiableCNN(nn.Module):
+    """
+    Ultra-Verifiable CNN - Designed specifically for formal verification tools
+
+    Design principles from verification literature:
+    1. SMALL WIDTH: 16-24 channels max (exponential complexity in width)
+    2. MINIMAL DEPTH: 4-5 layers total (linear complexity in depth)
+    3. STRIDED CONV: Replace pooling entirely (fewer layer types)
+    4. NO BATCHNORM: Already folded in at export, but keep simple
+    5. DIRECT FC: One hidden layer max
+
+    Input: 32x32x3 RGB images
+    Architecture: 2 strided conv + 1 conv + 2 FC
+    Parameters: ~20K (minimal for fast verification)
+
+    Expected NNV layers: 5-6 (vs 13 before)
+    Expected verification time: <5 minutes (vs 20+ minutes)
+    Expected accuracy: 85-90% (vs 95%+ for larger models)
+
+    Trade-off: Sacrifices 5-10% accuracy for 10x+ faster verification
+    """
+
+    def __init__(self, num_classes=43):
+        super(UltraVerifiableCNN, self).__init__()
+        self.num_classes = num_classes
+
+        # Layer 1: 32x32x3 -> 16x16x16 (strided conv, no pooling)
+        self.conv1 = nn.Conv2d(
+            in_channels=3,
+            out_channels=16,
+            kernel_size=4,
+            stride=2,
+            padding=1
+        )
+        self.bn1 = nn.BatchNorm2d(16)
+
+        # Layer 2: 16x16x16 -> 8x8x24 (strided conv, no pooling)
+        self.conv2 = nn.Conv2d(
+            in_channels=16,
+            out_channels=24,
+            kernel_size=4,
+            stride=2,
+            padding=1
+        )
+        self.bn2 = nn.BatchNorm2d(24)
+
+        # Layer 3: 8x8x24 -> 8x8x32 (regular conv, maintain spatial size)
+        self.conv3 = nn.Conv2d(
+            in_channels=24,
+            out_channels=32,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        )
+        self.bn3 = nn.BatchNorm2d(32)
+
+        # Global Average Pooling: 8x8x32 -> 1x1x32
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+
+        # Fully connected: 32 -> num_classes
+        self.fc = nn.Linear(32, num_classes)
+
+    def forward(self, x):
+        # Conv block 1
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+
+        # Conv block 2
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+
+        # Conv block 3
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = F.relu(x)
+
+        # Global pooling
+        x = self.global_avg_pool(x)
+
+        # Flatten
+        x = x.view(x.size(0), -1)
+
+        # Classify
+        x = self.fc(x)
+
+        return x
+
+    def count_parameters(self):
+        """Count total trainable parameters"""
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+
 # Feature extractor variants for use as gating network backbones
 class SmallExpertCNN_Features(nn.Module):
     """
