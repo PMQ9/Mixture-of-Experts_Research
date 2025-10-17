@@ -17,3 +17,4 @@ artifacts/abcrown_models/*.onnx
 modules/alpha-beta-CROWN/complete_verifier/out.txt
 modules/alpha-beta-CROWN/complete_verifier/out.pkl
 
+src/Formal_Neural_Network_Verification/alpha-beta-crown/__pycache__/*.pyc

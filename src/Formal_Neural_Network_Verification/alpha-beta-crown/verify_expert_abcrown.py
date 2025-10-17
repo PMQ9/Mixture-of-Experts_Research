@@ -320,6 +320,10 @@ def main():
     parser.add_argument('--auto_run', action='store_true',
                         help='Run verification automatically without prompting')
 
+    # Force recreation of VNNLIB specs
+    parser.add_argument('--force_recreate', action='store_true',
+                        help='Force recreation of VNNLIB specs even if they exist')
+
     args = parser.parse_args()
 
     print(f"\n{'='*80}")
@@ -359,7 +363,7 @@ def main():
     vnnlib_dir = Path('artifacts/vnnlib_specs') / args.dataset.lower()
     csv_file = vnnlib_dir / f"{args.dataset.lower()}_instances.csv"
 
-    if not vnnlib_dir.exists() or not csv_file.exists():
+    if args.force_recreate or not vnnlib_dir.exists() or not csv_file.exists():
         # Create VNNLIB specs using the create_vnnlib_specs script
         result = subprocess.run(
             [
