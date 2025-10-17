@@ -183,33 +183,62 @@ def install_dependencies(project_root, skip_deps=False):
 
     print_step(4, 6, "Installing dependencies...")
 
-    # Install auto_LiRPA
-    print("Installing auto_LiRPA...")
+    # Check if auto_LiRPA is already installed
     auto_lirpa_dir = project_root / 'modules' / 'alpha-beta-CROWN' / 'auto_LiRPA'
-    result = run_command([sys.executable, '-m', 'pip', 'install', '-e', '.'], cwd=auto_lirpa_dir)
-    if result and result.returncode == 0:
-        print_success("auto_LiRPA installed")
-    else:
-        print_error("Failed to install auto_LiRPA")
-        return False
+    sys.path.insert(0, str(auto_lirpa_dir))
 
-    # Install alpha-beta-CROWN requirements
-    print("Installing alpha-beta-CROWN requirements...")
+    try:
+        import auto_LiRPA
+        print_success(f"auto_LiRPA {auto_LiRPA.__version__} already installed, skipping")
+    except ImportError:
+        # Install auto_LiRPA
+        print("Installing auto_LiRPA...")
+        result = run_command([sys.executable, '-m', 'pip', 'install', '-e', '.'], cwd=auto_lirpa_dir)
+        if result and result.returncode == 0:
+            print_success("auto_LiRPA installed")
+        else:
+            print_error("Failed to install auto_LiRPA")
+            if result:
+                if result.stdout:
+                    print(f"Output: {result.stdout}")
+                if result.stderr:
+                    print(f"Error: {result.stderr}")
+            return False
+
+    # Check and install alpha-beta-CROWN requirements
+    print("Checking alpha-beta-CROWN requirements...")
     requirements_file = project_root / 'modules' / 'alpha-beta-CROWN' / 'complete_verifier' / 'requirements.txt'
-    result = run_command([sys.executable, '-m', 'pip', 'install', '-r', str(requirements_file)])
-    if result and result.returncode == 0:
-        print_success("alpha-beta-CROWN requirements installed")
-    else:
-        print_error("Failed to install requirements")
-        return False
 
-    # Install additional utilities
-    print("Installing additional utilities...")
-    result = run_command([sys.executable, '-m', 'pip', 'install', 'appdirs', 'pyyaml'])
-    if result and result.returncode == 0:
-        print_success("Additional utilities installed")
+    # Check if key dependencies are installed
+    missing_deps = []
+    try:
+        import onnx
+        import onnxruntime
+    except ImportError as e:
+        missing_deps.append(str(e))
+
+    if missing_deps:
+        print(f"Installing missing requirements...")
+        result = run_command([sys.executable, '-m', 'pip', 'install', '-r', str(requirements_file)])
+        if result and result.returncode == 0:
+            print_success("Requirements installed")
+        else:
+            print_warning("Some requirements may have failed to install, but continuing...")
     else:
-        print_warning("Could not install some utilities (may already be installed)")
+        print_success("All requirements already installed")
+
+    # Check and install additional utilities
+    print("Checking additional utilities...")
+    try:
+        import yaml
+        print_success("Additional utilities already installed")
+    except ImportError:
+        print("Installing additional utilities...")
+        result = run_command([sys.executable, '-m', 'pip', 'install', 'appdirs', 'pyyaml'])
+        if result and result.returncode == 0:
+            print_success("Additional utilities installed")
+        else:
+            print_warning("Could not install some utilities")
 
     return True
 
