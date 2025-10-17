@@ -62,17 +62,17 @@ def print_step(step_num, total_steps, text):
 
 def print_success(text):
     """Print a success message"""
-    print(f"{Colors.GREEN}✓ {text}{Colors.NC}")
+    print(f"{Colors.GREEN}[OK] {text}{Colors.NC}")
 
 
 def print_warning(text):
     """Print a warning message"""
-    print(f"{Colors.YELLOW}⚠ {text}{Colors.NC}")
+    print(f"{Colors.YELLOW}[WARNING] {text}{Colors.NC}")
 
 
 def print_error(text):
     """Print an error message"""
-    print(f"{Colors.RED}✗ {text}{Colors.NC}")
+    print(f"{Colors.RED}[ERROR] {text}{Colors.NC}")
 
 
 def run_command(cmd, capture_output=True, cwd=None, env=None):
@@ -130,14 +130,22 @@ def check_pytorch():
 
 def initialize_submodules(project_root):
     """Initialize and update git submodules"""
-    print_step(3, 6, "Initializing alpha-beta-CROWN submodule...")
+    print_step(3, 6, "Checking alpha-beta-CROWN submodule...")
 
     abcrown_dir = project_root / 'modules' / 'alpha-beta-CROWN'
     auto_lirpa_dir = abcrown_dir / 'auto_LiRPA'
 
-    # Initialize alpha-beta-CROWN submodule
-    if not (abcrown_dir / '.git').exists():
-        print("Initializing submodule for the first time...")
+    # Check if submodules exist and have content
+    submodule_has_content = (abcrown_dir / 'README.md').exists()
+    auto_lirpa_has_content = (auto_lirpa_dir / 'README.md').exists()
+
+    if submodule_has_content and auto_lirpa_has_content:
+        print_success("Submodules already initialized and have content")
+        return True
+
+    # Initialize alpha-beta-CROWN submodule if needed
+    if not submodule_has_content:
+        print("Initializing alpha-beta-CROWN submodule...")
         result = run_command(
             ['git', 'submodule', 'update', '--init', '--recursive', 'modules/alpha-beta-CROWN'],
             cwd=project_root
@@ -146,18 +154,12 @@ def initialize_submodules(project_root):
             print_success("Submodule initialized")
         else:
             print_error("Failed to initialize submodule")
+            if result and result.stderr:
+                print(f"Error details: {result.stderr}")
             return False
-    else:
-        print("Submodule already initialized, updating...")
-        result = run_command(
-            ['git', 'submodule', 'update', '--remote', '--merge', 'modules/alpha-beta-CROWN'],
-            cwd=project_root
-        )
-        if result and result.returncode == 0:
-            print_success("Submodule updated")
 
     # Check auto_LiRPA submodule
-    if not (auto_lirpa_dir / '.git').exists():
+    if not auto_lirpa_has_content:
         print("Initializing auto_LiRPA submodule...")
         result = run_command(
             ['git', 'submodule', 'update', '--init', '--recursive'],
@@ -167,6 +169,8 @@ def initialize_submodules(project_root):
             print_success("auto_LiRPA submodule initialized")
         else:
             print_warning("Could not initialize auto_LiRPA submodule (may need manual setup)")
+            if result and result.stderr:
+                print(f"Error details: {result.stderr}")
 
     return True
 
@@ -436,11 +440,14 @@ def main():
 
     args = parser.parse_args()
 
-    # Get project root (4 levels up from this script)
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent.parent.parent
+    # Get project root by going up from this script's location
+    # Script location: <project_root>/src/Formal_Neural_Network_Verification/alpha-beta-crown/setup_abcrown.py
+    # Need to go up 4 levels: alpha-beta-crown -> Formal_Neural_Network_Verification -> src -> project_root
+    script_path = Path(__file__).resolve()
+    project_root = script_path.parent.parent.parent.parent
 
     print_header("alpha-beta-CROWN Setup Script")
+    print(f"Script location: {script_path}")
     print(f"Project root: {project_root}")
     print(f"Platform: {platform.system()} {platform.release()}")
     print(f"Python: {sys.executable}")
