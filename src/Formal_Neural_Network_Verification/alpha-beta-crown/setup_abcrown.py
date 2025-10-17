@@ -187,23 +187,40 @@ def install_dependencies(project_root, skip_deps=False):
     auto_lirpa_dir = project_root / 'modules' / 'alpha-beta-CROWN' / 'auto_LiRPA'
     sys.path.insert(0, str(auto_lirpa_dir))
 
+    # First check if auto_LiRPA can be imported
+    auto_lirpa_works = False
     try:
         import auto_LiRPA
+        auto_lirpa_works = True
         print_success(f"auto_LiRPA {auto_LiRPA.__version__} already installed, skipping")
     except ImportError:
-        # Install auto_LiRPA
+        pass
+
+    # If not importable, try to install it
+    if not auto_lirpa_works:
         print("Installing auto_LiRPA...")
         result = run_command([sys.executable, '-m', 'pip', 'install', '-e', '.'], cwd=auto_lirpa_dir)
-        if result and result.returncode == 0:
-            print_success("auto_LiRPA installed")
-        else:
-            print_error("Failed to install auto_LiRPA")
-            if result:
-                if result.stdout:
-                    print(f"Output: {result.stdout}")
-                if result.stderr:
-                    print(f"Error: {result.stderr}")
-            return False
+
+        # Check if installation succeeded by testing import
+        try:
+            import auto_LiRPA
+            print_success("auto_LiRPA installed successfully")
+        except ImportError:
+            # Installation failed - show error but check if we can still use it from path
+            print_error("Failed to install auto_LiRPA via pip")
+            if result and result.stdout:
+                print(f"Output: {result.stdout[:500]}...")  # Show first 500 chars
+            if result and result.stderr:
+                print(f"Error: {result.stderr[:500]}...")  # Show first 500 chars
+
+            # Check if it's still usable from the submodule directly
+            print("Checking if auto_LiRPA is usable from submodule directory...")
+            try:
+                import auto_LiRPA
+                print_warning("auto_LiRPA can be imported from submodule (will work with PYTHONPATH setup)")
+            except ImportError:
+                print_error("Cannot import auto_LiRPA. Setup failed.")
+                return False
 
     # Check and install alpha-beta-CROWN requirements
     print("Checking alpha-beta-CROWN requirements...")
