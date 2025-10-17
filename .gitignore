@@ -4,4 +4,6 @@ src/Vision_Transformer_Pytorch/__pycache__/
 src/Vision_Transformer_Pytorch/vit_cifer10_best.pth
 data/
 artifacts/training_*/
-*.m
+tbxmanager/*
+src/Formal_Neural_Network_Verification/**/*.m
+gurobi.log

@@ -71,10 +71,10 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
-parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0'], help='Backbone architecture for the MetaGatingNet router')
+parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
-parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
+parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
 parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
@@ -903,6 +903,28 @@ def main():
         best_model_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
         model = torch.load(best_model_path, map_location=DEVICE, weights_only=False)
         export_to_onnx(model=model, config=config, device=DEVICE, output_dir=OUTPUT_DIR, dataset_name="MetaMoE" if args.meta_moe else args.dataset, model_arch=args.model_arch)
+
+        # Export to NNV-compatible ONNX for verification (individual experts only)
+        if not args.meta_moe and args.model_arch in ['nnv_cnn', 'micro_cnn', 'tiny_cnn', 'small_cnn', 'ultra_verifiable_cnn']:
+            import subprocess
+            nnv_export_script = os.path.join(os.path.dirname(__file__), '..', 'Formal_Neural_Network_Verification', 'export_to_onnx.py')
+            nnv_output_dir = os.path.join(OUTPUT_DIR, 'nnv_models')
+            os.makedirs(nnv_output_dir, exist_ok=True)
+
+            print(f"\nExporting to NNV-compatible ONNX format...")
+            try:
+                result = subprocess.run([
+                    'python', nnv_export_script,
+                    '--model_path', best_model_path,
+                    '--output_dir', nnv_output_dir
+                ], capture_output=True, text=True, timeout=60)
+
+                if result.returncode == 0:
+                    print(f"NNV ONNX export successful! Output directory: {nnv_output_dir}")
+                else:
+                    print(f"NNV ONNX export failed: {result.stderr}")
+            except Exception as e:
+                print(f"Error during NNV ONNX export: {e}")
 
     if args.art_attack:
         if args.meta_moe:

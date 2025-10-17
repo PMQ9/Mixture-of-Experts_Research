@@ -281,13 +281,36 @@ class MetaGatingNet(nn.Module):
     def __init__(self, num_experts=2, backbone='convnext_tiny', temperature=0.025):
         super().__init__()
         self.backbone = backbone
-        self.model = timm.create_model(self.backbone, pretrained=True, num_classes=0)
-        feature_dim = self.model.num_features
+        self.temperature = temperature
+
+        # Custom CNN backbones
+        custom_backbones = {
+            'small_cnn': ('SmallExpertCNN_Features', 512),
+            'tiny_cnn': ('TinyExpertCNN_Features', 256),
+            'micro_cnn': ('MicroExpertCNN_Features', 1024)
+        }
+
+        if backbone in custom_backbones:
+            # Use custom CNN backbone
+            from small_expert import SmallExpertCNN_Features, TinyExpertCNN_Features, MicroExpertCNN_Features
+
+            if backbone == 'small_cnn':
+                self.model = SmallExpertCNN_Features()
+            elif backbone == 'tiny_cnn':
+                self.model = TinyExpertCNN_Features()
+            elif backbone == 'micro_cnn':
+                self.model = MicroExpertCNN_Features()
+
+            feature_dim = self.model.num_features
+        else:
+            # Use timm backbone
+            self.model = timm.create_model(self.backbone, pretrained=True, num_classes=0)
+            feature_dim = self.model.num_features
+
         self.fc = nn.Sequential(
             nn.Linear(feature_dim, num_experts),
             nn.Softmax(dim=1)
         )
-        self.temperature = temperature
 
     def forward(self, x):
         features = self.model(x)

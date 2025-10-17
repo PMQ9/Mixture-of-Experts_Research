@@ -1,6 +1,3 @@
-[submodule "modules/gnnv"]
-	path = modules/gnnv
-	url = https://github.com/atumlin/gnnv.git
 [submodule "modules/gnnv_moe"]
 	path = modules/gnnv_moe
 	url = https://github.com/PMQ9/gnnv_moe.git
