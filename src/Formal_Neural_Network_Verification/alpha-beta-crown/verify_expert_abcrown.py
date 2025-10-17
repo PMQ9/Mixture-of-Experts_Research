@@ -317,12 +317,14 @@ def main():
                         help='Skip ONNX export if file already exists')
 
     # Auto-run verification without prompt
-    parser.add_argument('--auto_run', action='store_true',
+    parser.add_argument('--auto_run', action='store_true', default=True,
                         help='Run verification automatically without prompting')
 
-    # Force recreation of VNNLIB specs
-    parser.add_argument('--force_recreate', action='store_true',
-                        help='Force recreation of VNNLIB specs even if they exist')
+    # Force recreation of VNNLIB specs (default: True)
+    parser.add_argument('--force_recreate', action='store_true', default=True,
+                        help='Force recreation of VNNLIB specs even if they exist (default: True)')
+    parser.add_argument('--no_force_recreate', action='store_false', dest='force_recreate',
+                        help='Use existing VNNLIB specs if available (faster but may be outdated)')
 
     args = parser.parse_args()
 
