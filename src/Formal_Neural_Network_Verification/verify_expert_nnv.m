@@ -16,7 +16,7 @@
 nnv_root = fullfile('..', '..', 'modules', 'nnv_moe', 'code', 'nnv');
 
 % Path to exported ONNX model
-onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_nnv_cnn.onnx');
+onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_ultra_verifiable_cnn.onnx');
 
 % Dataset configuration
 dataset_name = 'GTSRB'; % Options: GTSRB, CIFAR10, MNIST
