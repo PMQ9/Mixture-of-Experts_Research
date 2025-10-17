@@ -230,7 +230,25 @@ def install_dependencies(project_root, skip_deps=False):
                     print_success(f"auto_LiRPA {auto_LiRPA.__version__} can be used directly from submodule")
                     print_warning("Note: Using auto_LiRPA from submodule (not installed via pip)")
                 except ImportError as e:
-                    print_error(f"Cannot import auto_LiRPA even from submodule: {e}")
+                    # Check if it's a missing dependency issue
+                    error_msg = str(e)
+                    if "No module named" in error_msg:
+                        missing_module = error_msg.split("'")[1] if "'" in error_msg else "unknown"
+                        print_warning(f"Missing dependency: {missing_module}")
+                        print(f"Installing {missing_module}...")
+                        result = run_command([sys.executable, '-m', 'pip', 'install', missing_module])
+                        if result and result.returncode == 0:
+                            # Try import again
+                            try:
+                                import auto_LiRPA
+                                auto_lirpa_works = True
+                                print_success(f"auto_LiRPA {auto_LiRPA.__version__} now works after installing {missing_module}")
+                            except ImportError as e2:
+                                print_error(f"Still cannot import after installing {missing_module}: {e2}")
+                        else:
+                            print_error(f"Failed to install {missing_module}")
+                    else:
+                        print_error(f"Cannot import auto_LiRPA: {e}")
 
         if not auto_lirpa_works:
             print_error("Failed to set up auto_LiRPA")
