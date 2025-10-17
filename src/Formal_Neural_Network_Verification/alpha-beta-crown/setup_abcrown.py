@@ -183,44 +183,58 @@ def install_dependencies(project_root, skip_deps=False):
 
     print_step(4, 6, "Installing dependencies...")
 
-    # Check if auto_LiRPA is already installed
+    # Add auto_LiRPA directory to path first
     auto_lirpa_dir = project_root / 'modules' / 'alpha-beta-CROWN' / 'auto_LiRPA'
-    sys.path.insert(0, str(auto_lirpa_dir))
+    if str(auto_lirpa_dir) not in sys.path:
+        sys.path.insert(0, str(auto_lirpa_dir))
 
-    # First check if auto_LiRPA can be imported
+    # Check if auto_LiRPA can be imported from the submodule
     auto_lirpa_works = False
+    auto_lirpa_version = None
     try:
         import auto_LiRPA
         auto_lirpa_works = True
-        print_success(f"auto_LiRPA {auto_LiRPA.__version__} already installed, skipping")
+        auto_lirpa_version = auto_LiRPA.__version__
     except ImportError:
         pass
 
-    # If not importable, try to install it
-    if not auto_lirpa_works:
-        print("Installing auto_LiRPA...")
+    if auto_lirpa_works:
+        print_success(f"auto_LiRPA {auto_lirpa_version} already available from submodule")
+    else:
+        # Try to install it via pip (may fail on Windows due to encoding issues)
+        print("Attempting to install auto_LiRPA via pip...")
         result = run_command([sys.executable, '-m', 'pip', 'install', '-e', '.'], cwd=auto_lirpa_dir)
 
         # Check if installation succeeded by testing import
+        # Reload the module in case it was cached
+        if 'auto_LiRPA' in sys.modules:
+            del sys.modules['auto_LiRPA']
+
         try:
             import auto_LiRPA
-            print_success("auto_LiRPA installed successfully")
+            auto_lirpa_works = True
+            print_success("auto_LiRPA installed successfully via pip")
         except ImportError:
-            # Installation failed - show error but check if we can still use it from path
-            print_error("Failed to install auto_LiRPA via pip")
-            if result and result.stdout:
-                print(f"Output: {result.stdout[:500]}...")  # Show first 500 chars
-            if result and result.stderr:
-                print(f"Error: {result.stderr[:500]}...")  # Show first 500 chars
+            pass
 
-            # Check if it's still usable from the submodule directly
-            print("Checking if auto_LiRPA is usable from submodule directory...")
-            try:
-                import auto_LiRPA
-                print_warning("auto_LiRPA can be imported from submodule (will work with PYTHONPATH setup)")
-            except ImportError:
-                print_error("Cannot import auto_LiRPA. Setup failed.")
-                return False
+        # If pip install failed but auto_LiRPA exists in submodule, use it directly
+        if not auto_lirpa_works:
+            print_warning("pip install failed, checking if auto_LiRPA can be used directly from submodule...")
+
+            # Check if __init__.py exists in auto_LiRPA
+            init_file = auto_lirpa_dir / 'auto_LiRPA' / '__init__.py'
+            if init_file.exists():
+                try:
+                    import auto_LiRPA
+                    auto_lirpa_works = True
+                    print_success(f"auto_LiRPA {auto_LiRPA.__version__} can be used directly from submodule")
+                    print_warning("Note: Using auto_LiRPA from submodule (not installed via pip)")
+                except ImportError as e:
+                    print_error(f"Cannot import auto_LiRPA even from submodule: {e}")
+
+        if not auto_lirpa_works:
+            print_error("Failed to set up auto_LiRPA")
+            return False
 
     # Check and install alpha-beta-CROWN requirements
     print("Checking alpha-beta-CROWN requirements...")
@@ -447,8 +461,12 @@ def print_usage_instructions(project_root):
     print_header("Setup Complete!")
 
     print("alpha-beta-CROWN is now ready to use.\n")
+
+    print("IMPORTANT: The verification scripts handle PYTHONPATH setup automatically.")
+    print("If you run alpha-beta-CROWN directly, you need to set PYTHONPATH manually.\n")
+
     print("Quick start:")
-    print("  1. Export and verify a trained model:")
+    print("  1. Export and verify a trained model (recommended):")
     print("     python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py \\")
     print("       --model_path artifacts/gtsrb_small_cnn_best.pth \\")
     print("       --dataset GTSRB \\")
@@ -456,7 +474,7 @@ def print_usage_instructions(project_root):
     print("       --num_images 10 \\")
     print("       --auto_run\n")
 
-    print("  2. Or run verification manually:")
+    print("  2. Or run verification manually (requires PYTHONPATH setup):")
     print("     cd modules/alpha-beta-CROWN/complete_verifier")
     if platform.system() == 'Windows':
         print("     set PYTHONPATH=..\\auto_LiRPA;%PYTHONPATH%")
@@ -465,6 +483,7 @@ def print_usage_instructions(project_root):
     print("     python abcrown.py --config <path-to-config.yaml>\n")
 
     print("Documentation:")
+    print("  - Setup guide: src/Formal_Neural_Network_Verification/alpha-beta-crown/SETUP_README.md")
     print("  - Quick start: src/Formal_Neural_Network_Verification/alpha-beta-crown/ABCROWN_QUICKSTART.md")
     print("  - Project docs: CLAUDE.md")
     print("  - Official docs: modules/alpha-beta-CROWN/README.md")
