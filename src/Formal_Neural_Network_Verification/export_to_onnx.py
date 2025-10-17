@@ -24,18 +24,323 @@ from pathlib import Path
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Vision_Transformer_Pytorch'))
 sys.path.append(SRC_DIR)
 
-from small_expert import MicroExpertCNN, TinyExpertCNN, SmallExpertCNN
+from small_expert import MicroExpertCNN, TinyExpertCNN, SmallExpertCNN, NNVCompatibleCNN, UltraVerifiableCNN
 
 
+def fold_batch_norm_into_conv(conv, bn):
+    """
+    Fold BatchNorm parameters into Conv layer weights and biases.
+    This eliminates the BatchNorm layer entirely, making the model simpler for NNV.
+
+    Formula:
+        y = gamma * (conv(x) - running_mean) / sqrt(running_var + eps) + beta
+
+    Folded conv:
+        new_weight = gamma / sqrt(running_var + eps) * old_weight
+        new_bias = gamma / sqrt(running_var + eps) * (old_bias - running_mean) + beta
+
+    Args:
+        conv: nn.Conv2d layer
+        bn: nn.BatchNorm2d layer
+
+    Returns:
+        New Conv2d layer with folded weights
+    """
+    # Get BatchNorm parameters
+    gamma = bn.weight.data
+    beta = bn.bias.data
+    running_mean = bn.running_mean
+    running_var = bn.running_var
+    eps = bn.eps
+
+    # Compute scaling factor
+    scale = gamma / torch.sqrt(running_var + eps)
+
+    # Create new conv layer with bias
+    new_conv = nn.Conv2d(
+        conv.in_channels,
+        conv.out_channels,
+        conv.kernel_size,
+        conv.stride,
+        conv.padding,
+        bias=True  # Always use bias after folding
+    )
+
+    # Fold weights: w_new = scale * w_old
+    new_conv.weight.data = conv.weight.data * scale.view(-1, 1, 1, 1)
+
+    # Fold bias: b_new = scale * (b_old - mean) + beta
+    if conv.bias is not None:
+        new_conv.bias.data = scale * (conv.bias.data - running_mean) + beta
+    else:
+        new_conv.bias.data = scale * (0 - running_mean) + beta
+
+    return new_conv
+
+
+class NNVSimplifiedWrapper(nn.Module):
+    """
+    Ultra-simplified wrapper for NNV compatibility.
+
+    Key improvements:
+    1. Folds BatchNorm into Conv layers (eliminates BN from ONNX)
+    2. Uses static Flatten operation (no dynamic Shape+Reshape)
+    3. Minimal layer count for faster verification
+
+    This addresses the "13 layers" issue by eliminating BatchNorm entirely.
+    """
+    def __init__(self, model, fold_bn=True):
+        super().__init__()
+
+        model_type = type(model).__name__
+        self.model_type = model_type
+        self.num_classes = model.num_classes
+
+        if model_type in ['MicroExpertCNN', 'NNVCompatibleCNN']:
+            # Fold BatchNorm into Conv layers
+            if fold_bn:
+                self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
+                self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
+                self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+            else:
+                self.conv1 = model.conv1
+                self.bn1 = model.bn1
+                self.conv2 = model.conv2
+                self.bn2 = model.bn2
+                self.conv3 = model.conv3
+                self.bn3 = model.bn3
+
+            self.pool1 = model.pool1
+            self.pool2 = model.pool2
+            self.pool3 = model.pool3
+            self.fc = model.fc
+            self.fold_bn = fold_bn
+
+        elif model_type == 'UltraVerifiableCNN':
+            # Ultra-verifiable architecture: 4 conv + 3 avg pool + 2 FC
+            if fold_bn:
+                self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
+                self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
+                self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+                self.conv4 = fold_batch_norm_into_conv(model.conv4, model.bn4)
+            else:
+                self.conv1 = model.conv1
+                self.bn1 = model.bn1
+                self.conv2 = model.conv2
+                self.bn2 = model.bn2
+                self.conv3 = model.conv3
+                self.bn3 = model.bn3
+                self.conv4 = model.conv4
+                self.bn4 = model.bn4
+
+            self.pool1 = model.pool1
+            self.pool2 = model.pool2
+            self.pool3 = model.pool3
+            self.fc1 = model.fc1
+            self.fc2 = model.fc2
+            self.dropout = model.dropout
+            self.fold_bn = fold_bn
+
+        elif model_type == 'TinyExpertCNN':
+            if fold_bn:
+                self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
+                self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
+                self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+            else:
+                self.conv1 = model.conv1
+                self.bn1 = model.bn1
+                self.conv2 = model.conv2
+                self.bn2 = model.bn2
+                self.conv3 = model.conv3
+                self.bn3 = model.bn3
+
+            self.pool1 = model.pool1
+            self.pool2 = model.pool2
+            self.pool3 = model.pool3
+            self.fc1 = model.fc1
+            self.fc2 = model.fc2
+            self.dropout = model.dropout
+            self.fold_bn = fold_bn
+
+        elif model_type == 'SmallExpertCNN':
+            if fold_bn:
+                self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
+                self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
+                self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+                self.conv4 = fold_batch_norm_into_conv(model.conv4, model.bn4)
+            else:
+                self.conv1 = model.conv1
+                self.bn1 = model.bn1
+                self.conv2 = model.conv2
+                self.bn2 = model.bn2
+                self.conv3 = model.conv3
+                self.bn3 = model.bn3
+                self.conv4 = model.conv4
+                self.bn4 = model.bn4
+
+            self.pool1 = model.pool1
+            self.pool2 = model.pool2
+            self.pool3 = model.pool3
+            self.pool4 = model.pool4
+            self.fc1 = model.fc1
+            self.fc2 = model.fc2
+            self.dropout = model.dropout
+            self.fold_bn = fold_bn
+
+        else:
+            raise ValueError(f"Unsupported model type for NNV export: {model_type}")
+
+    def forward(self, x):
+        """
+        Forward pass with:
+        1. Optional BatchNorm (if fold_bn=False)
+        2. Static flatten operation (no dynamic view)
+        """
+        if self.model_type in ['MicroExpertCNN', 'NNVCompatibleCNN']:
+            # Block 1
+            x = self.conv1(x)
+            if not self.fold_bn:
+                x = self.bn1(x)
+            x = F.relu(x)
+            x = self.pool1(x)
+
+            # Block 2
+            x = self.conv2(x)
+            if not self.fold_bn:
+                x = self.bn2(x)
+            x = F.relu(x)
+            x = self.pool2(x)
+
+            # Block 3
+            x = self.conv3(x)
+            if not self.fold_bn:
+                x = self.bn3(x)
+            x = F.relu(x)
+            x = self.pool3(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layer
+            x = self.fc(x)
+
+        elif self.model_type == 'UltraVerifiableCNN':
+            # Ultra-verifiable: 4 conv blocks + 3 avg pools + 2 FC
+            # Block 1
+            x = self.conv1(x)
+            if not self.fold_bn:
+                x = self.bn1(x)
+            x = F.relu(x)
+            x = self.pool1(x)
+
+            # Block 2
+            x = self.conv2(x)
+            if not self.fold_bn:
+                x = self.bn2(x)
+            x = F.relu(x)
+            x = self.pool2(x)
+
+            # Block 3
+            x = self.conv3(x)
+            if not self.fold_bn:
+                x = self.bn3(x)
+            x = F.relu(x)
+            x = self.pool3(x)
+
+            # Block 4 (no pooling)
+            x = self.conv4(x)
+            if not self.fold_bn:
+                x = self.bn4(x)
+            x = F.relu(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layers
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.dropout(x)
+            x = self.fc2(x)
+
+        elif self.model_type == 'TinyExpertCNN':
+            # Block 1
+            x = self.conv1(x)
+            if not self.fold_bn:
+                x = self.bn1(x)
+            x = F.relu(x)
+            x = self.pool1(x)
+
+            # Block 2
+            x = self.conv2(x)
+            if not self.fold_bn:
+                x = self.bn2(x)
+            x = F.relu(x)
+            x = self.pool2(x)
+
+            # Block 3
+            x = self.conv3(x)
+            if not self.fold_bn:
+                x = self.bn3(x)
+            x = F.relu(x)
+            x = self.pool3(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layers
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.dropout(x)
+            x = self.fc2(x)
+
+        elif self.model_type == 'SmallExpertCNN':
+            # Block 1
+            x = self.conv1(x)
+            if not self.fold_bn:
+                x = self.bn1(x)
+            x = F.relu(x)
+            x = self.pool1(x)
+
+            # Block 2
+            x = self.conv2(x)
+            if not self.fold_bn:
+                x = self.bn2(x)
+            x = F.relu(x)
+            x = self.pool2(x)
+
+            # Block 3
+            x = self.conv3(x)
+            if not self.fold_bn:
+                x = self.bn3(x)
+            x = F.relu(x)
+            x = self.pool3(x)
+
+            # Block 4
+            x = self.conv4(x)
+            if not self.fold_bn:
+                x = self.bn4(x)
+            x = F.relu(x)
+            x = self.pool4(x)
+
+            # Static flatten
+            x = torch.flatten(x, 1)
+
+            # FC layers
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.dropout(x)
+            x = self.fc2(x)
+
+        return x
+
+
+# Legacy wrapper (keep for compatibility)
 class NNVCompatibleWrapper(nn.Module):
     """
+    DEPRECATED: Use NNVSimplifiedWrapper instead for better NNV compatibility.
+
     Wrapper to make models NNV-compatible by replacing dynamic view operations
     with static reshape operations that MATLAB's ONNX importer can handle.
-
-    The issue: PyTorch's x.view() creates Shape+Gather+Reshape operators in ONNX
-    which MATLAB's importONNXNetwork cannot parse (ONNXParams error).
-
-    The solution: Override forward() to use static flatten/reshape operations.
     """
     def __init__(self, model):
         super().__init__()
@@ -46,6 +351,9 @@ class NNVCompatibleWrapper(nn.Module):
 
         if model_type == 'MicroExpertCNN':
             # MicroExpertCNN: after conv3+pool3, we have [B, 64, 4, 4]
+            self.flatten_size = 64 * 4 * 4  # 1024
+        elif model_type == 'NNVCompatibleCNN':
+            # NNVCompatibleCNN: same structure as MicroExpertCNN but with AvgPool
             self.flatten_size = 64 * 4 * 4  # 1024
         elif model_type == 'TinyExpertCNN':
             # TinyExpertCNN: after conv3+pool3, we have [B, 128, 4, 4]
@@ -64,7 +372,8 @@ class NNVCompatibleWrapper(nn.Module):
         Forward pass with static reshaping instead of dynamic view()
         This recreates the forward pass without using x.view()
         """
-        if self.model_type == 'MicroExpertCNN':
+        if self.model_type == 'MicroExpertCNN' or self.model_type == 'NNVCompatibleCNN':
+            # Both MicroExpertCNN and NNVCompatibleCNN have the same structure
             # Block 1: Conv + BN + ReLU + Pool
             x = self.model.conv1(x)
             x = self.model.bn1(x)
@@ -191,11 +500,21 @@ def export_model_to_onnx(model_path, output_path, input_size=(1, 3, 32, 32), ops
     # Set to evaluation mode
     model.eval()
 
-    # Wrap model for NNV compatibility (replaces dynamic view with static flatten)
+    # Wrap model for NNV compatibility
     model_type = type(model).__name__
-    if model_type in ['MicroExpertCNN', 'TinyExpertCNN', 'SmallExpertCNN']:
-        print(f"Wrapping {model_type} for NNV compatibility (static reshape)...")
-        model = NNVCompatibleWrapper(model)
+    if model_type in ['MicroExpertCNN', 'TinyExpertCNN', 'SmallExpertCNN', 'NNVCompatibleCNN', 'UltraVerifiableCNN']:
+        print(f"Wrapping {model_type} for NNV compatibility...")
+        print("  - Folding BatchNorm into Conv layers (reduces layer count)")
+        print("  - Using static Flatten operation (avoids Shape+Reshape)")
+
+        if model_type == 'UltraVerifiableCNN':
+            print("  - UltraVerifiableCNN: Balanced architecture for verification")
+            print("    * 4 conv layers (24-32-48-64 channels)")
+            print("    * 3x AvgPool + 2 FC layers")
+            print("    * ~45K params (33% smaller than NNVCompatibleCNN)")
+            print("    * Expected NNV layers: ~7-8 (vs 13 for other models)")
+
+        model = NNVSimplifiedWrapper(model, fold_bn=True)
         model.eval()
     else:
         print(f"Warning: {model_type} may not be NNV-compatible. Consider adding support.")

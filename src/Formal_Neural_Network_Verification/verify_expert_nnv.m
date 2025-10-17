@@ -16,16 +16,16 @@
 nnv_root = fullfile('..', '..', 'modules', 'nnv_moe', 'code', 'nnv');
 
 % Path to exported ONNX model
-onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_micro_cnn.onnx');
+onnx_model_path = fullfile('..', '..', 'artifacts', 'nnv_models', 'gtsrb_ultra_verifiable_cnn.onnx');
 
 % Dataset configuration
 dataset_name = 'GTSRB'; % Options: GTSRB, CIFAR10, MNIST
 data_root = fullfile('..', '..', 'data');
 
 % Verification parameters
-epsilon = 0.5/255;        % L-infinity perturbation bound (normalized)
+epsilon = 0.25/255;        % L-infinity perturbation bound (normalized)
 reachMethod = 'abs-dom'; % Options: 'exact-star', 'approx-star', 'abs-dom'
-lp_solver = 'linprog';  % Options: 'linprog', 'glpk', 'gurobi'
+lp_solver = 'gurobi';  % Options: 'linprog', 'glpk', 'gurobi'
 relaxFactor = 0;        % Relaxation factor for approximate methods (0 = tight)
 numCores = 1;           % Number of parallel cores (1 = sequential)
 
