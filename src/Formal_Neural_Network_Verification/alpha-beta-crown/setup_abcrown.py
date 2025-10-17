@@ -183,7 +183,16 @@ def install_dependencies(project_root, skip_deps=False):
 
     print_step(4, 6, "Installing dependencies...")
 
-    # Add auto_LiRPA directory to path first
+    # Install core auto_LiRPA dependencies first (before trying to import)
+    print("Installing core auto_LiRPA dependencies (graphviz, appdirs, pyyaml, tqdm)...")
+    core_deps = ['graphviz>=0.20.3', 'appdirs>=1.4', 'pyyaml>=5.0', 'tqdm>=4.64']
+    result = run_command([sys.executable, '-m', 'pip', 'install'] + core_deps)
+    if result and result.returncode == 0:
+        print_success("Core dependencies installed")
+    else:
+        print_warning("Some core dependencies may have failed to install, but continuing...")
+
+    # Add auto_LiRPA directory to path
     auto_lirpa_dir = project_root / 'modules' / 'alpha-beta-CROWN' / 'auto_LiRPA'
     if str(auto_lirpa_dir) not in sys.path:
         sys.path.insert(0, str(auto_lirpa_dir))
@@ -199,14 +208,13 @@ def install_dependencies(project_root, skip_deps=False):
         pass
 
     if auto_lirpa_works:
-        print_success(f"auto_LiRPA {auto_lirpa_version} already available from submodule")
+        print_success(f"auto_LiRPA {auto_lirpa_version} available from submodule")
     else:
-        # Try to install it via pip (may fail on Windows due to encoding issues)
+        # auto_LiRPA not importable yet - try pip install
         print("Attempting to install auto_LiRPA via pip...")
         result = run_command([sys.executable, '-m', 'pip', 'install', '-e', '.'], cwd=auto_lirpa_dir)
 
-        # Check if installation succeeded by testing import
-        # Reload the module in case it was cached
+        # Reload and test import
         if 'auto_LiRPA' in sys.modules:
             del sys.modules['auto_LiRPA']
 
@@ -214,44 +222,31 @@ def install_dependencies(project_root, skip_deps=False):
             import auto_LiRPA
             auto_lirpa_works = True
             print_success("auto_LiRPA installed successfully via pip")
-        except ImportError:
-            pass
+        except ImportError as e:
+            # pip install failed (common on Windows due to encoding issues)
+            # Try using it directly from submodule
+            print_warning(f"pip install failed: {e}")
+            print("Checking if auto_LiRPA can be used directly from submodule...")
 
-        # If pip install failed but auto_LiRPA exists in submodule, use it directly
-        if not auto_lirpa_works:
-            print_warning("pip install failed, checking if auto_LiRPA can be used directly from submodule...")
-
-            # Check if __init__.py exists in auto_LiRPA
             init_file = auto_lirpa_dir / 'auto_LiRPA' / '__init__.py'
             if init_file.exists():
+                # Reload again in case of cache
+                if 'auto_LiRPA' in sys.modules:
+                    del sys.modules['auto_LiRPA']
+
                 try:
                     import auto_LiRPA
                     auto_lirpa_works = True
-                    print_success(f"auto_LiRPA {auto_LiRPA.__version__} can be used directly from submodule")
-                    print_warning("Note: Using auto_LiRPA from submodule (not installed via pip)")
-                except ImportError as e:
-                    # Check if it's a missing dependency issue
-                    error_msg = str(e)
-                    if "No module named" in error_msg:
-                        missing_module = error_msg.split("'")[1] if "'" in error_msg else "unknown"
-                        print_warning(f"Missing dependency: {missing_module}")
-                        print(f"Installing {missing_module}...")
-                        result = run_command([sys.executable, '-m', 'pip', 'install', missing_module])
-                        if result and result.returncode == 0:
-                            # Try import again
-                            try:
-                                import auto_LiRPA
-                                auto_lirpa_works = True
-                                print_success(f"auto_LiRPA {auto_LiRPA.__version__} now works after installing {missing_module}")
-                            except ImportError as e2:
-                                print_error(f"Still cannot import after installing {missing_module}: {e2}")
-                        else:
-                            print_error(f"Failed to install {missing_module}")
-                    else:
-                        print_error(f"Cannot import auto_LiRPA: {e}")
+                    print_success(f"auto_LiRPA {auto_LiRPA.__version__} works from submodule")
+                    print_warning("Note: Using auto_LiRPA from submodule (not pip-installed)")
+                except ImportError as e2:
+                    print_error(f"Cannot import auto_LiRPA from submodule: {e2}")
+                    print_error("This usually means a dependency is missing.")
+                    print_error("Try running: pip install graphviz appdirs pyyaml tqdm")
 
         if not auto_lirpa_works:
             print_error("Failed to set up auto_LiRPA")
+            print_error("Please install dependencies manually and try again")
             return False
 
     # Check and install alpha-beta-CROWN requirements
