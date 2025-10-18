@@ -14,7 +14,7 @@ DEFAULT_PARAMS = {
     'test_frequency': 2,
     'gpd_attack_epsilon_default': 0.1,
     'gpd_attack_epsilon_cifar_gtsrb': 0.031,
-    'gpd_attack_epsilon_mnist': 0.3,
+    'gpd_attack_epsilon_mnist': 0.031,
     'gpd_attack_iter': 20,
     'gpd_attack_iter_default': 10
 }
