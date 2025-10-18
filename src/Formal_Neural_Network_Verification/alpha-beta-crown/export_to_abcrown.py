@@ -320,7 +320,7 @@ def validate_onnx_export(pytorch_model, onnx_path, input_shape=(1, 3, 32, 32), d
         return False
 
 
-def export_model_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=True, validate=True):
+def export_model_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=True, validate=True, input_shape=None):
     """
     Export a trained PyTorch model to ONNX format for alpha-beta-CROWN.
 
@@ -330,6 +330,7 @@ def export_model_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=Tr
         device: Device to load model on
         simplify_onnx: Whether to simplify ONNX graph
         validate: Whether to validate ONNX export
+        input_shape: Input tensor shape (B, C, H, W). If None, auto-detect from model path
 
     Returns:
         Path to exported ONNX file
@@ -369,8 +370,28 @@ def export_model_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=Tr
     simplified_model = SimplifiedWrapper(model).to(device)
     simplified_model.eval()
 
+    # Auto-detect input shape from model path if not provided
+    if input_shape is None:
+        model_name_lower = Path(model_path).name.lower()
+
+        # Check if model was trained on MNIST (but note: expert architectures still use 3 channels)
+        # MNIST images are converted from 1->3 channels during data loading for compatibility
+        if 'mnist' in model_name_lower:
+            # All expert architectures expect 3-channel input (RGB)
+            # MNIST grayscale images are converted to 3 channels during training
+            input_shape = (1, 3, 32, 32)  # 3 channels (converted from 1), 32x32 (padded from 28x28)
+            print(f"Auto-detected MNIST dataset: input_shape = {input_shape}")
+            print(f"  Note: MNIST models use 3-channel input (grayscale duplicated to RGB)")
+        elif 'gtsrb' in model_name_lower or 'cifar' in model_name_lower:
+            input_shape = (1, 3, 32, 32)  # GTSRB/CIFAR: RGB, 32x32
+            print(f"Auto-detected GTSRB/CIFAR dataset: input_shape = {input_shape}")
+        else:
+            # Default to CIFAR/GTSRB size
+            input_shape = (1, 3, 32, 32)
+            print(f"Using default input_shape = {input_shape}")
+
     # Create dummy input
-    dummy_input = torch.randn(1, 3, 32, 32).to(device)
+    dummy_input = torch.randn(*input_shape).to(device)
 
     # Test forward pass
     with torch.no_grad():
@@ -414,7 +435,7 @@ def export_model_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=Tr
     # Validate ONNX export
     if validate:
         print("Validating ONNX export...")
-        validate_onnx_export(simplified_model, str(onnx_path), device=device)
+        validate_onnx_export(simplified_model, str(onnx_path), input_shape=input_shape, device=device)
 
     # Print ONNX stats
     onnx_model = onnx.load(str(onnx_path))

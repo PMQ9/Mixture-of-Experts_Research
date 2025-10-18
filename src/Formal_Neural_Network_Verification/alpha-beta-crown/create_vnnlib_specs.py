@@ -152,14 +152,20 @@ def load_dataset(dataset_name, data_dir='data', num_images=100):
     elif dataset_name == 'MNIST':
         import torchvision
         import torchvision.transforms as transforms
+        from PIL import Image
 
         mean, std = MNIST_NORM['mean'], MNIST_NORM['std']
         num_classes = 10
 
-        # MNIST is grayscale, use only first channel of normalization values
+        # IMPORTANT: Match the training pipeline
+        # - MNIST models are trained on RGB images (grayscale converted to 3 channels)
+        # - Images are resized from 28x28 to 32x32
+        # - Normalization uses 3-channel mean/std
         transform = transforms.Compose([
+            transforms.Resize(32),  # Resize from 28x28 to 32x32 (to match training)
+            transforms.Lambda(lambda img: img.convert('RGB')),  # Convert grayscale to RGB (3 channels)
             transforms.ToTensor(),
-            transforms.Normalize((mean[0],), (std[0],))  # Single channel for grayscale
+            transforms.Normalize(mean, std)  # Use 3-channel normalization
         ])
 
         testset = torchvision.datasets.MNIST(

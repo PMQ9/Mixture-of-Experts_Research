@@ -184,10 +184,9 @@ def create_verification_config(
         csv_file: CSV file listing VNNLIB files (optional)
     """
     # Determine input shape based on dataset
-    if dataset_name == 'MNIST':
-        input_shape = [1, 1, 28, 28]  # Grayscale, 28x28
-    else:  # CIFAR10, GTSRB
-        input_shape = [1, 3, 32, 32]  # RGB, 32x32
+    # NOTE: All expert models expect 3-channel RGB input (32x32)
+    # MNIST images are converted from grayscale (1 channel, 28x28) to RGB (3 channels, 32x32) during training
+    input_shape = [1, 3, 32, 32]  # All models use RGB, 32x32
 
     # Use VNNLIB specs if provided, otherwise use built-in dataset loader
     if vnnlib_dir and csv_file:
