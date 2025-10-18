@@ -308,15 +308,12 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
             if args.meta_moe:
                 _, gating_pred = gates.max(1)
                 gating_correct += gating_pred.eq(meta_class).sum().item()
-                gtsrb_mask = meta_class == 0
-                cifar10_mask = meta_class == 1
-                mnist_mask = meta_class == 2
-                # tsrd_mask = meta_class == 2
-                # btsd_mask = meta_class == 3
-                # etsd_mask = meta_class == 4
-                if gtsrb_mask.any():
-                    gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
-                    gtsrb_total += gtsrb_mask.sum().item()
+                #gtsrb_mask = meta_class == 0
+                cifar10_mask = meta_class == 0
+                mnist_mask = meta_class == 1
+                # if gtsrb_mask.any():
+                #     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
+                #     gtsrb_total += gtsrb_mask.sum().item()
                 if cifar10_mask.any():
                     cifar10_correct += predicted[cifar10_mask].eq(target[cifar10_mask]).sum().item()
                     cifar10_total += cifar10_mask.sum().item()
@@ -444,32 +441,32 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
 
 def main():
     dataset_params = {
-        'GTSRB': {
-            'num_classes': 43,
-            'train_dir': './data/GTSRB/Training',
-            'test_dir': './data/GTSRB/Test',
-            'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
-            'normalization_mean': (GTSRB_NORM['mean']),
-            'normalization_std': (GTSRB_NORM['std']),
-            'default_meta_class': 0
-        },
+        # 'GTSRB': {
+        #     'num_classes': 43,
+        #     'train_dir': './data/GTSRB/Training',
+        #     'test_dir': './data/GTSRB/Test',
+        #     'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
+        #     'normalization_mean': (GTSRB_NORM['mean']),
+        #     'normalization_std': (GTSRB_NORM['std']),
+        #     'default_meta_class': 0
+        # },
         'CIFAR10': {
             'num_classes': 10,
             'train_dir': './data/CIFAR10/Training',
             'test_dir': './data/CIFAR10/Test',
-            'csv_file': './data/CIFAR10/Test/testset_with_meta_class.csv',
+            'csv_file': './data/CIFAR10/Test/testset_with_meta_class_modified_for_ab.csv',
             'normalization_mean': (CIFAR10_NORM['mean']),
             'normalization_std': (CIFAR10_NORM['std']),
-            'default_meta_class': 1
+            'default_meta_class': 0
         },
         'MNIST': {
             'num_classes': 10,
             'train_dir': './data/MNIST/Training',
             'test_dir': './data/MNIST/Test',
-            'csv_file': './data/MNIST/Test/testset_with_meta_class.csv',
+            'csv_file': './data/MNIST/Test/testset_with_meta_class_modified_for_ab.csv',
             'normalization_mean': (MNIST_NORM['mean']),
             'normalization_std': (MNIST_NORM['std']),
-            'default_meta_class': 2
+            'default_meta_class': 1
         }
     }
 
@@ -510,7 +507,7 @@ def main():
             params = dataset_params[dataset]
             train_dataset = TrafficSignTrainDataset(
                 root=params['train_dir'],
-                csv_file=os.path.join(params['train_dir'], 'train_with_meta_class.csv'),
+                csv_file=os.path.join(params['train_dir'], 'train_with_meta_class_modified_for_ab.csv'),
                 transform=transform_train
             )
             test_dataset = TrafficSignTestDataset(
@@ -577,7 +574,7 @@ def main():
         
         train_dataset = TrafficSignTrainDataset(
             root=train_dir,
-            csv_file=os.path.join(train_dir, 'train_with_meta_class.csv'),
+            csv_file=os.path.join(train_dir, 'train_with_meta_class_modified_for_ab.csv'),
             transform=transform_train
         )
         test_dataset = TrafficSignTestDataset(
