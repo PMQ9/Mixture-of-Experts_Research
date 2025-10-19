@@ -319,14 +319,11 @@ class MetaGatingNet(nn.Module):
             self.model = timm.create_model(self.backbone, pretrained=True, num_classes=0)
             feature_dim = self.model.num_features
 
-        self.fc = nn.Sequential(
-            nn.Linear(feature_dim, num_experts),
-            nn.Softmax(dim=1)
-        )
+        self.fc = nn.Linear(feature_dim, num_experts)
 
     def forward(self, x):
         features = self.model(x)
-        logits = self.fc(features) / self.temperature
+        logits = self.fc(features)
         return logits
 
 class MetaMoE(nn.Module):

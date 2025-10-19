@@ -19,3 +19,29 @@ modules/alpha-beta-CROWN/complete_verifier/out.pkl
 
 src/Formal_Neural_Network_Verification/alpha-beta-crown/__pycache__/*.pyc
 src/Formal_Neural_Network_Verification/slprj/*
+artifacts/vnnlib/*
+
+# Router verification logs (regenerated each run)
+router_*.log
+router_verification_*.log
+router_cifar10_*.log
+
+# Temporary test scripts
+test_router_predictions.py
+test_router_raw_logits.py
+
+# Old/temporary verification scripts (use run_router_formal_verification.py instead)
+run_router_verification.py
+
+# Temporary artifacts
+router_verification_output.txt
+NUL
+
+# Training artifacts (regenerated)
+artifacts/training_log.txt
+artifacts/training_metrics.png
+artifacts/*.pth
+artifacts/nnv_models/*.pth
+
+# Claude Code configuration
+.claude/
