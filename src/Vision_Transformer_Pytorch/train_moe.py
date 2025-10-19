@@ -76,7 +76,7 @@ parser.add_argument('--adv_gating_train', action='store_true', help='Enable adve
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+# parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_*_best.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
@@ -475,7 +475,7 @@ def main():
             datasets = ['GTSRB', 'CIFAR10', 'MNIST']
             num_meta_experts = 3
         else:
-            datasets = ['GTSRB', 'CIFAR10']
+            datasets = ['CIFAR10', 'MNIST']
             num_meta_experts = args.num_meta_experts
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         total_classes = sum(num_classes_list)
@@ -694,14 +694,14 @@ def main():
             )
         # Old code here
         else:
-            gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
-            gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
-            if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
-            if isinstance(gtsrb_model, ModelWrapper):
-                gtsrb_model = gtsrb_model.model
-            gtsrb_model = gtsrb_model.to(DEVICE)
-            print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+            # gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
+            # gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
+            # if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            #     raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
+            # if isinstance(gtsrb_model, ModelWrapper):
+            #     gtsrb_model = gtsrb_model.model
+            # gtsrb_model = gtsrb_model.to(DEVICE)
+            # print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
 
             cifar10_model_path = resolve_model_path(args.cifar10_model_path)
             cifar10_model = torch.load(cifar10_model_path, map_location=DEVICE, weights_only=False)
@@ -724,7 +724,7 @@ def main():
             with torch.no_grad():
                 dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
                 for model, expected_classes, name in [
-                    (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
+                    # (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                     (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
                     (mnist_model, dataset_params['MNIST']['num_classes'], "MNIST"),
                 ]:
@@ -735,18 +735,18 @@ def main():
                         raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
                     print(f"{name} model output shape: {output.shape}")
 
-            gtsrb_model.eval()
+            # gtsrb_model.eval()
             cifar10_model.eval()
             mnist_model.eval()
-            for param in gtsrb_model.parameters():
-                param.requires_grad = False
+            # for param in gtsrb_model.parameters():
+            #     param.requires_grad = False
             for param in cifar10_model.parameters():
                 param.requires_grad = False
             for param in mnist_model.parameters():
                 param.requires_grad = False
 
             meta_gating_net = MetaGatingNet(num_experts=num_meta_experts, backbone=args.gating_backbone).to(DEVICE)
-            experts = [gtsrb_model, cifar10_model]
+            experts = [cifar10_model, mnist_model]
             # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
             model = MetaMoE(
                 experts=experts,
