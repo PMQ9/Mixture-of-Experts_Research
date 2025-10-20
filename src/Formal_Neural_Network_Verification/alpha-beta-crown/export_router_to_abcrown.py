@@ -79,14 +79,26 @@ class SimplifiedRouter(nn.Module):
             self.fc_linear = router_model.fc
 
     def _fold_ultra_verifiable_backbone(self, model):
-        """Fold UltraVerifiableCNN_Features backbone"""
-        self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
-        self.pool1 = model.pool1
-        self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
-        self.pool2 = model.pool2
-        self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
-        self.pool3 = model.pool3
-        self.conv4 = fold_batch_norm_into_conv(model.conv4, model.bn4)
+        """Fold UltraVerifiableCNN_Features backbone (or copy if no BatchNorm)"""
+        # Check if BatchNorm exists (old models) or was removed (new models after bug fix)
+        if hasattr(model, 'bn1'):
+            # Old model with BatchNorm - fold it
+            self.conv1 = fold_batch_norm_into_conv(model.conv1, model.bn1)
+            self.pool1 = model.pool1
+            self.conv2 = fold_batch_norm_into_conv(model.conv2, model.bn2)
+            self.pool2 = model.pool2
+            self.conv3 = fold_batch_norm_into_conv(model.conv3, model.bn3)
+            self.pool3 = model.pool3
+            self.conv4 = fold_batch_norm_into_conv(model.conv4, model.bn4)
+        else:
+            # New model without BatchNorm - just copy layers directly
+            self.conv1 = model.conv1
+            self.pool1 = model.pool1
+            self.conv2 = model.conv2
+            self.pool2 = model.pool2
+            self.conv3 = model.conv3
+            self.pool3 = model.pool3
+            self.conv4 = model.conv4
 
     def _fold_nnv_backbone(self, model):
         """Fold NNVCompatibleCNN_Features backbone"""

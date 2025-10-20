@@ -860,17 +860,26 @@ def main():
                 print(f"Avg Inference Time per image: {test_inference_time:.6f} seconds")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
-        if test_acc is not None and test_acc > best_acc:
-            best_acc = test_acc
+        # For MetaMoE, save best model based on GATING accuracy (not classification accuracy)
+        # This prevents mode collapse where model routes everything to one expert
+        if args.meta_moe:
+            save_metric = test_gating_acc if test_gating_acc is not None else None
+            metric_name = "gating accuracy"
+        else:
+            save_metric = test_acc
+            metric_name = "accuracy"
+
+        if save_metric is not None and save_metric > best_acc:
+            best_acc = save_metric
             suffix = "_robust" if args.adv_training else "_og"
             if args.fine_tune_meta_moe:
                 suffix += "_finetuned"
-            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")            
+            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
                 state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict{suffix}.pth")
-                torch.save(model.state_dict(), state_dict_path)         
-            print(f"New best accuracy: {best_acc:.4f}")
+                torch.save(model.state_dict(), state_dict_path)
+            print(f"New best {metric_name}: {best_acc:.4f}")
         print()
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:

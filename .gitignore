@@ -30,11 +30,11 @@ router_cifar10_*.log
 test_router_predictions.py
 test_router_raw_logits.py
 
-# Old/temporary verification scripts (use run_router_formal_verification.py instead)
-run_router_verification.py
-
 # Temporary artifacts
 router_verification_output.txt
+artifacts/router_verification_config.yaml
+artifacts/router_verification_instances.csv
+artifacts/router_verification_results.txt
 NUL
 
 # Training artifacts (regenerated)
