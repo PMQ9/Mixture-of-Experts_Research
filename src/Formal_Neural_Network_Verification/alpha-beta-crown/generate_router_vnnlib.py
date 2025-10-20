@@ -121,12 +121,34 @@ def create_router_vnnlib_spec(
         f.write(f"(assert (or {' '.join(and_clauses)}))\n")
 
 
+def cleanup_vnnlib_directory(vnnlib_dir):
+    """
+    Clean up old VNNLIB files before generating new ones.
+
+    Args:
+        vnnlib_dir: Path to VNNLIB directory
+    """
+    if vnnlib_dir.exists():
+        print(f"Cleaning up old VNNLIB files in {vnnlib_dir}...")
+        # Remove all .vnnlib files
+        vnnlib_files = list(vnnlib_dir.glob("*.vnnlib"))
+        if vnnlib_files:
+            for f in vnnlib_files:
+                f.unlink()
+            print(f"  Removed {len(vnnlib_files)} old VNNLIB files")
+        else:
+            print(f"  No old VNNLIB files to remove")
+    else:
+        print(f"Creating VNNLIB directory: {vnnlib_dir}")
+
+
 def generate_router_vnnlib_specs(
     dataset_name,
     num_images,
     epsilon,
     output_dir,
-    device='cpu'
+    device='cpu',
+    cleanup=True
 ):
     """
     Generate VNNLIB specs for router verification on a dataset.
@@ -137,6 +159,7 @@ def generate_router_vnnlib_specs(
         epsilon: L-infinity perturbation bound
         output_dir: Directory to save VNNLIB files
         device: Device for loading images
+        cleanup: Whether to clean up old VNNLIB files before generation (default: True)
 
     Returns:
         tuple: (vnnlib_dir, csv_path) - paths to specs and index file
@@ -152,6 +175,10 @@ def generate_router_vnnlib_specs(
     # Create output directory
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean up old VNNLIB files
+    if cleanup:
+        cleanup_vnnlib_directory(output_dir)
 
     # Load dataset
     print("Loading dataset...")
