@@ -287,12 +287,20 @@ class MetaGatingNet(nn.Module):
         custom_backbones = {
             'small_cnn': ('SmallExpertCNN_Features', 512),
             'tiny_cnn': ('TinyExpertCNN_Features', 256),
-            'micro_cnn': ('MicroExpertCNN_Features', 1024)
+            'micro_cnn': ('MicroExpertCNN_Features', 1024),
+            'nnv_cnn': ('NNVCompatibleCNN_Features', 1024),
+            'ultra_verifiable_cnn': ('UltraVerifiableCNN_Features', 896)
         }
 
         if backbone in custom_backbones:
             # Use custom CNN backbone
-            from small_expert import SmallExpertCNN_Features, TinyExpertCNN_Features, MicroExpertCNN_Features
+            from small_expert import (
+                SmallExpertCNN_Features,
+                TinyExpertCNN_Features,
+                MicroExpertCNN_Features,
+                NNVCompatibleCNN_Features,
+                UltraVerifiableCNN_Features
+            )
 
             if backbone == 'small_cnn':
                 self.model = SmallExpertCNN_Features()
@@ -300,6 +308,10 @@ class MetaGatingNet(nn.Module):
                 self.model = TinyExpertCNN_Features()
             elif backbone == 'micro_cnn':
                 self.model = MicroExpertCNN_Features()
+            elif backbone == 'nnv_cnn':
+                self.model = NNVCompatibleCNN_Features()
+            elif backbone == 'ultra_verifiable_cnn':
+                self.model = UltraVerifiableCNN_Features()
 
             feature_dim = self.model.num_features
         else:
@@ -307,14 +319,11 @@ class MetaGatingNet(nn.Module):
             self.model = timm.create_model(self.backbone, pretrained=True, num_classes=0)
             feature_dim = self.model.num_features
 
-        self.fc = nn.Sequential(
-            nn.Linear(feature_dim, num_experts),
-            nn.Softmax(dim=1)
-        )
+        self.fc = nn.Linear(feature_dim, num_experts)
 
     def forward(self, x):
         features = self.model(x)
-        logits = self.fc(features) / self.temperature
+        logits = self.fc(features)
         return logits
 
 class MetaMoE(nn.Module):

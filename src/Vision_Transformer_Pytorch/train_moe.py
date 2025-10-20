@@ -71,12 +71,12 @@ parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
-parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn'], help='Backbone architecture for the MetaGatingNet router')
+parser.add_argument('--gating_backbone', type=str, default='convnextv2_femto', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='convnext_tiny', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+# parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_*_best.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
@@ -308,15 +308,12 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
             if args.meta_moe:
                 _, gating_pred = gates.max(1)
                 gating_correct += gating_pred.eq(meta_class).sum().item()
-                gtsrb_mask = meta_class == 0
-                cifar10_mask = meta_class == 1
-                mnist_mask = meta_class == 2
-                # tsrd_mask = meta_class == 2
-                # btsd_mask = meta_class == 3
-                # etsd_mask = meta_class == 4
-                if gtsrb_mask.any():
-                    gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
-                    gtsrb_total += gtsrb_mask.sum().item()
+                #gtsrb_mask = meta_class == 0
+                cifar10_mask = meta_class == 0
+                mnist_mask = meta_class == 1
+                # if gtsrb_mask.any():
+                #     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
+                #     gtsrb_total += gtsrb_mask.sum().item()
                 if cifar10_mask.any():
                     cifar10_correct += predicted[cifar10_mask].eq(target[cifar10_mask]).sum().item()
                     cifar10_total += cifar10_mask.sum().item()
@@ -444,32 +441,32 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
 
 def main():
     dataset_params = {
-        'GTSRB': {
-            'num_classes': 43,
-            'train_dir': './data/GTSRB/Training',
-            'test_dir': './data/GTSRB/Test',
-            'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
-            'normalization_mean': (GTSRB_NORM['mean']),
-            'normalization_std': (GTSRB_NORM['std']),
-            'default_meta_class': 0
-        },
+        # 'GTSRB': {
+        #     'num_classes': 43,
+        #     'train_dir': './data/GTSRB/Training',
+        #     'test_dir': './data/GTSRB/Test',
+        #     'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
+        #     'normalization_mean': (GTSRB_NORM['mean']),
+        #     'normalization_std': (GTSRB_NORM['std']),
+        #     'default_meta_class': 0
+        # },
         'CIFAR10': {
             'num_classes': 10,
             'train_dir': './data/CIFAR10/Training',
             'test_dir': './data/CIFAR10/Test',
-            'csv_file': './data/CIFAR10/Test/testset_with_meta_class.csv',
+            'csv_file': './data/CIFAR10/Test/testset_with_meta_class_modified_for_ab.csv',
             'normalization_mean': (CIFAR10_NORM['mean']),
             'normalization_std': (CIFAR10_NORM['std']),
-            'default_meta_class': 1
+            'default_meta_class': 0
         },
         'MNIST': {
             'num_classes': 10,
             'train_dir': './data/MNIST/Training',
             'test_dir': './data/MNIST/Test',
-            'csv_file': './data/MNIST/Test/testset_with_meta_class.csv',
+            'csv_file': './data/MNIST/Test/testset_with_meta_class_modified_for_ab.csv',
             'normalization_mean': (MNIST_NORM['mean']),
             'normalization_std': (MNIST_NORM['std']),
-            'default_meta_class': 2
+            'default_meta_class': 1
         }
     }
 
@@ -478,7 +475,7 @@ def main():
             datasets = ['GTSRB', 'CIFAR10', 'MNIST']
             num_meta_experts = 3
         else:
-            datasets = ['GTSRB', 'CIFAR10']
+            datasets = ['CIFAR10', 'MNIST']
             num_meta_experts = args.num_meta_experts
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         total_classes = sum(num_classes_list)
@@ -510,7 +507,7 @@ def main():
             params = dataset_params[dataset]
             train_dataset = TrafficSignTrainDataset(
                 root=params['train_dir'],
-                csv_file=os.path.join(params['train_dir'], 'train_with_meta_class.csv'),
+                csv_file=os.path.join(params['train_dir'], 'train_with_meta_class_modified_for_ab.csv'),
                 transform=transform_train
             )
             test_dataset = TrafficSignTestDataset(
@@ -577,7 +574,7 @@ def main():
         
         train_dataset = TrafficSignTrainDataset(
             root=train_dir,
-            csv_file=os.path.join(train_dir, 'train_with_meta_class.csv'),
+            csv_file=os.path.join(train_dir, 'train_with_meta_class_modified_for_ab.csv'),
             transform=transform_train
         )
         test_dataset = TrafficSignTestDataset(
@@ -697,14 +694,14 @@ def main():
             )
         # Old code here
         else:
-            gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
-            gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
-            if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
-            if isinstance(gtsrb_model, ModelWrapper):
-                gtsrb_model = gtsrb_model.model
-            gtsrb_model = gtsrb_model.to(DEVICE)
-            print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+            # gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
+            # gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
+            # if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+            #     raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
+            # if isinstance(gtsrb_model, ModelWrapper):
+            #     gtsrb_model = gtsrb_model.model
+            # gtsrb_model = gtsrb_model.to(DEVICE)
+            # print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
 
             cifar10_model_path = resolve_model_path(args.cifar10_model_path)
             cifar10_model = torch.load(cifar10_model_path, map_location=DEVICE, weights_only=False)
@@ -727,7 +724,7 @@ def main():
             with torch.no_grad():
                 dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
                 for model, expected_classes, name in [
-                    (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
+                    # (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
                     (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
                     (mnist_model, dataset_params['MNIST']['num_classes'], "MNIST"),
                 ]:
@@ -738,18 +735,18 @@ def main():
                         raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
                     print(f"{name} model output shape: {output.shape}")
 
-            gtsrb_model.eval()
+            # gtsrb_model.eval()
             cifar10_model.eval()
             mnist_model.eval()
-            for param in gtsrb_model.parameters():
-                param.requires_grad = False
+            # for param in gtsrb_model.parameters():
+            #     param.requires_grad = False
             for param in cifar10_model.parameters():
                 param.requires_grad = False
             for param in mnist_model.parameters():
                 param.requires_grad = False
 
             meta_gating_net = MetaGatingNet(num_experts=num_meta_experts, backbone=args.gating_backbone).to(DEVICE)
-            experts = [gtsrb_model, cifar10_model]
+            experts = [cifar10_model, mnist_model]
             # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
             model = MetaMoE(
                 experts=experts,
@@ -863,17 +860,26 @@ def main():
                 print(f"Avg Inference Time per image: {test_inference_time:.6f} seconds")
         print(f"Epoch time: {epoch_time:.2f} seconds")
 
-        if test_acc is not None and test_acc > best_acc:
-            best_acc = test_acc
+        # For MetaMoE, save best model based on GATING accuracy (not classification accuracy)
+        # This prevents mode collapse where model routes everything to one expert
+        if args.meta_moe:
+            save_metric = test_gating_acc if test_gating_acc is not None else None
+            metric_name = "gating accuracy"
+        else:
+            save_metric = test_acc
+            metric_name = "accuracy"
+
+        if save_metric is not None and save_metric > best_acc:
+            best_acc = save_metric
             suffix = "_robust" if args.adv_training else "_og"
             if args.fine_tune_meta_moe:
                 suffix += "_finetuned"
-            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")            
+            save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
                 state_dict_path = os.path.join(OUTPUT_DIR, f"{args.model_arch}_{args.dataset.lower()}_best_state_dict{suffix}.pth")
-                torch.save(model.state_dict(), state_dict_path)         
-            print(f"New best accuracy: {best_acc:.4f}")
+                torch.save(model.state_dict(), state_dict_path)
+            print(f"New best {metric_name}: {best_acc:.4f}")
         print()
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:

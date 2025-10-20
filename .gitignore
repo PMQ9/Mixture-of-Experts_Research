@@ -5,8 +5,10 @@ src/Vision_Transformer_Pytorch/vit_cifer10_best.pth
 data/
 artifacts/training_*/
 tbxmanager/*
-src/Formal_Neural_Network_Verification/**/*.m
 gurobi.log
+
+# NNV (archived, not used)
+src/Formal_Neural_Network_Verification/nnv/slprj/*
 
 # alpha-beta-CROWN verification artifacts (auto-generated)
 artifacts/vnnlib_specs/**/*.vnnlib
@@ -18,4 +20,29 @@ modules/alpha-beta-CROWN/complete_verifier/out.txt
 modules/alpha-beta-CROWN/complete_verifier/out.pkl
 
 src/Formal_Neural_Network_Verification/alpha-beta-crown/__pycache__/*.pyc
-src/Formal_Neural_Network_Verification/slprj/*
+artifacts/vnnlib/*
+
+# Router verification logs (regenerated each run)
+router_*.log
+router_verification_*.log
+router_cifar10_*.log
+
+# Temporary test scripts
+test_router_predictions.py
+test_router_raw_logits.py
+
+# Temporary artifacts
+router_verification_output.txt
+artifacts/router_verification_config.yaml
+artifacts/router_verification_instances.csv
+artifacts/router_verification_results.txt
+NUL
+
+# Training artifacts (regenerated)
+artifacts/training_log.txt
+artifacts/training_metrics.png
+artifacts/*.pth
+artifacts/nnv_models/*.pth
+
+*.pyc
+test_config.yaml

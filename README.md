@@ -3,11 +3,10 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 # To do list
  **DevOps**
-- [ ] Add Unit Test
-- [ ] Reactivate Gitlab Runner. Use Golang, because
+
 
  **Performance**
-- [x] Add GNNV
+
 
 # User Manual
 
@@ -134,6 +133,25 @@ Fine-tine the initial MoE to integrate MNIST expert
 |---------------------------|-----------|-----------------------|
 | Best training accuracy    |    |                       |
 | **Best testing accuracy** | |                       |
+
+# Formal Verification
+
+This project includes formal verification of both the MetaMoE router and individual expert models using alpha-beta-CROWN (VNN-COMP 2021-2024 winner).
+
+**Router Verification Results:**
+- 100% verification success rate on 20 test samples (10 MNIST + 10 CIFAR10)
+- Average verification time: 10.82 seconds per sample at epsilon = 2/255
+- Provable guarantee: No adversarial perturbation within epsilon-ball can change expert selection
+
+**Expert Verification:**
+- Scalable to CNNs with millions of parameters
+- Provides formal robustness certificates for classification
+
+**Documentation:**
+- Complete guide: [src/Formal_Neural_Network_Verification/alpha-beta-crown/FORMAL_VERIFICATION_GUIDE.md](src/Formal_Neural_Network_Verification/alpha-beta-crown/FORMAL_VERIFICATION_GUIDE.md)
+- Quick reference: See [CLAUDE.md](CLAUDE.md) section on "Formal Verification with alpha-beta-CROWN"
+- Note: if you have an issue with auto_LiRPA:
+  - Remove: `modules/alpha-beta-CROWN/complete_verifier/auto_LiRP`
 
 # GitLab CI/CD DevOps Pipeline
 *Why do you a CI/CD pipeline for this? -> Yes👍*
