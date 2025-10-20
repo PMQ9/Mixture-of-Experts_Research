@@ -150,6 +150,8 @@ This project includes formal verification of both the MetaMoE router and individ
 **Documentation:**
 - Complete guide: [src/Formal_Neural_Network_Verification/alpha-beta-crown/FORMAL_VERIFICATION_GUIDE.md](src/Formal_Neural_Network_Verification/alpha-beta-crown/FORMAL_VERIFICATION_GUIDE.md)
 - Quick reference: See [CLAUDE.md](CLAUDE.md) section on "Formal Verification with alpha-beta-CROWN"
+- Note: if you have an issue with auto_LiRPA:
+  - Remove: `modules/alpha-beta-CROWN/complete_verifier/auto_LiRP`
 
 # GitLab CI/CD DevOps Pipeline
 *Why do you a CI/CD pipeline for this? -> Yes👍*

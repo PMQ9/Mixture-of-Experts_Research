@@ -5,6 +5,7 @@ This script:
 1. Loads MNIST and CIFAR10 test images
 2. Creates VNNLIB specifications for robustness verification
 3. Generates CSV file listing all verification instances
+4. Automatically cleans up old VNNLIB files before generating new ones
 """
 
 import torch
@@ -12,33 +13,30 @@ import numpy as np
 from torchvision import datasets, transforms
 import sys
 import os
+import argparse
+import shutil
 from pathlib import Path
 
 sys.path.insert(0, 'src/Vision_Transformer_Pytorch')
 from config import UNIFIED_NORM
 
-# Create output directories
-vnnlib_dir = Path("artifacts/vnnlib_specs/router")
-vnnlib_dir.mkdir(parents=True, exist_ok=True)
+def cleanup_vnnlib_directory(vnnlib_dir):
+    """
+    Clean up old VNNLIB files and CSV before generating new ones.
 
-# Prepare transforms (UNIFIED normalization - same as training!)
-transform_mnist = transforms.Compose([
-    transforms.Resize(32),
-    transforms.Grayscale(num_output_channels=3),
-    transforms.ToTensor(),
-    transforms.Normalize(UNIFIED_NORM['mean'], UNIFIED_NORM['std'])
-])
-
-transform_cifar = transforms.Compose([
-    transforms.Resize(32),
-    transforms.ToTensor(),
-    transforms.Normalize(UNIFIED_NORM['mean'], UNIFIED_NORM['std'])
-])
-
-# Load datasets
-print("Loading datasets...")
-mnist = datasets.MNIST(root='./data', train=False, download=False, transform=transform_mnist)
-cifar10 = datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_cifar)
+    Args:
+        vnnlib_dir: Path to VNNLIB directory
+    """
+    if vnnlib_dir.exists():
+        print(f"\nCleaning up old VNNLIB files in {vnnlib_dir}...")
+        # Remove all .vnnlib files
+        vnnlib_files = list(vnnlib_dir.glob("*.vnnlib"))
+        for f in vnnlib_files:
+            f.unlink()
+        print(f"  Removed {len(vnnlib_files)} old VNNLIB files")
+    else:
+        print(f"\nCreating VNNLIB directory: {vnnlib_dir}")
+        vnnlib_dir.mkdir(parents=True, exist_ok=True)
 
 def create_vnnlib_router(input_image, true_expert, epsilon, output_file):
     """
@@ -101,49 +99,106 @@ def create_vnnlib_router(input_image, true_expert, epsilon, output_file):
             # Negation of property: Y_0 >= Y_1
             f.write("(assert (>= Y_0 Y_1))\n")
 
-print("\nCreating VNNLIB specifications...")
-print("="*70)
+def main():
+    parser = argparse.ArgumentParser(
+        description='Prepare router verification data for alpha-beta-CROWN'
+    )
+    parser.add_argument('--num_mnist', type=int, default=10,
+                        help='Number of MNIST samples to generate (default: 10)')
+    parser.add_argument('--num_cifar', type=int, default=10,
+                        help='Number of CIFAR10 samples to generate (default: 10)')
+    parser.add_argument('--epsilon', type=float, default=2.0/255.0,
+                        help='L-infinity perturbation bound (default: 2/255)')
+    parser.add_argument('--output_dir', type=str, default='artifacts/vnnlib_specs/router',
+                        help='Output directory for VNNLIB files')
 
-# Configuration
-epsilon = 2.0 / 255.0  # L-infinity perturbation bound (2/255 is common for robustness testing)
-num_mnist_samples = 10
-num_cifar_samples = 10
+    args = parser.parse_args()
 
-csv_lines = []
+    # Create output directory
+    vnnlib_dir = Path(args.output_dir)
 
-# Process MNIST samples (should route to expert 1)
-print(f"\nMNIST samples (epsilon={epsilon:.6f}):")
-for i in range(num_mnist_samples):
-    img, label = mnist[i * 100]  # Sample every 100th image
-    vnnlib_file = vnnlib_dir / f"mnist_{i}.vnnlib"
-    create_vnnlib_router(img, true_expert=1, epsilon=epsilon, output_file=str(vnnlib_file))
+    # Clean up old VNNLIB files
+    cleanup_vnnlib_directory(vnnlib_dir)
 
-    csv_lines.append(f"mnist_{i},artifacts/vnnlib_specs/router/mnist_{i}.vnnlib,60")
-    print(f"  Created: {vnnlib_file.name} (digit {label})")
+    # Prepare transforms (UNIFIED normalization - same as training!)
+    transform_mnist = transforms.Compose([
+        transforms.Resize(32),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.ToTensor(),
+        transforms.Normalize(UNIFIED_NORM['mean'], UNIFIED_NORM['std'])
+    ])
 
-# Process CIFAR10 samples (should route to expert 0)
-print(f"\nCIFAR10 samples (epsilon={epsilon:.6f}):")
-for i in range(num_cifar_samples):
-    img, label = cifar10[i * 100]  # Sample every 100th image
-    vnnlib_file = vnnlib_dir / f"cifar10_{i}.vnnlib"
-    create_vnnlib_router(img, true_expert=0, epsilon=epsilon, output_file=str(vnnlib_file))
+    transform_cifar = transforms.Compose([
+        transforms.Resize(32),
+        transforms.ToTensor(),
+        transforms.Normalize(UNIFIED_NORM['mean'], UNIFIED_NORM['std'])
+    ])
 
-    csv_lines.append(f"cifar10_{i},artifacts/vnnlib_specs/router/cifar10_{i}.vnnlib,60")
-    print(f"  Created: {vnnlib_file.name} (class {label})")
+    # Load datasets
+    print("\nLoading datasets...")
+    mnist = datasets.MNIST(root='./data', train=False, download=False, transform=transform_mnist)
+    cifar10 = datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_cifar)
 
-# Create instances CSV for alpha-beta-CROWN
-csv_file = "artifacts/router_verification_instances.csv"
-with open(csv_file, 'w') as f:
-    for line in csv_lines:
-        f.write(line + "\n")
+    print("\nCreating VNNLIB specifications...")
+    print("="*70)
 
-print("\n" + "="*70)
-print("SUMMARY")
-print("="*70)
-print(f"Created {len(csv_lines)} VNNLIB specifications")
-print(f"MNIST samples: {num_mnist_samples}")
-print(f"CIFAR10 samples: {num_cifar_samples}")
-print(f"Epsilon (L∞): {epsilon:.6f} ({epsilon*255:.1f}/255)")
-print(f"\nInstances CSV: {csv_file}")
-print(f"VNNLIB specs: {vnnlib_dir}/")
-print("\nNext: Create YAML config and run alpha-beta-CROWN verification")
+    csv_lines = []
+
+    # Determine sampling strategy based on requested number of samples
+    mnist_total = len(mnist)
+    cifar_total = len(cifar10)
+
+    # Calculate stride for sampling (avoid exceeding dataset size)
+    mnist_stride = max(1, mnist_total // args.num_mnist) if args.num_mnist <= mnist_total else 1
+    cifar_stride = max(1, cifar_total // args.num_cifar) if args.num_cifar <= cifar_total else 1
+
+    # Adjust num_samples if requested more than available
+    actual_num_mnist = min(args.num_mnist, mnist_total)
+    actual_num_cifar = min(args.num_cifar, cifar_total)
+
+    if actual_num_mnist < args.num_mnist:
+        print(f"\nWARNING: Requested {args.num_mnist} MNIST samples, but only {mnist_total} available. Using {actual_num_mnist}.")
+    if actual_num_cifar < args.num_cifar:
+        print(f"\nWARNING: Requested {args.num_cifar} CIFAR10 samples, but only {cifar_total} available. Using {actual_num_cifar}.")
+
+    # Process MNIST samples (should route to expert 1)
+    print(f"\nMNIST samples (epsilon={args.epsilon:.6f}, stride={mnist_stride}):")
+    for i in range(actual_num_mnist):
+        idx = i * mnist_stride
+        img, label = mnist[idx]
+        vnnlib_file = vnnlib_dir / f"mnist_{i}.vnnlib"
+        create_vnnlib_router(img, true_expert=1, epsilon=args.epsilon, output_file=str(vnnlib_file))
+
+        csv_lines.append(f"mnist_{i},artifacts/vnnlib_specs/router/mnist_{i}.vnnlib,60")
+        print(f"  Created: {vnnlib_file.name} (digit {label}, index {idx})")
+
+    # Process CIFAR10 samples (should route to expert 0)
+    print(f"\nCIFAR10 samples (epsilon={args.epsilon:.6f}, stride={cifar_stride}):")
+    for i in range(actual_num_cifar):
+        idx = i * cifar_stride
+        img, label = cifar10[idx]
+        vnnlib_file = vnnlib_dir / f"cifar10_{i}.vnnlib"
+        create_vnnlib_router(img, true_expert=0, epsilon=args.epsilon, output_file=str(vnnlib_file))
+
+        csv_lines.append(f"cifar10_{i},artifacts/vnnlib_specs/router/cifar10_{i}.vnnlib,60")
+        print(f"  Created: {vnnlib_file.name} (class {label}, index {idx})")
+
+    # Create instances CSV for alpha-beta-CROWN
+    csv_file = "artifacts/router_verification_instances.csv"
+    with open(csv_file, 'w') as f:
+        for line in csv_lines:
+            f.write(line + "\n")
+
+    print("\n" + "="*70)
+    print("SUMMARY")
+    print("="*70)
+    print(f"Created {len(csv_lines)} VNNLIB specifications")
+    print(f"MNIST samples: {actual_num_mnist} (requested: {args.num_mnist})")
+    print(f"CIFAR10 samples: {actual_num_cifar} (requested: {args.num_cifar})")
+    print(f"Epsilon (L-inf): {args.epsilon:.6f} ({args.epsilon*255:.1f}/255)")
+    print(f"\nInstances CSV: {csv_file}")
+    print(f"VNNLIB specs: {vnnlib_dir}/")
+    print("\nNext: Create YAML config and run alpha-beta-CROWN verification")
+
+if __name__ == '__main__':
+    main()
