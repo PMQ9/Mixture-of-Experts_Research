@@ -69,9 +69,14 @@ class SimplifiedRouter(nn.Module):
         else:
             raise ValueError(f"Unsupported router backbone: {self.backbone_type}")
 
-        # Copy FC layer (Linear + Softmax) - but we'll output LOGITS for verification
+        # Copy FC layer - now just a Linear layer (Softmax removed in bug fix)
         # alpha-beta-CROWN verifies logits, not softmax outputs
-        self.fc_linear = router_model.fc[0]  # Linear layer only, skip Softmax
+        if isinstance(router_model.fc, nn.Sequential):
+            # Old architecture with nn.Sequential([Linear, Softmax])
+            self.fc_linear = router_model.fc[0]  # Linear layer only, skip Softmax
+        else:
+            # New architecture with just nn.Linear (bug fix applied)
+            self.fc_linear = router_model.fc
 
     def _fold_ultra_verifiable_backbone(self, model):
         """Fold UltraVerifiableCNN_Features backbone"""

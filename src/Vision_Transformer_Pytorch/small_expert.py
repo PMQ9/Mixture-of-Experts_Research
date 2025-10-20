@@ -644,6 +644,10 @@ class UltraVerifiableCNN_Features(nn.Module):
     Feature extractor variant of UltraVerifiableCNN
     Returns features instead of class predictions
     Feature dimension: 896 (56 * 4 * 4 flattened conv features)
+
+    **NO BATCHNORM** - Removed to fix train/eval mode discrepancy in MetaMoE routing.
+    BatchNorm caused inconsistent routing behavior between training (uses batch stats)
+    and inference (uses running stats averaged across domains).
     """
 
     def __init__(self):
@@ -652,45 +656,45 @@ class UltraVerifiableCNN_Features(nn.Module):
 
         # Block 1: 32x32x3 -> 16x16x20
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=20, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(20)
+        # self.bn1 = nn.BatchNorm2d(20)  # REMOVED: Causes train/eval discrepancy
         self.pool1 = nn.AvgPool2d(kernel_size=2, stride=2)
 
         # Block 2: 16x16x20 -> 8x8x28
         self.conv2 = nn.Conv2d(in_channels=20, out_channels=28, kernel_size=3, stride=1, padding=1)
-        self.bn2 = nn.BatchNorm2d(28)
+        # self.bn2 = nn.BatchNorm2d(28)  # REMOVED: Causes train/eval discrepancy
         self.pool2 = nn.AvgPool2d(kernel_size=2, stride=2)
 
         # Block 3: 8x8x28 -> 4x4x40
         self.conv3 = nn.Conv2d(in_channels=28, out_channels=40, kernel_size=3, stride=1, padding=1)
-        self.bn3 = nn.BatchNorm2d(40)
+        # self.bn3 = nn.BatchNorm2d(40)  # REMOVED: Causes train/eval discrepancy
         self.pool3 = nn.AvgPool2d(kernel_size=2, stride=2)
 
         # Block 4: 4x4x40 -> 4x4x56
         self.conv4 = nn.Conv2d(in_channels=40, out_channels=56, kernel_size=3, stride=1, padding=1)
-        self.bn4 = nn.BatchNorm2d(56)
+        # self.bn4 = nn.BatchNorm2d(56)  # REMOVED: Causes train/eval discrepancy
 
     def forward(self, x):
         # Block 1
         x = self.conv1(x)
-        x = self.bn1(x)
+        # x = self.bn1(x)  # REMOVED
         x = F.relu(x)
         x = self.pool1(x)
 
         # Block 2
         x = self.conv2(x)
-        x = self.bn2(x)
+        # x = self.bn2(x)  # REMOVED
         x = F.relu(x)
         x = self.pool2(x)
 
         # Block 3
         x = self.conv3(x)
-        x = self.bn3(x)
+        # x = self.bn3(x)  # REMOVED
         x = F.relu(x)
         x = self.pool3(x)
 
         # Block 4 (no pooling)
         x = self.conv4(x)
-        x = self.bn4(x)
+        # x = self.bn4(x)  # REMOVED
         x = F.relu(x)
 
         # Flatten and return features
