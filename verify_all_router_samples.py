@@ -1,20 +1,35 @@
 """
 Run alpha-beta-CROWN Verification on All MetaMoE Router Samples
 
-This script:
-1. Automatically generates fresh VNNLIB specifications with configurable sample counts
-2. Verifies all router samples (MNIST + CIFAR10)
-3. Generates a comprehensive verification report
+This script provides a complete end-to-end verification workflow:
+1. [Optional] Exports PyTorch model to ONNX
+2. Automatically generates fresh VNNLIB specifications with configurable sample counts
+3. Verifies all router samples (MNIST + CIFAR10)
+4. Generates a comprehensive verification report
 
 Usage:
     # Default: 10 MNIST + 10 CIFAR10 samples
     python verify_all_router_samples.py
 
+    # Verify a PyTorch model (auto-exports to ONNX)
+    python verify_all_router_samples.py \
+        --model_path artifacts/training_20251020_123456/meta_moe_ultra_verifiable_cnn_best_og.pth
+
+    # Verify specific ONNX file
+    python verify_all_router_samples.py \
+        --onnx_path artifacts/abcrown_models/my_router_only.onnx
+
     # Custom sample counts
     python verify_all_router_samples.py --num_mnist 20 --num_cifar 20
 
-    # Custom epsilon
-    python verify_all_router_samples.py --epsilon 0.01569  # 4/255
+    # Custom epsilon (4/255)
+    python verify_all_router_samples.py --epsilon 0.01569
+
+    # Full custom verification
+    python verify_all_router_samples.py \
+        --model_path artifacts/my_model.pth \
+        --num_mnist 50 --num_cifar 50 \
+        --epsilon 0.01569 --timeout 120
 """
 
 import subprocess
@@ -81,13 +96,87 @@ def main():
                         help='L-infinity perturbation bound (default: 2/255)')
     parser.add_argument('--timeout', type=int, default=60,
                         help='Timeout per sample in seconds (default: 60)')
+    parser.add_argument('--model_path', type=str, default=None,
+                        help='Path to MetaMoE .pth model (will auto-export to ONNX)')
+    parser.add_argument('--onnx_path', type=str, default=None,
+                        help='Path to router ONNX file (default: auto-detect most recent *router_only.onnx)')
 
     args = parser.parse_args()
 
     # Configuration
-    abcrown_dir = Path("modules/alpha-beta-CROWN/complete_verifier")
-    onnx_model = Path("artifacts/abcrown_models/meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx").resolve()
+    abcrown_dir = Path("modules/alpha-beta-CROWN/complete_verifier").resolve()
     vnnlib_dir = Path("artifacts/vnnlib_specs/router").resolve()
+
+    # Handle PyTorch model export if provided
+    if args.model_path:
+        model_path = Path(args.model_path)
+        if not model_path.exists():
+            print(f"\nERROR: Model file not found: {model_path}")
+            sys.exit(1)
+
+        print(f"\n{'='*80}")
+        print("Exporting PyTorch Model to ONNX")
+        print(f"{'='*80}")
+        print(f"Model: {model_path}")
+
+        # Check if export script exists
+        export_script = Path("src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py")
+        if not export_script.exists():
+            print(f"\nERROR: Export script not found: {export_script}")
+            sys.exit(1)
+
+        # Run export script
+        result = subprocess.run([
+            sys.executable, str(export_script),
+            '--model_path', str(model_path),
+            '--output_dir', 'artifacts/abcrown_models'
+        ])
+
+        if result.returncode != 0:
+            print("\nERROR: Router export failed!")
+            sys.exit(1)
+
+        print("\nRouter ONNX export complete!\n")
+
+        # The export script creates a file with pattern: *_router_only.onnx
+        # Auto-detect it as the most recent one
+        onnx_dir = Path("artifacts/abcrown_models")
+        onnx_files = list(onnx_dir.glob('*router_only.onnx'))
+        if onnx_files:
+            onnx_model = max(onnx_files, key=lambda p: p.stat().st_mtime).resolve()
+            print(f"Using exported ONNX: {onnx_model.name}\n")
+        else:
+            print("\nERROR: Export succeeded but ONNX file not found!")
+            sys.exit(1)
+
+    # Determine ONNX model path
+    elif args.onnx_path:
+        onnx_model = Path(args.onnx_path).resolve()
+        if not onnx_model.exists():
+            print(f"\nERROR: ONNX file not found: {onnx_model}")
+            print("Please check the path and try again.")
+            sys.exit(1)
+        print(f"\nUsing specified ONNX model: {onnx_model.name}")
+    else:
+        # Auto-detect latest ONNX in artifacts/abcrown_models/
+        onnx_dir = Path("artifacts/abcrown_models")
+        if not onnx_dir.exists():
+            print(f"\nERROR: ONNX directory not found: {onnx_dir}")
+            print("Please export your router model to ONNX first.")
+            sys.exit(1)
+
+        onnx_files = list(onnx_dir.glob('*router_only.onnx'))
+        if not onnx_files:
+            print(f"\nERROR: No router ONNX file found in {onnx_dir}")
+            print("\nPlease export your router model first:")
+            print("  python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py \\")
+            print("    --model_path <your_meta_moe_model.pth>")
+            sys.exit(1)
+
+        # Use the most recently modified ONNX file
+        onnx_model = max(onnx_files, key=lambda p: p.stat().st_mtime).resolve()
+        print(f"\nAuto-detected ONNX model: {onnx_model.name}")
+        print(f"  (most recent in artifacts/abcrown_models/)")
 
     print("\n" + "="*80)
     print("MetaMoE Router Formal Verification - All Samples")
@@ -123,10 +212,17 @@ def main():
     # Set up Python path for auto_LiRPA
     auto_lirpa_path = (abcrown_dir.parent / "auto_LiRPA").resolve()
     env = os.environ.copy()
+
+    # Convert to string and use forward slashes (works on both Windows and Unix)
+    auto_lirpa_str = str(auto_lirpa_path).replace('\\', '/')
+
+    # Build PYTHONPATH
+    pythonpath_parts = [auto_lirpa_str]
     if 'PYTHONPATH' in env:
-        env['PYTHONPATH'] = f"{auto_lirpa_path}{os.pathsep}{env['PYTHONPATH']}"
-    else:
-        env['PYTHONPATH'] = str(auto_lirpa_path)
+        pythonpath_parts.append(env['PYTHONPATH'])
+    env['PYTHONPATH'] = os.pathsep.join(pythonpath_parts)
+
+    print(f"PYTHONPATH set to: {env['PYTHONPATH']}")
 
     # Change to alpha-beta-CROWN directory
     original_dir = os.getcwd()
@@ -151,9 +247,11 @@ def main():
         print(f"[{idx}/{len(all_files)}] Verifying {dataset} sample: {vnnlib_file.name}")
         print("="*80)
 
-        # Create config for this sample
+        # Convert ONNX path to relative path from alpha-beta-CROWN/complete_verifier
+        onnx_relative = os.path.relpath(onnx_model, abcrown_dir)
+
         config_content = f"""model:
-  onnx_path: ../../../artifacts/abcrown_models/meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx
+  onnx_path: {onnx_relative}
   input_shape: [1, 3, 32, 32]
 
 specification:
@@ -196,6 +294,14 @@ bab:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=args.timeout + 60)
 
+            # Check for errors
+            if result.returncode != 0:
+                results['unknown'].append(sample_id)
+                print(f"\n[?] ERROR: alpha-beta-CROWN failed with return code {result.returncode}")
+                print(f"STDERR:\n{result.stderr}")  # Print full error for debugging
+                print(f"\nSTDOUT:\n{result.stdout[:500]}")  # Print some stdout too
+                continue
+
             # Parse result
             if "unsat" in result.stdout.lower() or "verified with init" in result.stdout.lower():
                 results['verified'].append(sample_id)
@@ -213,6 +319,7 @@ bab:
                 results['unknown'].append(sample_id)
                 status = "UNKNOWN"
                 symbol = "[?]"
+                print(f"STDOUT: {result.stdout[:500]}")  # Debug: print output if unknown
 
             # Extract time if available
             time_str = "N/A"

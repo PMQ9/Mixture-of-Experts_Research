@@ -44,5 +44,5 @@ artifacts/training_metrics.png
 artifacts/*.pth
 artifacts/nnv_models/*.pth
 
-# Claude Code configuration
-.claude/
+*.pyc
+test_config.yaml
