@@ -144,25 +144,44 @@ def main():
 
     csv_lines = []
 
+    # Determine sampling strategy based on requested number of samples
+    mnist_total = len(mnist)
+    cifar_total = len(cifar10)
+
+    # Calculate stride for sampling (avoid exceeding dataset size)
+    mnist_stride = max(1, mnist_total // args.num_mnist) if args.num_mnist <= mnist_total else 1
+    cifar_stride = max(1, cifar_total // args.num_cifar) if args.num_cifar <= cifar_total else 1
+
+    # Adjust num_samples if requested more than available
+    actual_num_mnist = min(args.num_mnist, mnist_total)
+    actual_num_cifar = min(args.num_cifar, cifar_total)
+
+    if actual_num_mnist < args.num_mnist:
+        print(f"\nWARNING: Requested {args.num_mnist} MNIST samples, but only {mnist_total} available. Using {actual_num_mnist}.")
+    if actual_num_cifar < args.num_cifar:
+        print(f"\nWARNING: Requested {args.num_cifar} CIFAR10 samples, but only {cifar_total} available. Using {actual_num_cifar}.")
+
     # Process MNIST samples (should route to expert 1)
-    print(f"\nMNIST samples (epsilon={args.epsilon:.6f}):")
-    for i in range(args.num_mnist):
-        img, label = mnist[i * 100]  # Sample every 100th image
+    print(f"\nMNIST samples (epsilon={args.epsilon:.6f}, stride={mnist_stride}):")
+    for i in range(actual_num_mnist):
+        idx = i * mnist_stride
+        img, label = mnist[idx]
         vnnlib_file = vnnlib_dir / f"mnist_{i}.vnnlib"
         create_vnnlib_router(img, true_expert=1, epsilon=args.epsilon, output_file=str(vnnlib_file))
 
         csv_lines.append(f"mnist_{i},artifacts/vnnlib_specs/router/mnist_{i}.vnnlib,60")
-        print(f"  Created: {vnnlib_file.name} (digit {label})")
+        print(f"  Created: {vnnlib_file.name} (digit {label}, index {idx})")
 
     # Process CIFAR10 samples (should route to expert 0)
-    print(f"\nCIFAR10 samples (epsilon={args.epsilon:.6f}):")
-    for i in range(args.num_cifar):
-        img, label = cifar10[i * 100]  # Sample every 100th image
+    print(f"\nCIFAR10 samples (epsilon={args.epsilon:.6f}, stride={cifar_stride}):")
+    for i in range(actual_num_cifar):
+        idx = i * cifar_stride
+        img, label = cifar10[idx]
         vnnlib_file = vnnlib_dir / f"cifar10_{i}.vnnlib"
         create_vnnlib_router(img, true_expert=0, epsilon=args.epsilon, output_file=str(vnnlib_file))
 
         csv_lines.append(f"cifar10_{i},artifacts/vnnlib_specs/router/cifar10_{i}.vnnlib,60")
-        print(f"  Created: {vnnlib_file.name} (class {label})")
+        print(f"  Created: {vnnlib_file.name} (class {label}, index {idx})")
 
     # Create instances CSV for alpha-beta-CROWN
     csv_file = "artifacts/router_verification_instances.csv"
@@ -174,8 +193,8 @@ def main():
     print("SUMMARY")
     print("="*70)
     print(f"Created {len(csv_lines)} VNNLIB specifications")
-    print(f"MNIST samples: {args.num_mnist}")
-    print(f"CIFAR10 samples: {args.num_cifar}")
+    print(f"MNIST samples: {actual_num_mnist} (requested: {args.num_mnist})")
+    print(f"CIFAR10 samples: {actual_num_cifar} (requested: {args.num_cifar})")
     print(f"Epsilon (L-inf): {args.epsilon:.6f} ({args.epsilon*255:.1f}/255)")
     print(f"\nInstances CSV: {csv_file}")
     print(f"VNNLIB specs: {vnnlib_dir}/")
