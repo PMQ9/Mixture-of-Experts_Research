@@ -208,6 +208,8 @@ def main():
     print(f"\nTotal samples: {len(all_files)}")
     print(f"  MNIST: {len(mnist_files)}")
     print(f"  CIFAR10: {len(cifar_files)}")
+    print(f"\nDevice: CUDA (GPU acceleration enabled)")
+    print(f"Batch size: 2048")
 
     # Set up Python path for auto_LiRPA
     auto_lirpa_path = (abcrown_dir.parent / "auto_LiRPA").resolve()
@@ -257,8 +259,12 @@ def main():
 specification:
   vnnlib_path: ../../../artifacts/vnnlib_specs/router/{vnnlib_file.name}
 
+general:
+  device: cuda
+  conv_mode: patches
+
 solver:
-  batch_size: 256
+  batch_size: 2048
   alpha-crown:
     iteration: 100
     lr_alpha: 0.1
@@ -319,7 +325,10 @@ bab:
                 results['unknown'].append(sample_id)
                 status = "UNKNOWN"
                 symbol = "[?]"
-                print(f"STDOUT: {result.stdout[:500]}")  # Debug: print output if unknown
+                # Debug: print output if unknown
+                if idx == 1:  # Print first sample's output for debugging
+                    print(f"\n[DEBUG] First sample output:")
+                    print(result.stdout[:1000])
 
             # Extract time if available
             time_str = "N/A"
