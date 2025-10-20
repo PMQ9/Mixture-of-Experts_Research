@@ -42,8 +42,6 @@ def archive_params(args, config, output_dir):
             item == folder_name  # Skip current run's folder (just created)
             or item == "results"  # Skip results folder
             or item == "nnv_models"  # Skip nnv folder
-            or (os.path.isdir(src) and item.startswith("abcrown_"))  # Skip all abcrown_* folders
-            or (os.path.isdir(src) and item.startswith("vnnlib_"))  # Skip all vnnlib_* folders
             or (os.path.isdir(src) and item.startswith("training_"))  # Skip all training_* folders
         ):
             continue
