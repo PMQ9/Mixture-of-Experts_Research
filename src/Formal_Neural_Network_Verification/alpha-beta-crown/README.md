@@ -21,7 +21,7 @@ This project uses **alpha-beta-CROWN**, the state-of-the-art neural network veri
 
 Formal verification provides mathematical proofs that a neural network is robust within an epsilon-ball around a test input. Unlike empirical testing, it guarantees that NO adversarial perturbation within the specified bound can change the model's behavior.
 
-### How Does alpha-beta-CROWN Work? (Simple Explanation)
+### How Does alpha-beta-CROWN Work?
 
 **The Core Idea:**
 Instead of testing individual adversarial examples (which is slow and incomplete), alpha-beta-CROWN analyzes the ENTIRE epsilon-ball at once by computing mathematical bounds on what the network can possibly output.
@@ -295,6 +295,105 @@ Successfully completed formal verification of the MetaMoE router with 100% verif
 
 ### Router Verification Workflow
 
+**NEW: Simplified One-Command Verification** - All steps automated!
+
+#### Quick Start (Recommended)
+
+```bash
+# Default: Verify 10 MNIST + 10 CIFAR10 samples
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth
+
+# Custom sample counts (supports up to 10,000 per dataset)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
+    --num_mnist 100 --num_cifar 100
+
+# Custom epsilon (4/255 instead of 2/255)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
+    --epsilon 0.01569
+
+# Thorough verification (200 samples, recommended for papers)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
+    --num_mnist 200 --num_cifar 200 \
+    --timeout 120
+```
+
+**What it does automatically:**
+1. Exports router to ONNX (if `.pth` file provided)
+2. Cleans up old VNNLIB specifications
+3. Generates fresh VNNLIB specs for both datasets
+4. Runs alpha-beta-CROWN verification on all samples
+5. Generates comprehensive report (`artifacts/router_verification_results.txt`)
+
+**Expected Output:**
+```
+================================================================================
+Step 1: Generating Fresh VNNLIB Specifications
+================================================================================
+Cleaning up old VNNLIB files...
+  Removed 20 old VNNLIB files
+
+MNIST samples (epsilon=0.007843, stride=100):
+  Created: mnist_0.vnnlib (digit 7, index 0)
+  Created: mnist_1.vnnlib (digit 6, index 100)
+  ...
+
+CIFAR10 samples (epsilon=0.007843, stride=100):
+  Created: cifar10_0.vnnlib (class 3, index 0)
+  Created: cifar10_1.vnnlib (class 4, index 100)
+  ...
+
+================================================================================
+Step 2: Running Verification on All Samples
+================================================================================
+Device: CUDA (GPU acceleration enabled)
+Batch size: 2048
+
+[1/20] Verifying MNIST sample: mnist_0.vnnlib
+[+] VERIFIED (3.20s)
+
+[2/20] Verifying MNIST sample: mnist_1.vnnlib
+[+] VERIFIED (2.89s)
+...
+
+================================================================================
+VERIFICATION SUMMARY
+================================================================================
+Total samples: 20
+  Verified:   20 (100.0%)
+  Falsified:  0 (0.0%)
+  Timeout:    0 (0.0%)
+  Unknown:    0 (0.0%)
+
+Total time: 216.45 seconds
+Average time per sample: 10.82 seconds
+
+Results saved to: artifacts/router_verification_results.txt
+================================================================================
+```
+
+**Sample Counts:**
+- **Maximum:** 10,000 per dataset (entire test set)
+- **Quick test:** 10-50 samples (~5-10 minutes)
+- **Medium:** 100-200 samples (~30-60 minutes, recommended for papers)
+- **Thorough:** 500-1000 samples (~2-5 hours)
+- **Complete:** 10,000 samples (~50-100 hours)
+
+**Sampling Strategy:**
+- Uses dynamic stride: `stride = dataset_size / num_samples`
+- For 100 samples: stride=100 (indices 0, 100, 200, ...)
+- For 1000 samples: stride=10 (indices 0, 10, 20, ...)
+- For 10000 samples: stride=1 (entire test set)
+
+---
+
+### Manual Step-by-Step Workflow (For Advanced Users)
+
+If you need fine-grained control, you can run each step manually:
+
 #### 1. Train MetaMoE with Verification-Optimized Router
 
 ```bash
@@ -312,40 +411,7 @@ python train.py --meta_moe \
 - Router outputs raw logits (not softmax probabilities)
 - No BatchNorm layers in router (removed for verification compatibility)
 
-#### 2. Test Router Outputs (Sanity Check)
-
-```bash
-python -c "
-import torch
-from torchvision import datasets, transforms
-import sys
-sys.path.insert(0, 'src/Vision_Transformer_Pytorch')
-from config import CIFAR10_NORM, MNIST_NORM
-
-# Load trained model
-model_path = 'artifacts/training_YYYYMMDD_HHMMSS/meta_moe_ultra_verifiable_cnn_best_og.pth'
-model = torch.load(model_path, map_location='cpu', weights_only=False)
-model.eval()
-
-# Test CIFAR-10 (should route to Expert 0)
-transform_cifar = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(CIFAR10_NORM['mean'], CIFAR10_NORM['std'])
-])
-cifar_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
-
-for i in range(3):
-    img, _ = cifar_dataset[i]
-    with torch.no_grad():
-        _, gates = model(img.unsqueeze(0))
-        expert = torch.argmax(gates, dim=1).item()
-    print(f'CIFAR-10 Image {i}: logits=[{gates[0,0].item():.4f}, {gates[0,1].item():.4f}] -> Expert {expert}')
-"
-```
-
-**Expected:** Logits in range [-5, +5], CIFAR-10 routes to Expert 0
-
-#### 3. Export Router to ONNX
+#### 2. Export Router to ONNX (Optional - done automatically by verify_all_router_samples.py)
 
 ```bash
 python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py \
@@ -353,52 +419,16 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_
     --output_dir artifacts/abcrown_models
 ```
 
-**Output:**
-- Router-only ONNX: `meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx`
-- 13 operators, no BatchNorm
-- Input: [1, 3, 32, 32], Output: [1, 2]
-
-#### 4. Generate VNNLIB Specifications
+#### 3. Generate VNNLIB Specifications (Optional - done automatically)
 
 ```bash
-# CIFAR-10 specs (10 images for quick test)
-python src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py \
-    --dataset CIFAR10 \
-    --num_images 10 \
-    --epsilon 0.00784313725490196
-
-# MNIST specs (10 images for quick test)
-python src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py \
-    --dataset MNIST \
-    --num_images 10 \
-    --epsilon 0.00784313725490196
+# Generates both MNIST and CIFAR10 specs with cleanup
+python prepare_router_verification.py --num_mnist 100 --num_cifar 100
 ```
 
-**Output:**
-- VNNLIB specs: `artifacts/vnnlib/router_cifar10/spec_*.vnnlib`
-- VNNLIB specs: `artifacts/vnnlib/router_mnist/spec_*.vnnlib`
-- CSV index files for batch verification
+#### 4. Run Verification (Use verify_all_router_samples.py instead)
 
-#### 5. Run Formal Verification
-
-```bash
-python run_router_formal_verification.py --dataset BOTH
-```
-
-**Expected Output:**
-```
-================================================================================
-Running Formal Router Verification: CIFAR-10
-================================================================================
-Final verified acc: 100.0% (total 10 examples)
-Problem instances count: 10 , total verified (safe/unsat): 10
-
-================================================================================
-Running Formal Router Verification: MNIST
-================================================================================
-Final verified acc: 100.0% (total 10 examples)
-Problem instances count: 10 , total verified (safe/unsat): 10
-```
+The old `run_router_formal_verification.py` has been replaced by the more comprehensive `verify_all_router_samples.py`.
 
 ### Key Challenges Overcome
 
@@ -439,10 +469,9 @@ Problem instances count: 10 , total verified (safe/unsat): 10
   - Timeout: 60 seconds per instance
 
 **Scripts:**
-- `prepare_router_verification.py` - Generate VNNLIB specifications
-- `run_router_verification.py` - Verify single sample
-- `verify_all_router_samples.py` - Batch verification of all samples
-- `export_router_to_abcrown.py` - Export router to ONNX
+- `verify_all_router_samples.py` - **[Main Script]** Complete end-to-end verification (RECOMMENDED)
+- `prepare_router_verification.py` - Generate VNNLIB specifications (called automatically by verify_all_router_samples.py)
+- `export_router_to_abcrown.py` - Export router to ONNX (called automatically by verify_all_router_samples.py)
 
 ---
 
@@ -624,6 +653,62 @@ Pre-configured verification settings are available in:
 
 ## Troubleshooting
 
+### Common Setup Issues
+
+**Issue: "No module named 'auto_LiRPA'" on Windows**
+
+Cause: There's an interfering `auto_LiRPA` file in `complete_verifier/` directory
+
+Fix:
+```bash
+# Remove the interfering file
+cd modules\alpha-beta-CROWN\complete_verifier
+del auto_LiRPA
+
+# Or if it's a directory:
+rmdir auto_LiRPA /s
+
+# Verify the actual package exists:
+dir ..\auto_LiRPA\auto_LiRPA\__init__.py
+```
+
+**Issue: "ConvertModel.__init__() got an unexpected keyword argument 'quirks'" on Ubuntu/Linux**
+
+Cause: Incompatible version of `onnx2pytorch` library. alpha-beta-CROWN requires a **custom fork** from Verified-Intelligence, not the standard PyPI version.
+
+Fix:
+```bash
+# IMPORTANT: Uninstall any existing onnx2pytorch from PyPI
+pip uninstall onnx2pytorch -y
+
+# Install the correct custom fork used by alpha-beta-CROWN
+pip install git+https://github.com/Verified-Intelligence/onnx2pytorch.git
+
+# Verify installation (should work without errors)
+python -c "import onnx2pytorch; print('onnx2pytorch installed correctly')"
+```
+
+**Note:** The standard `onnx2pytorch` from PyPI (e.g., version 0.4.1) is **NOT compatible** with alpha-beta-CROWN. You must use the Verified-Intelligence fork.
+
+
+Common causes:
+1. **PYTHONPATH not set correctly** - Fixed by using forward slashes in paths
+2. **Relative path calculation error** - Fixed by resolving `abcrown_dir` to absolute path
+3. **ONNX file not found** - Check `artifacts/abcrown_models/` exists
+
+Run diagnostics:
+```bash
+# Test if verification works with 1 sample
+python verify_all_router_samples.py --num_mnist 1 --num_cifar 0 --timeout 30
+
+# If it shows errors, check:
+# 1. ONNX file exists
+ls artifacts/abcrown_models/*router_only.onnx
+
+# 2. auto_LiRPA is accessible
+python -c "import sys; sys.path.insert(0, 'modules/alpha-beta-CROWN/auto_LiRPA'); from auto_LiRPA import BoundedTensor; print('OK')"
+```
+
 ### Router Verification Issues
 
 **Issue: Router outputs scaled probabilities (sum to 40)**
@@ -641,19 +726,21 @@ git diff src/Vision_Transformer_Pytorch/vision_transformer_moe.py
 # If not, pull the fix and retrain
 ```
 
+**Issue: Low GPU usage during verification (~5-15%)**
 
-**Issue: Verification crashes or errors**
+This is **NORMAL**! Formal verification is CPU-bound:
+- 90% of time: CPU-based symbolic bound propagation (LP/MILP solvers)
+- 10% of time: GPU-based neural network forward passes
 
-Fix:
-```bash
-# Check ONNX file was created
-ls artifacts/abcrown_models/*.onnx
+Your GPU IS being used - verification would be 2-3x slower on CPU-only mode.
 
-# Check VNNLIB specs were created
-ls artifacts/vnnlib/router_cifar10/spec_*.vnnlib | wc -l
-ls artifacts/vnnlib/router_mnist/spec_*.vnnlib | wc -l
+**Issue: Verification fails with "FileNotFoundError" for ONNX**
 
-# Regenerate if missing
+Cause: Incorrect relative path calculation
+
+Fix: Already fixed in latest version. Make sure you have:
+```python
+abcrown_dir = Path("modules/alpha-beta-CROWN/complete_verifier").resolve()  # .resolve() is key!
 ```
 
 ### Expert Verification Issues
@@ -770,25 +857,41 @@ If much slower: Increase `bab.timeout` in config files or reduce `num_images`.
 
 ## Quick Reference Commands
 
-### Router Verification
+### Router Verification (Simplified)
 
 ```bash
-# 1. Train MetaMoE
-python train.py --meta_moe --model_arch ultra_verifiable_cnn --gating_backbone ultra_verifiable_cnn\
-    --cifar10_model_path <path> --mnist_model_path <path> --epochs 10
+# NEW: One-command verification (RECOMMENDED)
+# Quick test (10+10 samples, ~5 minutes)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth
 
-# 2. Test router outputs
-python -c "import torch; model = torch.load('PATH', weights_only=False); print(model.meta_gating_net(torch.randn(1,3,32,32)))"
+# Medium verification (100+100 samples, ~30 minutes, good for papers)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
+    --num_mnist 100 --num_cifar 100
 
-# 3. Export to ONNX
-python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py --model_path PATH
+# Thorough verification (200+200 samples, ~1 hour)
+python verify_all_router_samples.py \
+    --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
+    --num_mnist 200 --num_cifar 200 \
+    --timeout 120
 
-# 4. Generate VNNLIB (10 images quick test)
-python src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py --dataset CIFAR10 --num_images 10 --epsilon 0.00784313725490196
-python src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py --dataset MNIST --num_images 10 --epsilon 0.00784313725490196
+# Or use existing ONNX file
+python verify_all_router_samples.py \
+    --onnx_path artifacts/abcrown_models/my_router.onnx \
+    --num_mnist 50 --num_cifar 50
+```
 
-# 5. Run verification
-python run_router_formal_verification.py --dataset BOTH
+### Training MetaMoE for Verification
+
+```bash
+# Train MetaMoE with verification-optimized router
+python train.py --meta_moe \
+    --model_arch ultra_verifiable_cnn \
+    --gating_backbone ultra_verifiable_cnn \
+    --cifar10_model_path artifacts/cifar10_*_best.pth \
+    --mnist_model_path artifacts/mnist_*_best.pth \
+    --epochs 10
 ```
 
 ### Expert Verification
