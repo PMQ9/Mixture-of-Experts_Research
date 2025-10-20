@@ -7,15 +7,3 @@ artifacts/training_*/
 tbxmanager/*
 src/Formal_Neural_Network_Verification/**/*.m
 gurobi.log
-
-# alpha-beta-CROWN verification artifacts (auto-generated)
-artifacts/vnnlib_specs/**/*.vnnlib
-artifacts/vnnlib_specs/**/*.vnnlib.compiled
-artifacts/vnnlib_specs/**/*.csv
-artifacts/abcrown_configs/*.yaml
-artifacts/abcrown_models/*.onnx
-modules/alpha-beta-CROWN/complete_verifier/out.txt
-modules/alpha-beta-CROWN/complete_verifier/out.pkl
-
-src/Formal_Neural_Network_Verification/alpha-beta-crown/__pycache__/*.pyc
-src/Formal_Neural_Network_Verification/slprj/*
