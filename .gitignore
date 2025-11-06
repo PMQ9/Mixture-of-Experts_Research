@@ -46,3 +46,9 @@ artifacts/nnv_models/*.pth
 
 *.pyc
 test_config.yaml
+# paper/artifacts/*
+paper/artifacts/**/*.png
+paper/artifacts/**/*.txt
+paper/artifacts/**/*.onnx
+paper/artifacts/**/*.json
+paper/artifacts/**/*.csv
