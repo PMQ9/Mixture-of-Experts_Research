@@ -52,3 +52,4 @@ paper/artifacts/**/*.txt
 paper/artifacts/**/*.onnx
 paper/artifacts/**/*.json
 paper/artifacts/**/*.csv
+artifacts/E*/

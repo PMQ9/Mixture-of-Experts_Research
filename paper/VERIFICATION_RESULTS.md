@@ -28,7 +28,7 @@ This document tracks the formal verification results for the MoE architecture us
 
 ```bash
 # Epsilon = 2/255 (0.00784)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.00784 ^
@@ -36,7 +36,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.01569 ^
@@ -44,7 +44,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.03137 ^
@@ -56,7 +56,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
 
 ```bash
 # Epsilon = 2/255 (0.00784)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.00784 ^
@@ -64,7 +64,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.01569 ^
@@ -72,7 +72,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.03137 ^
@@ -88,7 +88,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
 
 ```bash
 # Epsilon = 2/255 (0.00784)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.00784 ^
@@ -96,7 +96,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.01569 ^
@@ -104,7 +104,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.03137 ^
@@ -116,7 +116,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
 
 ```bash
 # Epsilon = 2/255 (0.00784)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.00784 ^
@@ -124,7 +124,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.01569 ^
@@ -132,7 +132,7 @@ python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py ^
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.03137 ^
@@ -314,7 +314,7 @@ python verify_all_router_samples.py ^
 Run expert verification from the Mixture-of-Experts_Research directory:
 ```bash
 cd D:\Mixture-of-Experts_Research
-python src/Formal_Neural_Network_Verification/verify_expert_abcrown.py --help
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py --help
 ```
 
 Run router verification:
