@@ -191,7 +191,9 @@ def validate_router_semantics(meta_moe_model):
     num_experts = meta_moe_model.num_experts
 
     # Check 1: Output shape
-    dummy_input = torch.randn(1, 3, 32, 32)
+    # Get device from model parameters
+    device = next(router.parameters()).device
+    dummy_input = torch.randn(1, 3, 32, 32).to(device)
     with torch.no_grad():
         output = router(dummy_input)
 
