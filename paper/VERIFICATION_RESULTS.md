@@ -151,8 +151,8 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
-    --num_cifar 50 ^
+    --num_mnist 100 ^
+    --num_cifar 100 ^
     --epsilon 0.00784 ^
     --timeout 300
 ```
@@ -162,8 +162,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
-    --num_cifar 50 ^
+    --num_mnist 100 ^
+    --num_cifar 100 ^
     --epsilon 0.01569 ^
     --timeout 300
 ```
@@ -173,8 +173,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
-    --num_cifar 50 ^
+    --num_mnist 100 ^
+    --num_cifar 100 ^
     --epsilon 0.03137 ^
     --timeout 300
 ```
@@ -186,7 +186,7 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
+    --num_mnist 100 ^
     --num_cifar 50 ^
     --epsilon 0.00784 ^
     --timeout 300
@@ -197,8 +197,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
-    --num_cifar 50 ^
+    --num_mnist 100 ^
+    --num_cifar 100 ^
     --epsilon 0.01569 ^
     --timeout 300
 ```
@@ -208,8 +208,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 50 ^
-    --num_cifar 50 ^
+    --num_mnist 100 ^
+    --num_cifar 100 ^
     --epsilon 0.03137 ^
     --timeout 300
 ```
@@ -266,8 +266,8 @@ python verify_all_router_samples.py ^
 
 | Epsilon | Verified | Falsified | Timeout | Unknown | Avg Time (s) | Notes |
 |---------|----------|-----------|---------|---------|--------------|-------|
-| 2/255 (0.00784) | | | | | | |
-| 4/255 (0.01569) | | | | | | |
+| 2/255 (0.00784) | 200 | 0 | 0 | 0 | 5.12(s) | |
+| 4/255 (0.01569) | 200 | 0 | 0 | 0 | 5.04(s) | |
 | 8/255 (0.03137) | | | | | | |
 
 **MoE_CNN_AT (Robust Training)**

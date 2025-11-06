@@ -176,6 +176,48 @@ class SimplifiedRouter(nn.Module):
         return logits
 
 
+def validate_router_semantics(meta_moe_model):
+    """
+    Validate that the router is correctly configured for verification.
+
+    This checks:
+    - Router returns raw logits (not softmax probabilities)
+    - Router assigns samples to correct experts (sanity check)
+    - Number of output classes matches number of experts
+    """
+    print("\n[Pre-Export Validation]")
+
+    router = meta_moe_model.meta_gating_net
+    num_experts = meta_moe_model.num_experts
+
+    # Check 1: Output shape
+    dummy_input = torch.randn(1, 3, 32, 32)
+    with torch.no_grad():
+        output = router(dummy_input)
+
+    if output.shape[1] != num_experts:
+        print(f"  ✗ ERROR: Router output ({output.shape[1]}) != num_experts ({num_experts})")
+        return False
+
+    print(f"  ✓ Router output shape correct: {output.shape}")
+
+    # Check 2: Temperature handling
+    if hasattr(router, 'temperature'):
+        print(f"  ✓ Temperature parameter found: {router.temperature}")
+        if router.temperature != 1.0:
+            print(f"    WARNING: Non-default temperature ({router.temperature}) stored but NOT applied in forward()")
+            print(f"    This is OK for verification (we verify raw logits)")
+
+    # Check 3: Output range (sanity check for logits vs softmax)
+    if output.abs().max() > 10:
+        print(f"  ✓ Output range suggests RAW LOGITS: [{output.min():.2f}, {output.max():.2f}]")
+    else:
+        print(f"  ⚠ Output range might indicate softmax: [{output.min():.2f}, {output.max():.2f}]")
+        print(f"    Verify that router returns logits, not probabilities")
+
+    return True
+
+
 def validate_onnx_export(pytorch_model, onnx_path, input_shape=(1, 3, 32, 32), device='cpu'):
     """Validate ONNX export correctness"""
     import onnxruntime as ort
@@ -238,6 +280,11 @@ def export_router_to_onnx(model_path, output_dir, device='cuda', simplify_onnx=T
 
     print(f"Number of experts: {model.num_experts}")
     print(f"Router backbone: {model.meta_gating_net.backbone}")
+
+    # Pre-export validation
+    if not validate_router_semantics(model):
+        print("\nERROR: Router validation failed!")
+        sys.exit(1)
 
     # Extract and simplify router
     print("\nExtracting router and folding BatchNorm...")

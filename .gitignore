@@ -53,3 +53,5 @@ paper/artifacts/**/*.onnx
 paper/artifacts/**/*.json
 paper/artifacts/**/*.csv
 artifacts/E*/
+
+.claude/settings.local.json
