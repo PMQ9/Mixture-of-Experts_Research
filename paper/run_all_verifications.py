@@ -134,6 +134,16 @@ def run_expert_verification(config, epsilon, dry_run=False):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 300, cwd=PROJECT_ROOT)
 
+        # Print error details if subprocess failed
+        if result.returncode != 0:
+            print(f"\n[ERROR] Process exited with code {result.returncode}")
+            if result.stderr:
+                print("\nSTDERR Output:")
+                print(result.stderr[:1000])  # Print first 1000 chars
+            if result.stdout:
+                print("\nSTDOUT Output (last 500 chars):")
+                print(result.stdout[-500:])
+
         # Parse results from output
         output = result.stdout + result.stderr
         verified = falsified = timeout_count = unknown = avg_time = 0
@@ -223,6 +233,16 @@ def run_router_verification(config, epsilon, dry_run=False):
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 600, cwd=PROJECT_ROOT)
+
+        # Print error details if subprocess failed
+        if result.returncode != 0:
+            print(f"\n[ERROR] Process exited with code {result.returncode}")
+            if result.stderr:
+                print("\nSTDERR Output:")
+                print(result.stderr[:1000])  # Print first 1000 chars
+            if result.stdout:
+                print("\nSTDOUT Output (last 500 chars):")
+                print(result.stdout[-500:])
 
         # Parse results from output
         output = result.stdout + result.stderr
