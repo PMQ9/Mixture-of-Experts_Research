@@ -39,9 +39,12 @@ import os
 import time
 import argparse
 
+# Compute project root from script location (robust to working directory)
+project_root = Path(__file__).parent.resolve()
+
 # Add project paths
-sys.path.insert(0, 'src/Vision_Transformer_Pytorch')
-sys.path.insert(0, '.')
+sys.path.insert(0, str(project_root / 'src/Vision_Transformer_Pytorch'))
+sys.path.insert(0, str(project_root))
 
 # Import the VNNLIB generation function
 from prepare_router_verification import main as prepare_vnnlib
@@ -103,9 +106,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Configuration
-    abcrown_dir = Path("modules/alpha-beta-CROWN/complete_verifier").resolve()
-    vnnlib_dir = Path("artifacts/vnnlib_specs/router").resolve()
+    # Configuration (use project_root for robust path resolution)
+    abcrown_dir = (project_root / "modules/alpha-beta-CROWN/complete_verifier").resolve()
+    vnnlib_dir = (project_root / "artifacts/vnnlib_specs/router").resolve()
 
     # Handle PyTorch model export if provided
     if args.model_path:
@@ -120,7 +123,7 @@ def main():
         print(f"Model: {model_path}")
 
         # Check if export script exists
-        export_script = Path("src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py")
+        export_script = project_root / "src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py"
         if not export_script.exists():
             print(f"\nERROR: Export script not found: {export_script}")
             sys.exit(1)
@@ -129,7 +132,7 @@ def main():
         result = subprocess.run([
             sys.executable, str(export_script),
             '--model_path', str(model_path),
-            '--output_dir', 'artifacts/abcrown_models'
+            '--output_dir', str(project_root / 'artifacts/abcrown_models')
         ])
 
         if result.returncode != 0:
@@ -140,7 +143,7 @@ def main():
 
         # The export script creates a file with pattern: *_router_only.onnx
         # Auto-detect it as the most recent one
-        onnx_dir = Path("artifacts/abcrown_models")
+        onnx_dir = project_root / "artifacts/abcrown_models"
         onnx_files = list(onnx_dir.glob('*router_only.onnx'))
         if onnx_files:
             onnx_model = max(onnx_files, key=lambda p: p.stat().st_mtime).resolve()
@@ -159,7 +162,7 @@ def main():
         print(f"\nUsing specified ONNX model: {onnx_model.name}")
     else:
         # Auto-detect latest ONNX in artifacts/abcrown_models/
-        onnx_dir = Path("artifacts/abcrown_models")
+        onnx_dir = project_root / "artifacts/abcrown_models"
         if not onnx_dir.exists():
             print(f"\nERROR: ONNX directory not found: {onnx_dir}")
             print("Please export your router model to ONNX first.")
@@ -286,7 +289,7 @@ bab:
     enabled: false
 """
 
-        config_file = Path("temp_router_verify_config.yaml").resolve()
+        config_file = abcrown_dir / "temp_router_verify_config.yaml"
         with open(config_file, 'w') as f:
             f.write(config_content)
 

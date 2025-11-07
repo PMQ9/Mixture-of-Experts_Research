@@ -20,6 +20,11 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 import json
+import os
+
+# Ensure UTF-8 output on Windows
+if sys.platform == 'win32':
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 # Project root (parent of paper directory)
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -118,7 +123,7 @@ def run_expert_verification(config, epsilon, dry_run=False):
     ]
 
     print(f"\n{'='*80}")
-    print(f"Running: {config['name']} @ ε={epsilon_to_fraction(epsilon)}")
+    print(f"Running: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
     print(f"{'='*80}")
     print(' '.join(cmd))
 
@@ -208,7 +213,7 @@ def run_router_verification(config, epsilon, dry_run=False):
     ]
 
     print(f"\n{'='*80}")
-    print(f"Running: {config['name']} @ ε={epsilon_to_fraction(epsilon)}")
+    print(f"Running: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
     print(f"{'='*80}")
     print(' '.join(cmd))
 
@@ -365,7 +370,7 @@ def main():
         all_results[config['name']] = {}
         for epsilon in config['epsilons']:
             current_test += 1
-            print(f"\n[{current_test}/{total_expert_tests + len(routers)*3}] Expert test: {config['name']} @ ε={epsilon_to_fraction(epsilon)}")
+            print(f"\n[{current_test}/{total_expert_tests + len(routers)*3}] Expert test: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
 
             result = run_expert_verification(config, epsilon, args.dry_run)
             all_results[config['name']][epsilon] = result
@@ -379,7 +384,7 @@ def main():
         all_results[config['name']] = {}
         for epsilon in config['epsilons']:
             current_test += 1
-            print(f"\n[{current_test}/{total_expert_tests + total_router_tests}] Router test: {config['name']} @ ε={epsilon_to_fraction(epsilon)}")
+            print(f"\n[{current_test}/{total_expert_tests + total_router_tests}] Router test: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
 
             result = run_router_verification(config, epsilon, args.dry_run)
             all_results[config['name']][epsilon] = result
