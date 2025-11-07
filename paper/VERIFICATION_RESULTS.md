@@ -32,7 +32,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.00784 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
@@ -40,7 +40,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.01569 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
@@ -48,7 +48,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_NAT\cifar10_ultra_verifiable_cnn_best_og.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.03137 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 ```
 
@@ -60,7 +60,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.00784 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
@@ -68,7 +68,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.01569 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
@@ -76,7 +76,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset CIFAR10 ^
     --epsilon 0.03137 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 ```
 
@@ -92,7 +92,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.00784 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
@@ -100,7 +100,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.01569 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
@@ -108,7 +108,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_NAT\mnist_ultra_verifiable_cnn_best_og.pth" ^
     --dataset MNIST ^
     --epsilon 0.03137 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 ```
 
@@ -120,7 +120,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.00784 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 4/255 (0.01569)
@@ -128,7 +128,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.01569 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 
 # Epsilon = 8/255 (0.03137)
@@ -136,7 +136,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_robust.pth" ^
     --dataset MNIST ^
     --epsilon 0.03137 ^
-    --num_images 100 ^
+    --num_images 20 ^
     --timeout 300
 ```
 
@@ -151,8 +151,8 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
-    --num_cifar 100 ^
+    --num_mnist 50 ^
+    --num_cifar 50 ^
     --epsilon 0.00784 ^
     --timeout 300
 ```
@@ -162,8 +162,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
-    --num_cifar 100 ^
+    --num_mnist 50 ^
+    --num_cifar 50 ^
     --epsilon 0.01569 ^
     --timeout 300
 ```
@@ -173,8 +173,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
-    --num_cifar 100 ^
+    --num_mnist 50 ^
+    --num_cifar 50 ^
     --epsilon 0.03137 ^
     --timeout 300
 ```
@@ -186,7 +186,7 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
+    --num_mnist 50 ^
     --num_cifar 50 ^
     --epsilon 0.00784 ^
     --timeout 300
@@ -197,8 +197,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
-    --num_cifar 100 ^
+    --num_mnist 50 ^
+    --num_cifar 50 ^
     --epsilon 0.01569 ^
     --timeout 300
 ```
@@ -208,8 +208,8 @@ python verify_all_router_samples.py ^
 ```bash
 python verify_all_router_samples.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
-    --num_mnist 100 ^
-    --num_cifar 100 ^
+    --num_mnist 50 ^
+    --num_cifar 50 ^
     --epsilon 0.03137 ^
     --timeout 300
 ```
@@ -232,9 +232,9 @@ python verify_all_router_samples.py ^
 
 **E_0_CNN_AT (Robust Training)**
 
-| Epsilon | Verified | Falsified | Timeout | Unknown | Avg Time (s) | Notes |
-|---------|----------|-----------|---------|---------|--------------|-------|
-| 2/255 (0.00784) | | | | | | |
+| Epsilon | Verified | Falsified | Unknown (Timeout) | Avg Time (s) | Notes |
+|---------|----------|-----------|-------------------|--------------|-------|
+| 2/255 (0.00784) | 18 | 0 | 2 | 32.3 (s) | |
 | 4/255 (0.01569) | | | | | | |
 | 8/255 (0.03137) | | | | | | |
 
@@ -266,8 +266,8 @@ python verify_all_router_samples.py ^
 
 | Epsilon | Verified | Falsified | Timeout | Unknown | Avg Time (s) | Notes |
 |---------|----------|-----------|---------|---------|--------------|-------|
-| 2/255 (0.00784) | 200 | 0 | 0 | 0 | 5.12(s) | |
-| 4/255 (0.01569) | 200 | 0 | 0 | 0 | 5.04(s) | |
+| 2/255 (0.00784) |  |  |  |  |  | |
+| 4/255 (0.01569) |  |  |  |  |  | |
 | 8/255 (0.03137) | | | | | | |
 
 **MoE_CNN_AT (Robust Training)**
