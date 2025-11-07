@@ -7,13 +7,13 @@ Total samples: 40
   MNIST: 20
   CIFAR10: 20
 
-Verified:   38 (95.0%)
+Verified:   40 (100.0%)
 Falsified:  0 (0.0%)
 Timeout:    0 (0.0%)
-Unknown:    2 (5.0%)
+Unknown:    0 (0.0%)
 
-Total time: 390.34 seconds
-Average time: 9.76 seconds per sample
+Total time: 370.07 seconds
+Average time: 9.25 seconds per sample
 
 
 VERIFIED:
@@ -27,6 +27,7 @@ VERIFIED:
   mnist_15
   mnist_16
   mnist_17
+  mnist_18
   mnist_19
   mnist_2
   mnist_3
@@ -50,12 +51,9 @@ VERIFIED:
   cifar10_19
   cifar10_2
   cifar10_3
+  cifar10_4
   cifar10_5
   cifar10_6
   cifar10_7
   cifar10_8
   cifar10_9
-
-UNKNOWN:
-  mnist_18
-  cifar10_4

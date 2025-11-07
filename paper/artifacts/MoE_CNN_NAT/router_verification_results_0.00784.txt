@@ -2,18 +2,18 @@ MetaMoE Router Formal Verification Results
 ================================================================================
 
 Model: meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx
-Epsilon (L-inf): 0.015690 (4.0/255)
+Epsilon (L-inf): 0.007840 (2.0/255)
 Total samples: 40
   MNIST: 20
   CIFAR10: 20
 
-Verified:   38 (95.0%)
+Verified:   40 (100.0%)
 Falsified:  0 (0.0%)
 Timeout:    0 (0.0%)
-Unknown:    2 (5.0%)
+Unknown:    0 (0.0%)
 
-Total time: 390.34 seconds
-Average time: 9.76 seconds per sample
+Total time: 353.06 seconds
+Average time: 8.83 seconds per sample
 
 
 VERIFIED:
@@ -27,6 +27,7 @@ VERIFIED:
   mnist_15
   mnist_16
   mnist_17
+  mnist_18
   mnist_19
   mnist_2
   mnist_3
@@ -50,12 +51,9 @@ VERIFIED:
   cifar10_19
   cifar10_2
   cifar10_3
+  cifar10_4
   cifar10_5
   cifar10_6
   cifar10_7
   cifar10_8
   cifar10_9
-
-UNKNOWN:
-  mnist_18
-  cifar10_4
