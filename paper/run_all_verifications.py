@@ -336,29 +336,51 @@ def update_markdown_results(all_results):
     with open(md_path, 'r') as f:
         lines = f.readlines()
 
-    # Update results in tables
+    # Build a mapping of model name to model type (Expert or Router)
+    model_types = {}
+    for config in EXPERT_CONFIGS:
+        model_types[config['name']] = 'Expert'
+    for config in ROUTER_CONFIGS:
+        model_types[config['name']] = 'Router'
+
+    # Track which model section we're currently in
+    current_model = None
     i = 0
     while i < len(lines):
         line = lines[i]
 
-        # Look for epsilon values in result tables
-        for model_name, results in all_results.items():
-            for epsilon, result in results.items():
+        # Check if this line starts a new model section (look for bold model names)
+        for model_name in all_results.keys():
+            if f"**{model_name}" in line:
+                current_model = model_name
+                break
+
+        # If we're in a model section and found a results table row
+        if current_model and '|' in line and all_results[current_model]:
+            # Check if this is a data row (contains epsilon value)
+            for epsilon, result in all_results[current_model].items():
                 if result is None:
-                    i += 1
                     continue
 
                 epsilon_frac = epsilon_to_fraction(epsilon)
-                if epsilon_frac in line:
-                    # Found the line with this epsilon
-                    # Parse the line and update values
-                    parts = line.strip().split('|')
-                    if len(parts) >= 6:  # Should have at least: |epsilon|verified|falsified|timeout|unknown|time|
-                        # Update the values
-                        if '|' in line:
-                            # Reconstruct the line with new values
-                            new_line = f"| {epsilon_frac} ({epsilon:.5f}) | {result['verified']} | {result['falsified']} | {result['timeout']} | {result['unknown']} | {result['avg_time']:.2f} | |"
-                            lines[i] = new_line + '\n'
+
+                # Match the epsilon in this line exactly
+                # Pattern: | 2/255 (0.00784) |
+                if f"| {epsilon_frac} (" in line and f"{epsilon:.5f})" in line:
+                    # This is the row we need to update
+                    # Determine table format based on model type
+                    model_type = model_types.get(current_model, 'Expert')
+
+                    if model_type == 'Router':
+                        # Router format: | epsilon | verified | falsified | timeout | unknown | avg_time | notes |
+                        new_line = f"| {epsilon_frac} ({epsilon:.5f}) | {result['verified']} | {result['falsified']} | {result['timeout']} | {result['unknown']} | {result['avg_time']:.2f} | |"
+                    else:
+                        # Expert format: | epsilon | verified | falsified | timeout/unknown | avg_time | notes |
+                        timeout_unknown = result['timeout'] + result['unknown']
+                        new_line = f"| {epsilon_frac} ({epsilon:.5f}) | {result['verified']} | {result['falsified']} | {timeout_unknown} | {result['avg_time']:.2f} | |"
+
+                    lines[i] = new_line + '\n'
+                    break
 
         i += 1
 
