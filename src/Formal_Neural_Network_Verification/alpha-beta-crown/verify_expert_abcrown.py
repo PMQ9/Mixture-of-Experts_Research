@@ -23,6 +23,7 @@ from pathlib import Path
 import yaml
 import subprocess
 import numpy as np
+import shutil
 
 # Add src directory to path (go up 3 levels: alpha-beta-crown -> Formal_Neural_Network_Verification -> src)
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
@@ -30,6 +31,51 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 # Import export utility (from parent directory)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from export_to_abcrown import export_model_to_onnx
+
+
+def cleanup_expert_artifacts(dataset_name, config_dir=None):
+    """
+    Clean up old VNNLIB files and configuration artifacts before generating new ones.
+
+    This prevents stale verification results from previous runs from interfering
+    with fresh verification.
+
+    Args:
+        dataset_name: Dataset name (GTSRB, CIFAR10, or MNIST)
+        config_dir: Optional config directory path to clean (default: artifacts/abcrown_configs)
+    """
+    vnnlib_dir = Path('artifacts/vnnlib_specs') / dataset_name.lower()
+
+    # Clean VNNLIB files
+    if vnnlib_dir.exists():
+        print(f"\nCleaning up old VNNLIB files in {vnnlib_dir}...")
+        vnnlib_files = list(vnnlib_dir.glob("*.vnnlib"))
+        csv_files = list(vnnlib_dir.glob("*.csv"))
+        all_files = vnnlib_files + csv_files
+
+        for f in all_files:
+            try:
+                f.unlink()
+            except Exception as e:
+                print(f"  Warning: Failed to remove {f}: {e}")
+
+        print(f"  Removed {len(all_files)} old verification files (VNNLIB + CSV)")
+    else:
+        print(f"\nCreating VNNLIB directory: {vnnlib_dir}")
+        vnnlib_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean config files (optional)
+    if config_dir:
+        config_dir = Path(config_dir)
+        if config_dir.exists():
+            print(f"Cleaning up old config files in {config_dir}...")
+            config_files = list(config_dir.glob("*_verification.yaml"))
+            for f in config_files:
+                try:
+                    f.unlink()
+                except Exception as e:
+                    print(f"  Warning: Failed to remove {f}: {e}")
+            print(f"  Removed {len(config_files)} old config files")
 
 
 def create_vnnlib_spec(num_classes, true_label, epsilon, input_bounds_lower, input_bounds_upper, output_file):
@@ -359,7 +405,10 @@ def main():
     print(f"  Mean: {mean}")
     print(f"  Std: {std}")
 
-    # Step 2.5: Create VNNLIB specification files
+    # Step 2.5: Clean up old artifacts before creating new ones
+    cleanup_expert_artifacts(args.dataset, config_dir=args.config_dir)
+
+    # Step 3: Create VNNLIB specification files
     print(f"\nCreating VNNLIB specification files...")
     vnnlib_dir = Path('artifacts/vnnlib_specs') / args.dataset.lower()
     csv_file = vnnlib_dir / f"{args.dataset.lower()}_instances.csv"
@@ -390,7 +439,7 @@ def main():
     else:
         print(f"Using existing VNNLIB specs: {vnnlib_dir}")
 
-    # Step 3: Create verification config
+    # Step 4: Create verification config
     config_dir = Path(args.config_dir)
     config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -409,7 +458,7 @@ def main():
         csv_file=csv_file
     )
 
-    # Step 4: Run verification
+    # Step 5: Run verification
     if vnnlib_dir and csv_file:
         print(f"\nUsing VNNLIB-based verification with {args.num_images} specifications")
     else:
