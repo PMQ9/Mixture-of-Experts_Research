@@ -51,7 +51,8 @@ def cleanup_expert_artifacts(dataset_name, config_dir=None):
         print(f"\nCleaning up old VNNLIB files in {vnnlib_dir}...")
         vnnlib_files = list(vnnlib_dir.glob("*.vnnlib"))
         csv_files = list(vnnlib_dir.glob("*.csv"))
-        all_files = vnnlib_files + csv_files
+        compiled_files = list(vnnlib_dir.glob("*.vnnlib.compiled"))  # Pickle cache from alpha-beta-CROWN
+        all_files = vnnlib_files + csv_files + compiled_files
 
         for f in all_files:
             try:
@@ -59,7 +60,7 @@ def cleanup_expert_artifacts(dataset_name, config_dir=None):
             except Exception as e:
                 print(f"  Warning: Failed to remove {f}: {e}")
 
-        print(f"  Removed {len(all_files)} old verification files (VNNLIB + CSV)")
+        print(f"  Removed {len(all_files)} old verification files (VNNLIB + CSV + cached)")
     else:
         print(f"\nCreating VNNLIB directory: {vnnlib_dir}")
         vnnlib_dir.mkdir(parents=True, exist_ok=True)

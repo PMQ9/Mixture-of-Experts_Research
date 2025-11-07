@@ -33,7 +33,11 @@ def cleanup_vnnlib_directory(vnnlib_dir):
         vnnlib_files = list(vnnlib_dir.glob("*.vnnlib"))
         for f in vnnlib_files:
             f.unlink()
-        print(f"  Removed {len(vnnlib_files)} old VNNLIB files")
+        # Remove cached .vnnlib.compiled files (pickle cache from alpha-beta-CROWN)
+        compiled_files = list(vnnlib_dir.glob("*.vnnlib.compiled"))
+        for f in compiled_files:
+            f.unlink()
+        print(f"  Removed {len(vnnlib_files)} old VNNLIB files and {len(compiled_files)} cached files")
     else:
         print(f"\nCreating VNNLIB directory: {vnnlib_dir}")
         vnnlib_dir.mkdir(parents=True, exist_ok=True)
