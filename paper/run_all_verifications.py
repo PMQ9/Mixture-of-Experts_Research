@@ -105,7 +105,7 @@ def epsilon_to_fraction(epsilon):
     return f'{epsilon:.5f}'
 
 
-def run_expert_verification(config, epsilon, dry_run=False):
+def run_expert_verification(config, epsilon, dry_run=False, verbose=False):
     """Run expert verification and return results"""
     model_path = PROJECT_ROOT / config['model_path']
     dataset = config['dataset']
@@ -125,14 +125,24 @@ def run_expert_verification(config, epsilon, dry_run=False):
     print(f"\n{'='*80}")
     print(f"Running: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
     print(f"{'='*80}")
-    print(' '.join(cmd))
+    if verbose:
+        print(f"[VERBOSE] Command: {' '.join(cmd)}")
+    else:
+        print(' '.join(cmd))
 
     if dry_run:
         print("[DRY RUN - NOT EXECUTING]")
         return None
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 300, cwd=PROJECT_ROOT)
+        if verbose:
+            # Stream output in real-time
+            print("\n[VERBOSE] Streaming output...\n")
+            result = subprocess.run(cmd, timeout=timeout + 300, cwd=PROJECT_ROOT)
+            # For verbose mode, we need to re-run to capture output for parsing
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 300, cwd=PROJECT_ROOT)
+        else:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 300, cwd=PROJECT_ROOT)
 
         # Print error details if subprocess failed
         if result.returncode != 0:
@@ -205,7 +215,7 @@ def run_expert_verification(config, epsilon, dry_run=False):
         }
 
 
-def run_router_verification(config, epsilon, dry_run=False):
+def run_router_verification(config, epsilon, dry_run=False, verbose=False):
     """Run router verification and return results"""
     model_path = PROJECT_ROOT / config['model_path']
     num_mnist = config['num_mnist']
@@ -225,14 +235,24 @@ def run_router_verification(config, epsilon, dry_run=False):
     print(f"\n{'='*80}")
     print(f"Running: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
     print(f"{'='*80}")
-    print(' '.join(cmd))
+    if verbose:
+        print(f"[VERBOSE] Command: {' '.join(cmd)}")
+    else:
+        print(' '.join(cmd))
 
     if dry_run:
         print("[DRY RUN - NOT EXECUTING]")
         return None
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 600, cwd=PROJECT_ROOT)
+        if verbose:
+            # Stream output in real-time
+            print("\n[VERBOSE] Streaming output...\n")
+            result = subprocess.run(cmd, timeout=timeout + 600, cwd=PROJECT_ROOT)
+            # For verbose mode, we need to re-run to capture output for parsing
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 600, cwd=PROJECT_ROOT)
+        else:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 600, cwd=PROJECT_ROOT)
 
         # Print error details if subprocess failed
         if result.returncode != 0:
@@ -360,6 +380,7 @@ def main():
     parser.add_argument('--skip-routers', action='store_true', help='Skip router verification')
     parser.add_argument('--dry-run', action='store_true', help='Print commands without executing')
     parser.add_argument('--models', type=str, help='Comma-separated list of models to run (e.g., E_0_CNN_NAT,MoE_CNN_NAT)')
+    parser.add_argument('--verbose', action='store_true', help='Stream subprocess output in real-time (shows progress)')
 
     args = parser.parse_args()
 
@@ -381,6 +402,7 @@ def main():
     print(f"Experts to verify: {len(experts)}")
     print(f"Routers to verify: {len(routers)}")
     print(f"Dry run: {args.dry_run}")
+    print(f"Verbose: {args.verbose}")
 
     # Run expert verifications
     total_expert_tests = len(experts) * 3  # 3 epsilon values per expert
@@ -392,7 +414,7 @@ def main():
             current_test += 1
             print(f"\n[{current_test}/{total_expert_tests + len(routers)*3}] Expert test: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
 
-            result = run_expert_verification(config, epsilon, args.dry_run)
+            result = run_expert_verification(config, epsilon, args.dry_run, args.verbose)
             all_results[config['name']][epsilon] = result
 
             if result and not result['success']:
@@ -406,7 +428,7 @@ def main():
             current_test += 1
             print(f"\n[{current_test}/{total_expert_tests + total_router_tests}] Router test: {config['name']} @ eps={epsilon_to_fraction(epsilon)}")
 
-            result = run_router_verification(config, epsilon, args.dry_run)
+            result = run_router_verification(config, epsilon, args.dry_run, args.verbose)
             all_results[config['name']][epsilon] = result
 
             if result and not result['success']:
