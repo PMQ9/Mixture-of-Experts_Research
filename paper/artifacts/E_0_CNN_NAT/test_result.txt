@@ -1,0 +1,23 @@
+epsilon 0.00784
+############# Summary #############
+Final verified acc: 10.0% (total 20 examples)
+Problem instances count: 20 , total verified (safe/unsat): 2 , total falsified (unsafe/sat): 0 , timeout: 18
+mean time for ALL instances (total 20):313.0023456302893, max time: 385.3538408279419
+mean time for verified SAFE instances(total 2): 190.08500492572784, max time: 232.32495760917664
+mean time for verified SAFE + TIMEOUT instances (total 20): 313.0025021314621, max time: [307.60423946380615, 351.59968161582947, 353.61869978904724, 306.9049246311188, 304.39536142349243, 313.4173080921173, 303.17796659469604, 310.4809136390686, 333.57743287086487, 385.3538408279419, 363.3480191230774, 336.2757921218872, 311.13619780540466, 316.1157877445221, 311.540575504303, 303.4108786582947, 355.8549392223358, 312.06747364997864]
+unknown (total 18), index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 15, 16, 17, 18, 19]
+safe (total 2), index: [11, 14]
+
+epsilon 0.01569
+############# Summary #############
+Final verified acc: 0.0% (total 20 examples)
+Problem instances count: 20 , total verified (safe/unsat): 0 , total falsified (unsafe/sat): 0 , timeout: 20
+mean time for ALL instances (total 20):323.418244908519, max time: 374.26259899139404
+unknown (total 20), index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+epsilon 0.03137
+############# Summary #############
+Final verified acc: 0.0% (total 20 examples)
+Problem instances count: 20 , total verified (safe/unsat): 0 , total falsified (unsafe/sat): 0 , timeout: 20
+mean time for ALL instances (total 20):321.52546351247577, max time: 345.12341380119324
+unknown (total 20), index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
