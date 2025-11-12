@@ -920,7 +920,7 @@ def main():
             print(f"\nExporting to NNV-compatible ONNX format...")
             try:
                 result = subprocess.run([
-                    'python', nnv_export_script,
+                    sys.executable, nnv_export_script,
                     '--model_path', best_model_path,
                     '--output_dir', nnv_output_dir
                 ], capture_output=True, text=True, timeout=60)
