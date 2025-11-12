@@ -12,13 +12,25 @@ from pathlib import Path
 # Repository root
 REPO_ROOT = Path(__file__).parent
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
-TRAINING_LOG = ARTIFACTS_DIR / "training_log.txt"
 SUMMARY_FILE = REPO_ROOT / "test_summary.txt"
 
 # Training parameters
 MODEL_ARCH = "ultra_verifiable_cnn"
 EPOCHS = 200
 TEST_START_EPOCH = 0
+
+def find_latest_training_log():
+    """Find the most recently created training_* folder and return path to its training_log.txt"""
+    training_folders = list(ARTIFACTS_DIR.glob("training_*"))
+
+    if not training_folders:
+        return None
+
+    # Sort by modification time, most recent first
+    latest_folder = max(training_folders, key=lambda p: p.stat().st_mtime)
+    log_path = latest_folder / "training_log.txt"
+
+    return log_path if log_path.exists() else None
 
 def extract_results_from_log(log_path):
     """Extract key results from training_log.txt"""
@@ -103,11 +115,16 @@ def main():
 
             if success:
                 successful_runs += 1
-                # Wait a moment for file system to sync
+                # Wait a moment for file system to sync and archive to complete
                 time.sleep(2)
 
-                # Extract results
-                results = extract_results_from_log(TRAINING_LOG)
+                # Find and extract results from the archived training log
+                log_path = find_latest_training_log()
+                if log_path:
+                    results = extract_results_from_log(log_path)
+                    print(f"Reading results from: {log_path}")
+                else:
+                    results = "ERROR: Could not find training_log.txt in archived folder!\n"
 
                 # Append to summary file
                 with open(SUMMARY_FILE, 'a') as f:
