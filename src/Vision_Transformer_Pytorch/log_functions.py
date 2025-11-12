@@ -74,7 +74,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 4, figsize=(45, 27))
+        fig, axes = plt.subplots(5, 4, figsize=(16, 12))
 
         # Build title with key metrics
         title_parts = ['MetaMoE Training and Testing Metrics']
@@ -195,9 +195,9 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         show_balance_loss = (model_arch == 'vit_moe')
 
         if show_balance_loss:
-            fig, axes = plt.subplots(3, 2, figsize=(15, 18))
+            fig, axes = plt.subplots(3, 2, figsize=(9, 10.8))
         else:
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig, axes = plt.subplots(2, 2, figsize=(8, 6))
 
         # Build title with key metrics
         title_parts = ['Training and Testing Metrics']
