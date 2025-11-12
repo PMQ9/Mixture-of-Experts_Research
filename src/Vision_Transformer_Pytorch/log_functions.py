@@ -30,6 +30,8 @@ def setup_logging(output_dir):
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
 
+    return log_file_handle
+
 # **************** Archive Trained Models for Fine Tuning ****************
 def archive_params(args, config, output_dir):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
