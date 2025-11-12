@@ -77,12 +77,10 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         fig, axes = plt.subplots(5, 4, figsize=(16, 12))
 
         # Build title with key metrics
-        title_parts = ['MetaMoE Training and Testing Metrics']
-        title_parts.append(f'Architecture: {model_arch}')
+        title = f'MetaMoE - {model_arch}'
         if adv_training:
-            title_parts.append('(Adversarial Training)')
-        title = ' - '.join(title_parts)
-        fig.suptitle(title, fontsize=16, fontweight='bold')
+            title += ' (AT)'
+        fig.suptitle(title, fontsize=10, fontweight='bold')
 
         # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
@@ -200,14 +198,13 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
             fig, axes = plt.subplots(2, 2, figsize=(8, 6))
 
         # Build title with key metrics
-        title_parts = ['Training and Testing Metrics']
         if dataset_name:
-            title_parts.append(f'Dataset: {dataset_name.upper()}')
-        title_parts.append(f'Architecture: {model_arch}')
+            title = f'{dataset_name.upper()} - {model_arch}'
+        else:
+            title = model_arch
         if adv_training:
-            title_parts.append('(Adversarial Training)')
-        title = ' - '.join(title_parts)
-        fig.suptitle(title, fontsize=16, fontweight='bold')
+            title += ' (AT)'
+        fig.suptitle(title, fontsize=10, fontweight='bold')
 
         # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
