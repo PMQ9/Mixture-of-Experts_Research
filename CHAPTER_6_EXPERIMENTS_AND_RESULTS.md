@@ -149,11 +149,11 @@ Individual expert models trained on MNIST and CIFAR-10 were verified separately 
 
 4. **Scalability to Extended Sets:**
 
-| Configuration | CIFAR-10 Samples | MNIST Samples | Total Time | CIFAR-10 CRA | MNIST CRA |
-|--------------|-----------------|--------------|-----------|--------------|-----------|
-| Standard (ε=2/255) | 20 | 20 | ~6 min | 90.0% | 95.0% |
-| Comprehensive (ε=2/255) | 100 | 100 |  |  |  |
-| Extended (ε=2/255) | 200 | 200 |  |  |  |
+| Configuration              | CIFAR-10 Samples | MNIST Samples | CIFAR-10 CRA | MNIST CRA |
+|----------------------------|------------------|---------------|--------------|-----------|
+| Standard (ε=2/255)         | 20               | 20            |              |           |
+| Comprehensive (ε=2/255)    | 100              | 100           | 74.0%        |           |  
+| Extended (ε=2/255)         | 200              | 200           |              |           |  
 
 **Critical Observation**: CRA remains stable across larger sample sets (~1-2% variation), indicating consistent expert robustness rather than outlier samples.
 
@@ -200,20 +200,12 @@ $$P_{\text{compositional}} = P_{\text{router}}(\text{correct expert selected}) \
 
 Extended verification experiments with configurable sample counts:
 
-| Configuration | MNIST Samples | CIFAR-10 Samples | Total Time | Verified | Success Rate |
-|--------------|--------------|-----------------|-----------|----------|--------------|
-| Quick test |  |  |  |  |  |
-| Standard (Router) | 10 | 10 | ~3.6 min | 20/20 | 100% |
-| Comprehensive (Router) |  |  |  | |  |
-| Thorough (Router) |  |  |  |  |  |
+| Configuration | MNIST Samples | CIFAR-10 Samples | MNIST Samples Verified | CIFAR-10 Samples Verified | Success Rate | Avg Time | Notes |
+|---------------|---------------|------------------|------------------------|---------------------------|--------------|----------|-------|
+| Standard (Router) | 10 | 10 | 10/10 | 10/10 | 100% | | 24.83(s) |
+| Comprehensive (Router) | 100 | 100 | 99/100 | 98/100 | 98.5% | 13.96(S) | |
+| Thorough (Router) | 1000 | 1000 | 992/1000 | 990/1000 | 99.1% | 20.96(s) | |
 
-**Extended Expert Verification (MNIST + CIFAR-10):**
-
-| Configuration | CIFAR-10 Verified | MNIST Verified | Total Time |
-|--------------|------------------|---------------|-----------|
-| Standard | 18/20 (90%) | 19/20 (95%) | ~6 min |
-| Comprehensive | 90/100 (90%) | 94/100 (94%) | ~32 min |
-| Thorough | 180/200 (90%) | 188/200 (94%) | ~67 min |
 
 These results demonstrate that α-β-CROWN verification scales linearly with sample count and maintains consistent CRA across extended evaluation sets.
 
