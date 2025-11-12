@@ -15,6 +15,11 @@ ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 TRAINING_LOG = ARTIFACTS_DIR / "training_log.txt"
 SUMMARY_FILE = REPO_ROOT / "test_summary.txt"
 
+# Training parameters
+MODEL_ARCH = "ultra_verifiable_cnn"
+EPOCHS = 200
+TEST_START_EPOCH = 0
+
 def extract_results_from_log(log_path):
     """Extract key results from training_log.txt"""
     if not log_path.exists():
@@ -46,9 +51,9 @@ def run_training(dataset, adv_training=False):
     cmd = [
         "python", "train.py",
         "--dataset", dataset,
-        "--model_arch", "ultra_verifiable_cnn",
-        "--epochs", "200",
-        "--test_start_epoch", "0",
+        "--model_arch", MODEL_ARCH,
+        "--epochs", str(EPOCHS),
+        "--test_start_epoch", str(TEST_START_EPOCH),
         "--art_attack"
     ]
 
