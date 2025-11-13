@@ -102,23 +102,32 @@ def parse_verification_output(output):
         if "Summary" in line and "#" in line:
             # Parse the next few lines for statistics
             for summary_line in lines[i:i+10]:
-                # Parse: "total verified (safe/unsat): 2"
+                # Parse: "Problem instances count: 2 , total verified (safe/unsat): 2 , total falsified (unsafe/sat): 0 , timeout: 0"
+                # Use non-greedy matching [^:]* to avoid matching too far
+
                 if "total verified" in summary_line:
-                    match = re.search(r'total verified.*:\s*(\d+)', summary_line)
+                    # Match "total verified (..." up to the colon, then extract digits
+                    match = re.search(r'total verified[^:]*:\s*(\d+)', summary_line)
                     if match:
                         stats["verified"] = int(match.group(1))
 
-                # Parse: "total falsified (unsafe/sat): 0"
                 if "total falsified" in summary_line:
-                    match = re.search(r'total falsified.*:\s*(\d+)', summary_line)
+                    # Match "total falsified (..." up to the colon, then extract digits
+                    match = re.search(r'total falsified[^:]*:\s*(\d+)', summary_line)
                     if match:
                         stats["falsified"] = int(match.group(1))
 
-                # Parse: "timeout: 0"
-                if "timeout:" in summary_line and "total" not in summary_line.lower():
-                    match = re.search(r'timeout:\s*(\d+)', summary_line)
+                # For timeout, look for "timeout: N" but not in compound phrases
+                if "timeout:" in summary_line:
+                    # Match the timeout count (may be on same line as verified/falsified)
+                    match = re.search(r',\s*timeout:\s*(\d+)', summary_line)
                     if match:
                         stats["timeout"] = int(match.group(1))
+                    else:
+                        # Fallback if format is different
+                        match = re.search(r'timeout:\s*(\d+)', summary_line)
+                        if match:
+                            stats["timeout"] = int(match.group(1))
 
                 # Parse: "mean time for ALL instances (total 2):4.630319451132541"
                 if "mean time for ALL instances" in summary_line:
