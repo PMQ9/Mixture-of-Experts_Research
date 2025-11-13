@@ -56,7 +56,7 @@ def run_verification(model_path, dataset, epsilon, num_images=NUM_IMAGES, timeou
     """Run a single verification session"""
     cmd = [
         "python",
-        "src/Formal_Neural_Network_Verification/verify_expert_abcrown.py",
+        "src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py",
         "--model_path", str(model_path),
         "--dataset", dataset,
         "--epsilon", str(epsilon),
@@ -74,7 +74,8 @@ def run_verification(model_path, dataset, epsilon, num_images=NUM_IMAGES, timeou
         )
 
         if result.returncode != 0:
-            return None, f"Verification failed with return code {result.returncode}"
+            error_output = result.stderr if result.stderr else result.stdout
+            return None, f"Verification failed with return code {result.returncode}. Error: {error_output[:200]}"
 
         return result.stdout + result.stderr, None
 
@@ -127,7 +128,7 @@ def parse_verification_output(output):
 
 def main():
     # Initialize results file
-    with open(RESULTS_FILE, 'w') as f:
+    with open(RESULTS_FILE, 'w', encoding='utf-8') as f:
         f.write("Expert Formal Verification Experiments\n")
         f.write(f"Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Configuration: 3 epsilon × 5 runs × 2 training modes × 2 datasets = 60 runs\n")
@@ -172,7 +173,7 @@ def main():
             error_msg = f"Model not found: {model_path}"
             print(f"\n✗ {config_label}: {error_msg}")
             failed_runs.append(f"{config_label}: {error_msg}")
-            with open(RESULTS_FILE, 'a') as f:
+            with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"{config_label}\n")
                 f.write(f"ERROR: {error_msg}\n\n")
             continue
@@ -195,7 +196,7 @@ def main():
             if error:
                 print(f"✗ {run_label} FAILED: {error}")
                 failed_runs.append(f"{run_label}: {error}")
-                with open(RESULTS_FILE, 'a') as f:
+                with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                     f.write(f"{run_label}\n")
                     f.write(f"ERROR: {error}\n\n")
             else:
@@ -208,7 +209,7 @@ def main():
                       f"Timeout: {stats['timeout']}, Unknown: {stats['unknown']}")
                 print(f"  Avg time: {stats['avg_time']:.2f}s")
 
-                with open(RESULTS_FILE, 'a') as f:
+                with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                     f.write(f"{run_label}\n")
                     f.write(f"  Verified: {stats['verified']}\n")
                     f.write(f"  Falsified: {stats['falsified']}\n")
@@ -240,7 +241,7 @@ def main():
             """
             print(stats_summary)
 
-            with open(RESULTS_FILE, 'a') as f:
+            with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"Summary for {config_label}:\n")
                 f.write(f"  Verified:     {statistics.mean(verified_list):.1f} ± {statistics.stdev(verified_list) if len(verified_list) > 1 else 0:.1f}\n")
                 f.write(f"  Falsified:    {statistics.mean(falsified_list):.1f} ± {statistics.stdev(falsified_list) if len(falsified_list) > 1 else 0:.1f}\n")
@@ -262,7 +263,7 @@ def main():
             print(f"  - {failed}")
         print()
 
-    with open(RESULTS_FILE, 'a') as f:
+    with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
         f.write("="*100 + "\n")
         f.write(f"Experiments completed at: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Successful runs: {successful_runs}/{total_runs}\n")
