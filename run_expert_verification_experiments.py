@@ -92,6 +92,12 @@ def parse_verification_output(output):
         "timeout": 0,
         "unknown": 0,
         "avg_time": 0.0,
+        "verified_acc": 0.0,
+        "max_time": 0.0,
+        "safe_instances": 0,
+        "safe_incomplete_timeout": 0,
+        "safe_incomplete": 0,
+        "summary_lines": [],
     }
 
     # Look for verification summary section
@@ -101,39 +107,56 @@ def parse_verification_output(output):
         # Find the summary section (marked by "Summary")
         if "Summary" in line and "#" in line:
             # Parse the next few lines for statistics
-            for summary_line in lines[i:i+10]:
-                # Parse: "Problem instances count: 2 , total verified (safe/unsat): 2 , total falsified (unsafe/sat): 0 , timeout: 0"
-                # Use non-greedy matching [^:]* to avoid matching too far
+            for summary_line in lines[i:i+15]:
+                stats["summary_lines"].append(summary_line)
 
+                # Parse: "Final verified acc: 100.0% (total 2 examples)"
+                if "Final verified acc" in summary_line:
+                    match = re.search(r'Final verified acc:\s*([\d.]+)%', summary_line)
+                    if match:
+                        stats["verified_acc"] = float(match.group(1))
+
+                # Parse: "Problem instances count: 2 , total verified (safe/unsat): 2 , total falsified (unsafe/sat): 0 , timeout: 0"
                 if "total verified" in summary_line:
-                    # Match "total verified (..." up to the colon, then extract digits
                     match = re.search(r'total verified[^:]*:\s*(\d+)', summary_line)
                     if match:
                         stats["verified"] = int(match.group(1))
 
                 if "total falsified" in summary_line:
-                    # Match "total falsified (..." up to the colon, then extract digits
                     match = re.search(r'total falsified[^:]*:\s*(\d+)', summary_line)
                     if match:
                         stats["falsified"] = int(match.group(1))
 
                 # For timeout, look for "timeout: N" but not in compound phrases
-                if "timeout:" in summary_line:
-                    # Match the timeout count (may be on same line as verified/falsified)
+                if "timeout:" in summary_line and "mean time" not in summary_line:
                     match = re.search(r',\s*timeout:\s*(\d+)', summary_line)
                     if match:
                         stats["timeout"] = int(match.group(1))
                     else:
-                        # Fallback if format is different
                         match = re.search(r'timeout:\s*(\d+)', summary_line)
                         if match:
                             stats["timeout"] = int(match.group(1))
 
-                # Parse: "mean time for ALL instances (total 2):4.630319451132541"
+                # Parse: "mean time for ALL instances (total 2):4.630319451132541, max time: 7.134141206741333"
                 if "mean time for ALL instances" in summary_line:
                     match = re.search(r'mean time for ALL instances[^:]*:\s*([\d.]+)', summary_line)
                     if match:
                         stats["avg_time"] = float(match.group(1))
+
+                    match = re.search(r'max time:\s*([\d.]+)', summary_line)
+                    if match:
+                        stats["max_time"] = float(match.group(1))
+
+                # Parse status lines like "safe-incomplete (timed out) (total 1)"
+                if "safe-incomplete" in summary_line:
+                    if "timed out" in summary_line:
+                        match = re.search(r'safe-incomplete.*\(total\s+(\d+)\)', summary_line)
+                        if match:
+                            stats["safe_incomplete_timeout"] = int(match.group(1))
+                    else:
+                        match = re.search(r'safe-incomplete.*\(total\s+(\d+)\)', summary_line)
+                        if match:
+                            stats["safe_incomplete"] = int(match.group(1))
             break
 
     return stats
@@ -217,17 +240,32 @@ def main():
                 run_results.append(stats)
 
                 print(f"✓ {run_label} completed")
+                print(f"  Verified Acc: {stats['verified_acc']:.1f}%")
                 print(f"  Verified: {stats['verified']}, Falsified: {stats['falsified']}, "
                       f"Timeout: {stats['timeout']}, Unknown: {stats['unknown']}")
-                print(f"  Avg time: {stats['avg_time']:.2f}s")
+                print(f"  Avg time: {stats['avg_time']:.2f}s, Max time: {stats['max_time']:.2f}s")
+                print(f"  Safe incomplete (timeout): {stats['safe_incomplete_timeout']}, "
+                      f"Safe incomplete: {stats['safe_incomplete']}")
 
                 with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                     f.write(f"{run_label}\n")
+                    f.write(f"  Verified Acc: {stats['verified_acc']:.1f}%\n")
                     f.write(f"  Verified: {stats['verified']}\n")
                     f.write(f"  Falsified: {stats['falsified']}\n")
                     f.write(f"  Timeout: {stats['timeout']}\n")
                     f.write(f"  Unknown: {stats['unknown']}\n")
-                    f.write(f"  Avg verification time: {stats['avg_time']:.2f}s\n\n")
+                    f.write(f"  Avg verification time: {stats['avg_time']:.2f}s\n")
+                    f.write(f"  Max verification time: {stats['max_time']:.2f}s\n")
+                    f.write(f"  Safe incomplete (timeout): {stats['safe_incomplete_timeout']}\n")
+                    f.write(f"  Safe incomplete: {stats['safe_incomplete']}\n")
+
+                    # Write full summary output
+                    if stats['summary_lines']:
+                        f.write(f"\n  Full Summary:\n")
+                        for line in stats['summary_lines']:
+                            if line.strip():
+                                f.write(f"    {line}\n")
+                    f.write(f"\n")
 
             total_runs += 1
 
@@ -243,23 +281,29 @@ def main():
             timeout_list = [r["timeout"] for r in run_results]
             unknown_list = [r["unknown"] for r in run_results]
             time_list = [r["avg_time"] for r in run_results]
+            max_time_list = [r["max_time"] for r in run_results]
+            verified_acc_list = [r["verified_acc"] for r in run_results]
 
             stats_summary = f"""
-  Verified:     {statistics.mean(verified_list):.1f} ± {statistics.stdev(verified_list) if len(verified_list) > 1 else 0:.1f}
-  Falsified:    {statistics.mean(falsified_list):.1f} ± {statistics.stdev(falsified_list) if len(falsified_list) > 1 else 0:.1f}
-  Timeout:      {statistics.mean(timeout_list):.1f} ± {statistics.stdev(timeout_list) if len(timeout_list) > 1 else 0:.1f}
-  Unknown:      {statistics.mean(unknown_list):.1f} ± {statistics.stdev(unknown_list) if len(unknown_list) > 1 else 0:.1f}
-  Avg time (s): {statistics.mean(time_list):.2f} ± {statistics.stdev(time_list) if len(time_list) > 1 else 0:.2f}
+  Verified Acc (%): {statistics.mean(verified_acc_list):.1f} ± {statistics.stdev(verified_acc_list) if len(verified_acc_list) > 1 else 0:.1f}
+  Verified:        {statistics.mean(verified_list):.1f} ± {statistics.stdev(verified_list) if len(verified_list) > 1 else 0:.1f}
+  Falsified:       {statistics.mean(falsified_list):.1f} ± {statistics.stdev(falsified_list) if len(falsified_list) > 1 else 0:.1f}
+  Timeout:         {statistics.mean(timeout_list):.1f} ± {statistics.stdev(timeout_list) if len(timeout_list) > 1 else 0:.1f}
+  Unknown:         {statistics.mean(unknown_list):.1f} ± {statistics.stdev(unknown_list) if len(unknown_list) > 1 else 0:.1f}
+  Avg time (s):    {statistics.mean(time_list):.2f} ± {statistics.stdev(time_list) if len(time_list) > 1 else 0:.2f}
+  Max time (s):    {statistics.mean(max_time_list):.2f} ± {statistics.stdev(max_time_list) if len(max_time_list) > 1 else 0:.2f}
             """
             print(stats_summary)
 
             with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"Summary for {config_label}:\n")
-                f.write(f"  Verified:     {statistics.mean(verified_list):.1f} ± {statistics.stdev(verified_list) if len(verified_list) > 1 else 0:.1f}\n")
-                f.write(f"  Falsified:    {statistics.mean(falsified_list):.1f} ± {statistics.stdev(falsified_list) if len(falsified_list) > 1 else 0:.1f}\n")
-                f.write(f"  Timeout:      {statistics.mean(timeout_list):.1f} ± {statistics.stdev(timeout_list) if len(timeout_list) > 1 else 0:.1f}\n")
-                f.write(f"  Unknown:      {statistics.mean(unknown_list):.1f} ± {statistics.stdev(unknown_list) if len(unknown_list) > 1 else 0:.1f}\n")
-                f.write(f"  Avg time (s): {statistics.mean(time_list):.2f} ± {statistics.stdev(time_list) if len(time_list) > 1 else 0:.2f}\n")
+                f.write(f"  Verified Acc (%): {statistics.mean(verified_acc_list):.1f} ± {statistics.stdev(verified_acc_list) if len(verified_acc_list) > 1 else 0:.1f}\n")
+                f.write(f"  Verified:        {statistics.mean(verified_list):.1f} ± {statistics.stdev(verified_list) if len(verified_list) > 1 else 0:.1f}\n")
+                f.write(f"  Falsified:       {statistics.mean(falsified_list):.1f} ± {statistics.stdev(falsified_list) if len(falsified_list) > 1 else 0:.1f}\n")
+                f.write(f"  Timeout:         {statistics.mean(timeout_list):.1f} ± {statistics.stdev(timeout_list) if len(timeout_list) > 1 else 0:.1f}\n")
+                f.write(f"  Unknown:         {statistics.mean(unknown_list):.1f} ± {statistics.stdev(unknown_list) if len(unknown_list) > 1 else 0:.1f}\n")
+                f.write(f"  Avg time (s):    {statistics.mean(time_list):.2f} ± {statistics.stdev(time_list) if len(time_list) > 1 else 0:.2f}\n")
+                f.write(f"  Max time (s):    {statistics.mean(max_time_list):.2f} ± {statistics.stdev(max_time_list) if len(max_time_list) > 1 else 0:.2f}\n")
                 f.write(f"\n" + "="*100 + "\n\n")
 
     # Final summary
