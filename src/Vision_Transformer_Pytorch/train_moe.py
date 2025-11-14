@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import numpy as np
 import torch
@@ -598,7 +599,7 @@ def main():
     else:
         print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    setup_logging(OUTPUT_DIR)
+    log_file_handle = setup_logging(OUTPUT_DIR)
 
     if os.name == 'nt':
         num_workers_train = min(os.cpu_count(), 8)
@@ -920,7 +921,7 @@ def main():
             print(f"\nExporting to NNV-compatible ONNX format...")
             try:
                 result = subprocess.run([
-                    'python', nnv_export_script,
+                    sys.executable, nnv_export_script,
                     '--model_path', best_model_path,
                     '--output_dir', nnv_output_dir
                 ], capture_output=True, text=True, timeout=60)
@@ -945,6 +946,10 @@ def main():
         visualize_robustness(model, test_loader, DEVICE, OUTPUT_DIR)
         
     if args.archive_params:
+        # Close log file handle and restore stdout before archiving (Windows compatibility)
+        if log_file_handle:
+            sys.stdout = sys.__stdout__  # Restore original stdout
+            log_file_handle.close()  # Close the file handle
         archive_params(args, config, OUTPUT_DIR)
 
 if __name__ == '__main__':

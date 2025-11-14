@@ -30,6 +30,8 @@ def setup_logging(output_dir):
     print(f"Training started at {datetime.now()}\n")
     print(f"Logging to: {log_file}")
 
+    return log_file_handle
+
 # **************** Archive Trained Models for Fine Tuning ****************
 def archive_params(args, config, output_dir):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -74,15 +76,13 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 4, figsize=(45, 27))
+        fig, axes = plt.subplots(5, 4, figsize=(16, 12))
 
         # Build title with key metrics
-        title_parts = ['MetaMoE Training and Testing Metrics']
-        title_parts.append(f'Architecture: {model_arch}')
+        title = f'MetaMoE - {model_arch}'
         if adv_training:
-            title_parts.append('(Adversarial Training)')
-        title = ' - '.join(title_parts)
-        fig.suptitle(title, fontsize=16, fontweight='bold')
+            title += ' (AT)'
+        fig.suptitle(title, fontsize=10, fontweight='bold')
 
         # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
@@ -195,19 +195,18 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         show_balance_loss = (model_arch == 'vit_moe')
 
         if show_balance_loss:
-            fig, axes = plt.subplots(3, 2, figsize=(15, 18))
+            fig, axes = plt.subplots(3, 2, figsize=(9, 10.8))
         else:
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig, axes = plt.subplots(2, 2, figsize=(8, 6))
 
         # Build title with key metrics
-        title_parts = ['Training and Testing Metrics']
         if dataset_name:
-            title_parts.append(f'Dataset: {dataset_name.upper()}')
-        title_parts.append(f'Architecture: {model_arch}')
+            title = f'{dataset_name.upper()} - {model_arch}'
+        else:
+            title = model_arch
         if adv_training:
-            title_parts.append('(Adversarial Training)')
-        title = ' - '.join(title_parts)
-        fig.suptitle(title, fontsize=16, fontweight='bold')
+            title += ' (AT)'
+        fig.suptitle(title, fontsize=10, fontweight='bold')
 
         # Classification Loss
         axes[0, 0].plot(train_epochs[:len(train_losses)], train_losses, label='Train Loss')
