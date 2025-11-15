@@ -95,7 +95,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[0, 1].plot(test_epochs[:len(test_losses)], test_losses, label='Test Loss')
         axes[0, 1].set_xlabel('Epoch')
         axes[0, 1].set_ylabel('Loss')
-        axes[0, 1].set_title(f'Test Classification Loss (Starting from Epoch {plot_test_start_epoch})')
+        axes[0, 1].set_title('Test Classification Loss')
         axes[0, 1].legend()
         axes[0, 1].grid(True)
 
@@ -110,7 +110,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[1, 1].plot(test_epochs[:len(test_accs)], test_accs, label='Test Accuracy')
         axes[1, 1].set_xlabel('Epoch')
         axes[1, 1].set_ylabel('Accuracy')
-        axes[1, 1].set_title(f'Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[1, 1].set_title('Test Accuracy')
         axes[1, 1].legend()
         axes[1, 1].grid(True)
 
@@ -129,14 +129,14 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[2, 0].plot(test_epochs[:len(test_gtsrb_accs)], test_gtsrb_accs, label='GTSRB Test Accuracy')
         axes[2, 0].set_xlabel('Epoch')
         axes[2, 0].set_ylabel('Accuracy')
-        axes[2, 0].set_title(f'GTSRB Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 0].set_title('GTSRB Test Accuracy')
         axes[2, 0].legend()
         axes[2, 0].grid(True)
 
         axes[2, 1].plot(test_epochs[:len(test_cifar10_accs)], test_cifar10_accs, label='CIFAR10 Test Accuracy')
         axes[2, 1].set_xlabel('Epoch')
         axes[2, 1].set_ylabel('Accuracy')
-        axes[2, 1].set_title(f'CIFAR10 Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[2, 1].set_title('CIFAR10 Test Accuracy')
         axes[2, 1].legend()
         axes[2, 1].grid(True)
 
@@ -172,7 +172,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[3, 1].plot(test_epochs[:len(test_gating_losses)], test_gating_losses, label='Test Gating Loss')
         axes[3, 1].set_xlabel('Epoch')
         axes[3, 1].set_ylabel('Loss')
-        axes[3, 1].set_title(f'Test Gating Loss (Starting from Epoch {plot_test_start_epoch})')
+        axes[3, 1].set_title('Test Gating Loss')
         axes[3, 1].legend()
         axes[3, 1].grid(True)
 
@@ -186,7 +186,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[4, 1].plot(test_epochs[:len(test_gating_accs)], test_gating_accs, label='Test Gating Accuracy')
         axes[4, 1].set_xlabel('Epoch')
         axes[4, 1].set_ylabel('Accuracy')
-        axes[4, 1].set_title(f'Test Gating Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[4, 1].set_title('Test Gating Accuracy')
         axes[4, 1].legend()
         axes[4, 1].grid(True)
 
@@ -219,7 +219,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[0, 1].plot(test_epochs[:len(test_losses)], test_losses, label='Test Loss')
         axes[0, 1].set_xlabel('Epoch')
         axes[0, 1].set_ylabel('Loss')
-        axes[0, 1].set_title(f'Test Classification Loss (Starting from Epoch {plot_test_start_epoch})')
+        axes[0, 1].set_title('Test Classification Loss')
         axes[0, 1].legend()
         axes[0, 1].grid(True)
 
@@ -234,7 +234,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
         axes[1, 1].plot(test_epochs[:len(test_accs)], test_accs, label='Test Accuracy')
         axes[1, 1].set_xlabel('Epoch')
         axes[1, 1].set_ylabel('Accuracy')
-        axes[1, 1].set_title(f'Test Accuracy (Starting from Epoch {plot_test_start_epoch})')
+        axes[1, 1].set_title('Test Accuracy')
         axes[1, 1].legend()
         axes[1, 1].grid(True)
 
@@ -261,7 +261,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
             axes[2, 1].plot(test_epochs[:len(test_balance_losses)], test_balance_losses, label='Test Balance Loss')
             axes[2, 1].set_xlabel('Epoch')
             axes[2, 1].set_ylabel('Balance Loss')
-            axes[2, 1].set_title(f'Test Balance Loss (Starting from Epoch {plot_test_start_epoch})')
+            axes[2, 1].set_title('Test Balance Loss')
             axes[2, 1].legend()
             axes[2, 1].grid(True)
 
