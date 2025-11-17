@@ -7,6 +7,7 @@ variables:
 stages:
   - test_gpu
   - prepare
+  - unit_tests
   - train
   - clean_up
 
@@ -48,6 +49,31 @@ prepare:
     - echo "Repository ready at ${CI_PROJECT_DIR}"
   timeout: 30m
 
+unit_tests:
+  stage: unit_tests
+  only:
+    - web
+  script:
+    - echo "Running unit and regression tests..."
+    - cd ${CI_PROJECT_DIR}
+    - pip install --upgrade pip
+    - pip install pytest torch torchvision
+    - "& 'C:\\Users\\phamm\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' -m pytest tests/ -m unit -v --tb=short" | Tee-Object -FilePath 'artifacts/unit_tests_log.txt'
+    - echo "Unit tests completed!"
+  artifacts:
+    paths:
+      - artifacts/unit_tests_log.txt
+    reports:
+      junit: artifacts/junit.xml
+    when: always
+    expire_in: 2 weeks
+  allow_failure: false
+  dependencies:
+    - prepare
+  tags:
+    - $SERVER_TAG
+  timeout: 30m
+
 train:
   stage: train
   only:
@@ -63,6 +89,7 @@ train:
   dependencies:
     - test_gpu
     - prepare
+    - unit_tests
   artifacts:
     paths:
       - artifacts/training_log.txt 
