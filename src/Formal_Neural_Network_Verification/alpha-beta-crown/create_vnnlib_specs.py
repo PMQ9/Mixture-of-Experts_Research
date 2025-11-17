@@ -6,7 +6,7 @@ VNNLIB format specifies:
 2. Output property: true label has highest score
 
 Usage:
-    python create_vnnlib_specs.py --dataset GTSRB --num_images 10 --epsilon 0.00784
+    python create_vnnlib_specs.py --dataset GTSRB --num_images 10 --epsilon 0.03137
 """
 
 import torch
@@ -195,8 +195,8 @@ def main():
                         help='Path to dataset directory')
     parser.add_argument('--num_images', type=int, default=100,
                         help='Number of images to create specs for')
-    parser.add_argument('--epsilon', type=float, default=0.00784313725490196,
-                        help='Perturbation bound (default: 2/255)')
+    parser.add_argument('--epsilon', type=float, default=8.0/255.0,
+                        help='Perturbation bound (default: 8/255 to match expert training epsilon)')
     parser.add_argument('--output_dir', type=str, default='artifacts/vnnlib_specs',
                         help='Directory to save VNNLIB files')
 

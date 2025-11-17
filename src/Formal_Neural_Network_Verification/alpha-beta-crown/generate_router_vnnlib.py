@@ -14,18 +14,17 @@ This enables formal verification of routing robustness, proving that adversarial
 perturbations cannot fool the router into selecting the wrong expert.
 
 Usage:
-    # Generate specs for CIFAR-10 images
+    # Generate specs for CIFAR-10 images (default epsilon=8/255)
     python generate_router_vnnlib.py \
         --dataset CIFAR10 \
         --num_images 200 \
-        --epsilon 0.00784 \
         --output_dir artifacts/vnnlib/router_cifar10
 
-    # Generate specs for MNIST images
+    # Generate specs for MNIST images with custom epsilon
     python generate_router_vnnlib.py \
         --dataset MNIST \
         --num_images 200 \
-        --epsilon 0.00784 \
+        --epsilon 0.03137 \
         --output_dir artifacts/vnnlib/router_mnist
 """
 
@@ -300,8 +299,8 @@ def main():
                         help='Dataset to generate specs for')
     parser.add_argument('--num_images', type=int, default=200,
                         help='Number of images to generate specs for')
-    parser.add_argument('--epsilon', type=float, default=2/255,
-                        help='L-infinity perturbation bound (default: 2/255)')
+    parser.add_argument('--epsilon', type=float, default=8.0/255.0,
+                        help='L-infinity perturbation bound (default: 8/255 to match router training epsilon)')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='Output directory (default: artifacts/vnnlib/router_{dataset})')
     parser.add_argument('--device', type=str, default='cpu',
