@@ -152,6 +152,10 @@ class TestModelSaveLoad:
         loaded_model.load_state_dict(torch.load(model_path))
         loaded_model = loaded_model.to(device)
 
+        # Put both models in eval mode for consistent output
+        model_small_cnn.eval()
+        loaded_model.eval()
+
         # Test that loaded model produces same output
         test_input = torch.randn(2, 3, 32, 32).to(device)
         with torch.no_grad():

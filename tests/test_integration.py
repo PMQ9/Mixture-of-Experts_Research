@@ -53,7 +53,7 @@ class TestDataLoading:
             assert batch_images.shape == (4, 3, 32, 32)
             assert batch_labels.shape == (4,)
 
-        except FileNotFoundError:
+        except (FileNotFoundError, RuntimeError):
             pytest.skip("CIFAR-10 dataset not available")
 
     @pytest.mark.integration
@@ -90,7 +90,7 @@ class TestDataLoading:
             assert batch_images.shape == (4, 1, 28, 28)
             assert batch_labels.shape == (4,)
 
-        except FileNotFoundError:
+        except (FileNotFoundError, RuntimeError):
             pytest.skip("MNIST dataset not available")
 
     @pytest.mark.unit
@@ -307,7 +307,10 @@ class TestCheckpointing:
         assert loaded_checkpoint['epoch'] == 5
         assert loaded_checkpoint['loss'] == 0.3
 
-        # Test that loaded model produces same output
+        # Test that loaded model produces same output (both in eval mode)
+        model_small_cnn.eval()
+        new_model.eval()
+
         test_input = torch.randn(2, 3, 32, 32).to(device)
         with torch.no_grad():
             output1 = model_small_cnn(test_input)
@@ -324,8 +327,9 @@ class TestONNXExport:
         """Test ONNX model export."""
         try:
             import onnx
+            import onnxscript
         except ImportError:
-            pytest.skip("ONNX not installed")
+            pytest.skip("ONNX or onnxscript not installed")
 
         model = model_small_cnn
         model.eval()
@@ -335,23 +339,27 @@ class TestONNXExport:
         # Create dummy input
         dummy_input = torch.randn(1, 3, 32, 32).to(device)
 
-        # Export to ONNX
-        torch.onnx.export(
-            model,
-            dummy_input,
-            str(onnx_path),
-            input_names=['input'],
-            output_names=['output'],
-            opset_version=14,
-            verbose=False
-        )
+        try:
+            # Export to ONNX
+            torch.onnx.export(
+                model,
+                dummy_input,
+                str(onnx_path),
+                input_names=['input'],
+                output_names=['output'],
+                opset_version=14,
+                verbose=False
+            )
 
-        # Verify ONNX model was created
-        assert onnx_path.exists()
+            # Verify ONNX model was created
+            assert onnx_path.exists()
 
-        # Load and check ONNX model
-        onnx_model = onnx.load(str(onnx_path))
-        assert onnx_model is not None
+            # Load and check ONNX model
+            onnx_model = onnx.load(str(onnx_path))
+            assert onnx_model is not None
+
+        except ModuleNotFoundError:
+            pytest.skip("ONNX export dependencies not fully available")
 
     @pytest.mark.integration
     def test_onnx_inference(self, model_small_cnn, temp_dir, device):
@@ -359,8 +367,9 @@ class TestONNXExport:
         try:
             import onnx
             import onnxruntime as ort
+            import onnxscript
         except ImportError:
-            pytest.skip("ONNX Runtime not installed")
+            pytest.skip("ONNX, onnxruntime, or onnxscript not installed")
 
         model = model_small_cnn
         model.eval()
@@ -369,24 +378,28 @@ class TestONNXExport:
 
         dummy_input = torch.randn(1, 3, 32, 32).to(device)
 
-        # Export to ONNX
-        torch.onnx.export(
-            model,
-            dummy_input,
-            str(onnx_path),
-            input_names=['input'],
-            output_names=['output'],
-            opset_version=14,
-        )
+        try:
+            # Export to ONNX
+            torch.onnx.export(
+                model,
+                dummy_input,
+                str(onnx_path),
+                input_names=['input'],
+                output_names=['output'],
+                opset_version=14,
+            )
 
-        # Load ONNX model
-        sess = ort.InferenceSession(str(onnx_path))
+            # Load ONNX model
+            sess = ort.InferenceSession(str(onnx_path))
 
-        # Prepare input
-        test_input = dummy_input.cpu().numpy()
+            # Prepare input
+            test_input = dummy_input.cpu().numpy()
 
-        # Run inference
-        outputs = sess.run(None, {'input': test_input})
+            # Run inference
+            outputs = sess.run(None, {'input': test_input})
 
-        assert len(outputs) > 0
-        assert outputs[0].shape == (1, 10)
+            assert len(outputs) > 0
+            assert outputs[0].shape == (1, 10)
+
+        except ModuleNotFoundError:
+            pytest.skip("ONNX export dependencies not fully available")
