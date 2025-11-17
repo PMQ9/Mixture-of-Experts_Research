@@ -111,10 +111,12 @@ def main():
                         help='Number of MNIST samples to generate (default: 10)')
     parser.add_argument('--num_cifar', type=int, default=10,
                         help='Number of CIFAR10 samples to generate (default: 10)')
-    parser.add_argument('--epsilon', type=float, default=2.0/255.0,
-                        help='L-infinity perturbation bound (default: 2/255)')
+    parser.add_argument('--epsilon', type=float, default=8.0/255.0,
+                        help='L-infinity perturbation bound (default: 8/255 to match empirical testing)')
     parser.add_argument('--output_dir', type=str, default='artifacts/vnnlib_specs/router',
                         help='Output directory for VNNLIB files')
+    parser.add_argument('--no_random_sampling', action='store_true',
+                        help='Disable random sampling and use stride sampling instead (default: random sampling enabled)')
 
     args = parser.parse_args()
 
@@ -152,10 +154,6 @@ def main():
     mnist_total = len(mnist)
     cifar_total = len(cifar10)
 
-    # Calculate stride for sampling (avoid exceeding dataset size)
-    mnist_stride = max(1, mnist_total // args.num_mnist) if args.num_mnist <= mnist_total else 1
-    cifar_stride = max(1, cifar_total // args.num_cifar) if args.num_cifar <= cifar_total else 1
-
     # Adjust num_samples if requested more than available
     actual_num_mnist = min(args.num_mnist, mnist_total)
     actual_num_cifar = min(args.num_cifar, cifar_total)
@@ -165,10 +163,25 @@ def main():
     if actual_num_cifar < args.num_cifar:
         print(f"\nWARNING: Requested {args.num_cifar} CIFAR10 samples, but only {cifar_total} available. Using {actual_num_cifar}.")
 
+    # Generate sample indices based on sampling strategy
+    # Default: random sampling (unless --no_random_sampling is set)
+    if not args.no_random_sampling:
+        import random
+        random.seed(42)  # For reproducibility
+        mnist_indices = sorted(random.sample(range(mnist_total), actual_num_mnist))
+        cifar_indices = sorted(random.sample(range(cifar_total), actual_num_cifar))
+        sampling_method = "random (seed=42)"
+    else:
+        # Stride sampling (evenly spaced)
+        mnist_stride = max(1, mnist_total // actual_num_mnist)
+        cifar_stride = max(1, cifar_total // actual_num_cifar)
+        mnist_indices = [i * mnist_stride for i in range(actual_num_mnist)]
+        cifar_indices = [i * cifar_stride for i in range(actual_num_cifar)]
+        sampling_method = f"stride (MNIST: {mnist_stride}, CIFAR10: {cifar_stride})"
+
     # Process MNIST samples (should route to expert 1)
-    print(f"\nMNIST samples (epsilon={args.epsilon:.6f}, stride={mnist_stride}):")
-    for i in range(actual_num_mnist):
-        idx = i * mnist_stride
+    print(f"\nMNIST samples (epsilon={args.epsilon:.6f}, sampling={sampling_method}):")
+    for i, idx in enumerate(mnist_indices):
         img, label = mnist[idx]
         vnnlib_file = vnnlib_dir / f"mnist_{i}.vnnlib"
         create_vnnlib_router(img, true_expert=1, epsilon=args.epsilon, output_file=str(vnnlib_file))
@@ -177,9 +190,8 @@ def main():
         print(f"  Created: {vnnlib_file.name} (digit {label}, index {idx})")
 
     # Process CIFAR10 samples (should route to expert 0)
-    print(f"\nCIFAR10 samples (epsilon={args.epsilon:.6f}, stride={cifar_stride}):")
-    for i in range(actual_num_cifar):
-        idx = i * cifar_stride
+    print(f"\nCIFAR10 samples (epsilon={args.epsilon:.6f}, sampling={sampling_method}):")
+    for i, idx in enumerate(cifar_indices):
         img, label = cifar10[idx]
         vnnlib_file = vnnlib_dir / f"cifar10_{i}.vnnlib"
         create_vnnlib_router(img, true_expert=0, epsilon=args.epsilon, output_file=str(vnnlib_file))

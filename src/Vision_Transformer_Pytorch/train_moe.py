@@ -74,6 +74,7 @@ parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top exp
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
 parser.add_argument('--gating_backbone', type=str, default='ultra_verifiable_cnn', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn'], help='Backbone architecture for the MetaGatingNet router')
 parser.add_argument('--adv_gating_train', action='store_true', help='Enable adversarial training for MetaGatingNet router')
+parser.add_argument('--gating_epsilon', type=float, default=8.0/255.0, help='Epsilon for adversarial gating training (default: 8/255 to match formal verification)')
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
@@ -137,7 +138,7 @@ def pgd_attack(model, data, target, epsilon=pgd_epsilon, alpha=0.01, num_iter=pg
     model.train()
     return data_adv
 
-def pgd_gating_attack(model, data, meta_class, epsilon=0.1, alpha=0.01, num_iter=10, device=DEVICE):
+def pgd_gating_attack(model, data, meta_class, epsilon=8.0/255.0, alpha=0.01, num_iter=10, device=DEVICE):
     model.eval()
     data_adv = data.clone().detach().to(device)
     original_data = data.clone().detach().to(device)
@@ -191,7 +192,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
                 total_images += data.size(0)
 
                 if args.adv_gating_train:
-                    data_adv = pgd_gating_attack(model, data, meta_class)
+                    data_adv = pgd_gating_attack(model, data, meta_class, epsilon=args.gating_epsilon)
                     output_adv, gates_adv = model(data_adv)
                     gating_loss_adv = gating_criterion(gates_adv, meta_class)
                     
@@ -872,9 +873,21 @@ def main():
 
         if save_metric is not None and save_metric > best_acc:
             best_acc = save_metric
-            suffix = "_robust" if args.adv_training else "_og"
-            if args.fine_tune_meta_moe:
-                suffix += "_finetuned"
+            # Generate descriptive suffix based on training type
+            if args.meta_moe:
+                # For MetaMoE routers: use NRT (Non-Robust Training) or RT_epsX (Robust Training with epsilon)
+                if args.adv_gating_train:
+                    # RT (Robust Training) with epsilon value
+                    epsilon_str = f"{args.gating_epsilon:.5f}".rstrip('0').rstrip('.')
+                    suffix = f"_RT_eps{epsilon_str}"
+                else:
+                    # NRT (Non-Robust Training)
+                    suffix = "_NRT"
+                if args.fine_tune_meta_moe:
+                    suffix += "_finetuned"
+            else:
+                # For individual experts: use _robust or _og
+                suffix = "_robust" if args.adv_training else "_og"
             save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:

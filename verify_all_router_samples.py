@@ -50,7 +50,7 @@ sys.path.insert(0, str(project_root))
 from prepare_router_verification import main as prepare_vnnlib
 
 
-def generate_vnnlib_specs(num_mnist, num_cifar, epsilon, vnnlib_dir):
+def generate_vnnlib_specs(num_mnist, num_cifar, epsilon, vnnlib_dir, no_random_sampling=False):
     """
     Generate fresh VNNLIB specifications before verification.
 
@@ -59,6 +59,7 @@ def generate_vnnlib_specs(num_mnist, num_cifar, epsilon, vnnlib_dir):
         num_cifar: Number of CIFAR10 samples
         epsilon: L-infinity perturbation bound
         vnnlib_dir: Output directory for VNNLIB files
+        no_random_sampling: Disable random sampling (default: random sampling enabled)
     """
     print("="*80)
     print("Step 1: Generating Fresh VNNLIB Specifications")
@@ -75,6 +76,9 @@ def generate_vnnlib_specs(num_mnist, num_cifar, epsilon, vnnlib_dir):
         '--epsilon', str(epsilon),
         '--output_dir', str(vnnlib_dir)
     ]
+
+    if no_random_sampling:
+        sys.argv.append('--no_random_sampling')
 
     try:
         # Call the preparation script
@@ -95,10 +99,12 @@ def main():
                         help='Number of MNIST samples to verify (default: 10)')
     parser.add_argument('--num_cifar', type=int, default=10,
                         help='Number of CIFAR10 samples to verify (default: 10)')
-    parser.add_argument('--epsilon', type=float, default=2.0/255.0,
-                        help='L-infinity perturbation bound (default: 2/255)')
+    parser.add_argument('--epsilon', type=float, default=8.0/255.0,
+                        help='L-infinity perturbation bound (default: 8/255 to match empirical testing)')
     parser.add_argument('--timeout', type=int, default=60,
                         help='Timeout per sample in seconds (default: 60)')
+    parser.add_argument('--no_random_sampling', action='store_true',
+                        help='Disable random sampling and use stride sampling instead (default: random sampling enabled)')
     parser.add_argument('--model_path', type=str, default=None,
                         help='Path to MetaMoE .pth model (will auto-export to ONNX)')
     parser.add_argument('--onnx_path', type=str, default=None,
@@ -198,7 +204,7 @@ def main():
         sys.exit(1)
 
     # Generate fresh VNNLIB specifications
-    generate_vnnlib_specs(args.num_mnist, args.num_cifar, args.epsilon, vnnlib_dir)
+    generate_vnnlib_specs(args.num_mnist, args.num_cifar, args.epsilon, vnnlib_dir, args.no_random_sampling)
 
     # Get all VNNLIB files
     mnist_files = sorted(vnnlib_dir.glob("mnist_*.vnnlib"))
