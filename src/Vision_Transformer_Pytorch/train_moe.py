@@ -886,8 +886,14 @@ def main():
                 if args.fine_tune_meta_moe:
                     suffix += "_finetuned"
             else:
-                # For individual experts: use _robust or _og
-                suffix = "_robust" if args.adv_training else "_og"
+                # For individual experts: use NRT (Non-Robust Training) or RT_epsX (Robust Training with epsilon)
+                if args.adv_training:
+                    # RT (Robust Training) with epsilon value
+                    epsilon_str = f"{pgd_epsilon:.5f}".rstrip('0').rstrip('.')
+                    suffix = f"_RT_eps{epsilon_str}"
+                else:
+                    # NRT (Non-Robust Training)
+                    suffix = "_NRT"
             save_path = os.path.join(OUTPUT_DIR, f"meta_moe_{args.model_arch}_best{suffix}.pth" if args.meta_moe else f"{args.dataset.lower()}_{args.model_arch}_best{suffix}.pth")
             torch.save(model, save_path)
             if not args.meta_moe and args.save_state_dict:
