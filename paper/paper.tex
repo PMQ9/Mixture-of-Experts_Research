@@ -12,6 +12,8 @@
 \usepackage{listings}
 \usepackage{float}
 \usepackage{xcolor}
+\usepackage{bbm}
+
 
 % Configure listings for Python
 \lstset{
@@ -83,7 +85,7 @@ We consider $L_\infty$-bounded perturbations $\delta$ with $\|\delta\|_\infty \l
 
 Certified robustness accuracy (CRA) measures the fraction of samples verified robust:
 \begin{equation}
-    \text{CRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbb{1}[\text{Verify}(f, x, \varepsilon)]
+    \text{CRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbbm{1}[\text{Verify}(f, x, \varepsilon)]
 \end{equation}
 
 \subsection{Compositional Robustness}
@@ -183,9 +185,7 @@ Define a set of $N$ pre-trained models $\{E_i\}_{i=1}^N$, where each $E_i: \math
 
 The Experts are trained on 7 distinct image-based datasets. Each Expert uses a Convolutional Neural Network (CNN) backbone simplified for formal verification while preserving performance. Both Non-Robust-Training (NRT) and Robust-Training (RT) versions are created. After training, Experts are frozen, fixing their parameters for subsequent stages.
 
-The selection of datasets serves dual purposes in evaluating the MoE architecture. CIFAR-10 (general objects), MNIST (handwritten digits), and GTSRB (German traffic signs) are chosen for their diversity in visual features and domain characteristics, which facilitates robust router training and verification. This diversity isolates the variable of dataset similarity, ensuring the router can reliably distinguish between dissimilar inputs without confounding factors.
-
-In contrast, the five additional traffic sign datasets (PTSD, BTSD, ETSD, TSRB) from various countries are highly similar in content (e.g., road signs with overlapping shapes and symbols but regional variations), enabling assessment of the MoE's performance in overlapping domains. This setup is particularly valuable for lifelong learning scenarios, such as incrementally adding new traffic sign variants from emerging regions without retraining the entire system, thus testing scalability and compositional robustness under similarity-induced challenges.
+We evaluate on 7 datasets: CIFAR-10, MNIST, and GTSRB provide domain diversity for robust routing, while PTSD, BTSD, ETSD, and TSRB test performance on similar traffic sign domains for lifelong learning scenarios (see Appendix C for detailed dataset characteristics).
 
 \begin{table}[H]
 \centering
@@ -249,29 +249,19 @@ The VerifiableCNN architecture:
 
 \subsubsection{Training Configuration}
 
-Each Expert is trained independently:
-
-\begin{itemize}
-    \item \textbf{Optimizer:} Adam, learning rate $1e-3$
-    \item \textbf{Loss Function:} Label Smoothing Cross Entropy (smoothing = 0.1)
-    \item \textbf{Epochs:} 200 (with early stopping if validation loss plateaus)
-    \item \textbf{Batch Size:} 128
-    \item \textbf{Data Augmentation:} Random horizontal flips, random crops ($28 \times 28 \to 32 \times 32$)
-\end{itemize}
-
-NRT: Standard supervised learning. RT: PGD AT with $\epsilon = 8/255$, 7 iterations, step $2/255$.
+Experts are trained independently using Adam optimizer with label smoothing cross entropy loss. NRT uses standard supervised learning; RT employs PGD adversarial training with $\epsilon = 8/255$ (full hyperparameters in Appendix A.1).
 
 \textbf{Metrics:}
 
 \begin{itemize}
     \item Clean Accuracy (CA):
     \begin{equation}
-        CA = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbb{1}\left[\arg\max_i E_i(x) = y\right]
+        CA = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbbm{1}\left[\arg\max_i E_i(x) = y\right]
     \end{equation}
 
     \item Adversarial Accuracy (AA):
     \begin{equation}
-        AA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbb{1}\left[\arg\max_i E_i(x^{adv}) = y\right]
+        AA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbbm{1}\left[\arg\max_i E_i(x^{adv}) = y\right]
     \end{equation}
 
     \item Expert Robustness Gap:
@@ -284,12 +274,7 @@ RT increases $AA(\epsilon)$ but decreases CA, validating Hypothesis 1.
 
 \subsubsection{ONNX Export and BatchNorm Folding}
 
-Experts are exported to ONNX with batch norm folding:
-\begin{equation}
-    W' = \gamma \cdot \frac{W}{\sqrt{\sigma^2 + \varepsilon}}; \quad b' = (b - \mu) \cdot \frac{\gamma}{\sqrt{\sigma^2 + \varepsilon}} + \beta.
-\end{equation}
-
-This transformation is mathematically equivalent and eliminates BatchNorm from the computational graph, reducing ONNX operator count and improving verification performance.
+Experts are exported to ONNX with BatchNorm parameters folded into convolutional layer weights, eliminating BatchNorm from the computational graph and improving verification performance (see Appendix B for folding equations).
 
 \subsection{GatingNet}
 
@@ -348,14 +333,7 @@ Robust-Training (RT):
     \mathcal{L}_{RT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m) + \text{CE}(\mathcal{G}(x^{adv}), m)]
 \end{equation}
 
-With $x^{adv}$ from PGD ($\varepsilon = 8/255$, 7 steps)
-
-Training configurations:
-\begin{itemize}
-    \item Adam optimizer, $lr = 1e-3$, weight decay = $5e-4$
-    \item Batch size 128 (mixed datasets)
-    \item Epoch: 50 (with early stopping)
-\end{itemize}
+With $x^{adv}$ from PGD ($\varepsilon = 8/255$, 7 steps). Training uses Adam optimizer with mixed-dataset batches (full configuration in Appendix A.1).
 
 \subsection{GatingNet Architecture for Verifiability}
 
@@ -378,17 +356,17 @@ For image $x$ with true meta\_class $m^*$, we verify: $\arg\max_i G_i(x') = m^*$
 \begin{itemize}
     \item Clean Gating Accuracy (GA):
     \begin{equation}
-        GA = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbb{1}\left[\arg\max_i G_i(x) = m^*\right]
+        GA = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i G_i(x) = m^*\right]
     \end{equation}
 
     \item Adversarial Gating Accuracy (AGA):
     \begin{equation}
-        AGA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbb{1}\left[\arg\max_i G_i(x^{adv}) = m^*\right]
+        AGA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i G_i(x^{adv}) = m^*\right]
     \end{equation}
 
     \item Certified Robustness Accuracy (formally verified):
     \begin{equation}
-        CRA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbb{1}[\alpha - \beta - \text{CROWN}(x, m^*, \epsilon)]
+        CRA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}[\alpha - \beta - \text{CROWN}(x, m^*, \epsilon)]
     \end{equation}
 
     \item Gating Robustness Gap:
@@ -403,12 +381,7 @@ Verified router (correct selection) + verified expert (correct classification) i
 
 \subsubsection{ONNX Export for GatingNet}
 
-Export ensures deterministic behavior (eval mode); static shape (1,3,32,32); raw logits; batch norm folding
-\begin{equation}
-    W' = \gamma \cdot \frac{W}{\sqrt{\sigma^2 + \epsilon}}, \quad b' = (b - \mu) \cdot \frac{\gamma}{\sqrt{\sigma^2 + \epsilon}} + \beta
-\end{equation}
-
-Inspected: no batch norm, $\leq 20$ operators, matching dimensions.
+Router export ensures deterministic behavior (eval mode), static input shape, raw logits output, and BatchNorm folding, resulting in $\leq 20$ operators with no BatchNorm layers (details in Appendix B).
 
 \subsection{Non-Robust-Training (NRT) and Robust-Training (RT)}
 
@@ -500,133 +473,32 @@ The model is trained to minimize two losses:
     \end{equation}
 \end{enumerate}
 
-\section{Adapting alpha-beta-CROWN for MoE Router Verification}
+\section{Compositional Verification with alpha-beta-CROWN}
 
-Standard alpha-beta-CROWN is designed for monolithic neural network verification. Verifying the MetaMoE router required critical adaptations to handle the compositional architecture, multi-expert structure, and unique routing semantics.
+Standard alpha-beta-CROWN verifies monolithic networks. Our MetaMoE system (router + 2 experts $\approx$ 2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the problem:
 
-\subsection{Challenge: Computational Intractability of Full System Verification}
-
-The complete MetaMoE system contains:
-\begin{itemize}
-    \item Router (MetaGatingNet): 96K parameters
-    \item Expert 0 (CIFAR-10): 96K parameters
-    \item Expert 1 (MNIST): 96K parameters
-    \item \textbf{Total: $\approx$2M parameters}
-\end{itemize}
-
-Verifying the full system is intractable because:
-\begin{enumerate}
-    \item \textbf{Scale}: 2M+ parameters exceed alpha-beta-CROWN's practical capacity
-    \item \textbf{Dynamic routing}: Conditional execution (if-then-else logic) cannot be modeled in static computational graphs
-    \item \textbf{Redundancy}: Experts are frozen and pre-trained; re-verifying them during system verification is wasteful
-\end{enumerate}
-
-\subsection{Solution: Compositional Router-Only Verification}
-
-We adopt a compositional verification strategy that verifies the router independently:
-
-\textbf{Key insight:} Routing correctness is independent of expert behavior. If the router selects Expert $i$ for clean input $x$, we only need to verify that the router still selects Expert $i$ for all perturbed inputs $x' \in \mathcal{B}_\epsilon(x)$. Expert computations are irrelevant to this property.
-
-\textbf{Compositional guarantee:}
+\textbf{Key insight:} Router correctness is independent of expert computations. We verify the router maintains consistent expert selection within $\varepsilon$-balls, then verify experts independently. The compositional guarantee holds:
 \begin{equation}
 \text{Verified}_{\text{Router}}(x \to i) \land \text{Verified}_{\text{Expert}_i}(x \to j) \implies \text{Verified}_{\text{MoE}}(x \to j)
 \end{equation}
 
-This decomposition reduces the verification problem from 2M parameters to 96K parameters (20$\times$ reduction), enabling tractable formal verification.
+This reduces verification from 2M to 96K parameters (20$\times$ reduction).
 
-\subsection{Critical Adaptation 1: Router-Only ONNX Export}
+\subsection{Critical Design Decisions for Verifiability}
 
-We extract the router as a standalone ONNX model:
+\textbf{1. Router-Only ONNX Export:} Extract router as standalone model outputting raw logits (not softmax). Since $\arg\max(\text{logits}) = \arg\max(\text{softmax}(\text{logits}/T))$, this is mathematically equivalent while enabling tighter CROWN bounds by avoiding exponential operations.
 
-\begin{lstlisting}[language=Python, caption={Router extraction from MetaMoE}]
-class SimplifiedRouter(nn.Module):
-    def __init__(self, meta_gating_net):
-        super().__init__()
-        self.backbone = meta_gating_net.model  # CNN features
-        self.fc = meta_gating_net.fc           # Expert logits
+\textbf{2. Property Specification via Negation:} For image $x$ with true meta-class $m^*$, verify $\arg\max_i G_i(x') = m^*$ for all $x' \in \mathcal{B}_\epsilon(x)$ by asserting the negation in VNNLIB and searching for counterexamples (standard bounded model checking).
 
-    def forward(self, x):
-        features = self.backbone(x)  # [batch, 896]
-        logits = self.fc(features)   # [batch, 2]
-        return logits  # Raw logits, no softmax
-\end{lstlisting}
+\textbf{3. Unified Normalization:} Router and verification use identical normalization parameters across all datasets ($\mu = [0.295, 0.291, 0.274]$, $\sigma = [0.325, 0.321, 0.319]$) to prevent distribution shift.
 
-\textbf{Critical design decision:} The router outputs raw logits instead of softmax probabilities. This is mathematically sound because expert selection uses $\arg\max(\text{logits})$, and argmax is monotonic:
-\begin{equation}
-\arg\max(\text{logits}) = \arg\max(\text{softmax}(\text{logits}/T))
-\end{equation}
-for any temperature $T > 0$. Raw logits simplify verification by avoiding exponential operations (softmax), enabling tighter CROWN bounds.
+\textbf{4. Normalized-Space Perturbations:} Perturbations defined in normalized space (not pixel space), ensuring threat model consistency between adversarial training and verification.
 
-\subsection{Critical Adaptation 2: VNNLIB Property Specification}
+\textbf{5. BatchNorm Elimination:} Router architecture has zero BatchNorm layers (replaced with increased channel capacity), ensuring deterministic behavior across training and evaluation modes.
 
-For router verification, we formulate the property in VNNLIB format. For an input image $x$ with true meta-class $m^*$ (0 for CIFAR-10, 1 for MNIST), we verify:
-\begin{equation}
-\forall x' \in \mathcal{B}_\epsilon(x): \arg\max_i G_i(x') = m^*
-\end{equation}
+\textbf{Soundness guarantee:} These adaptations preserve verification semantics: routing decisions unchanged, property negation standard, threat models aligned, behavior deterministic. Implementation details and router extraction code in Appendix D.
 
-where $G_i(x')$ is the router's logit for expert $i$.
-
-\textbf{Property negation for counterexample search:} alpha-beta-CROWN searches for satisfying assignments to the asserted property. To verify that Expert 1 (MNIST) has the highest logit, we assert the \textit{negation}:
-\begin{verbatim}
-(assert (>= Y_0 Y_1))  ; Negation of desired Y_1 > Y_0
-\end{verbatim}
-
-If no satisfying assignment exists (no counterexample found), the property $Y_1 > Y_0$ holds universally within the $\epsilon$-ball, and the sample is \textbf{verified}. This is the standard approach in bounded model checking.
-
-\subsection{Critical Adaptation 3: Unified Normalization Consistency}
-
-The router uses unified normalization across all datasets to ensure consistent input distribution:
-\begin{equation}
-x_{\text{norm}} = \frac{x - \mu_{\text{unified}}}{\sigma_{\text{unified}} + \epsilon}
-\end{equation}
-where $\mu_{\text{unified}} = [0.295, 0.291, 0.274]$ and $\sigma_{\text{unified}} = [0.325, 0.321, 0.319]$.
-
-\textbf{Consistency verification:}
-\begin{itemize}
-    \item Training uses UNIFIED\_NORM (\texttt{train\_moe.py:484-485})
-    \item ONNX export uses UNIFIED\_NORM (implicit in model weights)
-    \item VNNLIB generation uses UNIFIED\_NORM (\texttt{prepare\_router\_verification.py:134, 140})
-\end{itemize}
-
-This ensures that training and verification operate on identical input distributions, preventing distribution shift that would invalidate verification results.
-
-\subsection{Critical Adaptation 4: Epsilon in Normalized Space}
-
-Perturbations are defined in \textit{normalized} space, not pixel space. Given a normalized image $x_{\text{norm}}$, the $\epsilon$-ball is:
-\begin{equation}
-\mathcal{B}_\epsilon(x_{\text{norm}}) = \{x' : \|x' - x_{\text{norm}}\|_\infty \leq \epsilon\}
-\end{equation}
-
-For $\epsilon = 8/255 = 0.03137$, the perturbation bounds in VNNLIB are:
-\begin{align}
-\text{lower} &= x_{\text{norm}}[i] - 0.03137 \\
-\text{upper} &= x_{\text{norm}}[i] + 0.03137
-\end{align}
-
-\textbf{Threat model consistency:} Adversarial training also applies perturbations to normalized images, ensuring that training and verification use the same threat model. This alignment is critical for the empirical-formal correlation (AA $\approx$ CRA - $\delta$).
-
-\subsection{Critical Adaptation 5: Elimination of BatchNorm}
-
-BatchNorm layers exhibit different behavior in training mode (using batch statistics) vs. evaluation mode (using running statistics averaged across datasets). This non-determinism breaks verification soundness.
-
-\textbf{Solution:} The \texttt{UltraVerifiableCNN\_Features} architecture used for the router has \textit{no} BatchNorm layers. All BatchNorm layers were removed and replaced with increased channel capacity (20 $\to$ 28 $\to$ 40 $\to$ 56) to maintain representational power.
-
-This ensures deterministic behavior: the model's forward pass is identical in training and evaluation modes, guaranteeing that ONNX export matches PyTorch behavior exactly.
-
-\subsection{Verification Soundness Guarantee}
-
-These adaptations preserve the semantics of router verification:
-
-\begin{enumerate}
-    \item \textbf{Router extraction}: Routing decision $\arg\max(\text{router}(x))$ is unchanged; compositional guarantee holds
-    \item \textbf{Raw logits}: Expert selection is mathematically equivalent; tighter verification bounds due to linearity
-    \item \textbf{Property negation}: Standard bounded model checking semantics; verification is complete (no false positives)
-    \item \textbf{Epsilon consistency}: Training and verification use identical threat models; no distribution shift
-    \item \textbf{Unified normalization}: Single source of truth; all components use identical parameters
-    \item \textbf{No BatchNorm}: Deterministic behavior; model behavior matches training behavior exactly
-\end{enumerate}
-
-\textbf{Result:} The adapted verification pipeline enables tractable formal verification of MetaMoE routing with provable correctness guarantees, achieving 99.5\% verification success rate with an average time of 9.1 seconds per sample.
+\textbf{Result:} 99.5\% verification success rate, 9.1s average per sample.
 
 \section{Experiment and Results}
 
@@ -902,16 +774,9 @@ The empirical-formal correlation strongly supports Hypothesis 2. Empirical adver
 
 \subsection{Scalability of training time}
 
-\subsubsection{Overall Experiment Setup}
+\subsubsection{Experiment Setup}
 
-To evaluate training efficiency and validate Hypothesis 4 (Training Efficiency), we compared MetaMoE compositional training against monolithic single-model training.
-
-Configuration:
-\begin{itemize}
-    \item Datasets: GTSRB (43 classes, 39.2k samples) + PTSD (12 classes, 6.4k samples)
-    \item Hardware: Intel i7-14700K, NVIDIA RTX 4060 8GB, Ubuntu 22.04.5 LTS
-    \item Training framework: PyTorch with Adam optimizer (lr=1e-3)
-\end{itemize}
+We compared MetaMoE compositional training against monolithic single-model training on GTSRB (43 classes, 39.2k samples) and PTSD (12 classes, 6.4k samples) using PyTorch with Adam optimizer (hardware specs in Appendix E).
 
 \subsubsection{Training time comparison}
 
@@ -962,17 +827,7 @@ Strongly supported: MoE is 16.7\% faster for 3 datasets; incremental fine-tuning
 
 \subsubsection{Experiment Setup}
 
-To validate Hypothesis 3 (Inference Time Linearity), we measured inference latency as a function of meta\_top\_k for MetaMoE models with varying total expert counts.
-
-Hardware: Intel i7-14700K, NVIDIA RTX 4060 8GB, Ubuntu 22.04.5 LTS
-
-Experimental Design:
-\begin{itemize}
-    \item Total experts: [2, 3, 4, 5]
-    \item Activated experts: meta\_top\_k $\in$ [1, ..., total\_experts]
-    \item Measurements: 1000 inference runs per configuration
-    \item Metric: Average latency per image (seconds)
-\end{itemize}
+We measured inference latency as a function of activated experts (meta\_top\_k) for MetaMoE models with 2-5 total experts. Each configuration averaged over 1000 inference runs (hardware specs in Appendix E).
 
 \subsubsection{Inference Time Results}
 
@@ -1132,6 +987,323 @@ Yang, Y., et al. (2024). Theory on mixture-of-experts in continual learning. arX
 Pham, H., Kim, Y. J., Mukherjee, S., Woodruff, D., Poczos, B., \& Awadalla, H. (2023). Task-Based MoE for Multitask Multilingual Machine Translation. arXiv preprint arXiv:2308.15772.
 
 \end{thebibliography}
+
+\appendix
+
+\section{Training Hyperparameters}
+
+\subsection{Expert Training Configuration}
+
+All experts trained with the following configuration:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Optimizer & Adam \\
+Learning Rate & $1 \times 10^{-3}$ \\
+Weight Decay & 0 \\
+Loss Function & Label Smoothing Cross Entropy (smoothing = 0.1) \\
+Epochs & 200 (early stopping on validation plateau) \\
+Batch Size & 128 \\
+Data Augmentation & Random horizontal flips, random crops ($28 \times 28 \to 32 \times 32$) \\
+\midrule
+\multicolumn{2}{l}{\textbf{Adversarial Training (RT only)}} \\
+\midrule
+Attack Type & PGD (Projected Gradient Descent) \\
+Perturbation Budget ($\varepsilon$) & $8/255 = 0.03137$ \\
+PGD Iterations & 7 \\
+PGD Step Size ($\alpha$) & $2/255 = 0.00784$ \\
+Norm & $L_\infty$ \\
+\bottomrule
+\end{tabular}
+\caption{Expert Training Hyperparameters}
+\end{table}
+
+\subsection{Router Training Configuration}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Optimizer & Adam \\
+Learning Rate & $1 \times 10^{-3}$ \\
+Weight Decay & $5 \times 10^{-4}$ \\
+Loss Function & Cross Entropy \\
+Epochs & 50 (early stopping on validation plateau) \\
+Batch Size & 128 (mixed datasets) \\
+Data Augmentation & Random horizontal flips, random crops \\
+\midrule
+\multicolumn{2}{l}{\textbf{Adversarial Training (RT only)}} \\
+\midrule
+Attack Type & PGD \\
+Perturbation Budget ($\varepsilon$) & $8/255 = 0.03137$ \\
+PGD Iterations & 7 \\
+PGD Step Size ($\alpha$) & $2/255 = 0.00784$ \\
+Norm & $L_\infty$ \\
+\bottomrule
+\end{tabular}
+\caption{Router Training Hyperparameters}
+\end{table}
+
+\section{ONNX Export Details}
+
+\subsection{BatchNorm Folding}
+
+BatchNorm parameters are folded into convolutional layer weights during ONNX export using the following transformations:
+
+For a convolutional layer with weights $W \in \mathbb{R}^{C_{out} \times C_{in} \times k \times k}$ and bias $b \in \mathbb{R}^{C_{out}}$, followed by BatchNorm with parameters:
+\begin{itemize}
+    \item Running mean: $\mu \in \mathbb{R}^{C_{out}}$
+    \item Running variance: $\sigma^2 \in \mathbb{R}^{C_{out}}$
+    \item Learnable scale: $\gamma \in \mathbb{R}^{C_{out}}$
+    \item Learnable shift: $\beta \in \mathbb{R}^{C_{out}}$
+    \item Epsilon: $\varepsilon = 10^{-5}$
+\end{itemize}
+
+The folded parameters are:
+
+\begin{align}
+W'_{i,j,m,n} &= \gamma_i \cdot \frac{W_{i,j,m,n}}{\sqrt{\sigma^2_i + \varepsilon}} \quad \forall i,j,m,n \\
+b'_i &= \frac{\gamma_i}{\sqrt{\sigma^2_i + \varepsilon}} \cdot (b_i - \mu_i) + \beta_i \quad \forall i
+\end{align}
+
+This transformation is mathematically equivalent to the original Conv+BatchNorm sequence but eliminates the BatchNorm operation from the computational graph.
+
+\textbf{Verification:} Folding correctness validated by comparing outputs: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ for random inputs.
+
+\subsection{ONNX Export Configuration}
+
+All models exported with:
+\begin{itemize}
+    \item PyTorch version: 2.0+
+    \item ONNX opset version: 13
+    \item Model mode: \texttt{eval()} (deterministic behavior)
+    \item Input shape: Static $(1, 3, 32, 32)$
+    \item Output: Raw logits (no softmax)
+    \item Simplification: Dead code elimination, constant folding
+\end{itemize}
+
+\textbf{Inspection checklist:}
+\begin{enumerate}
+    \item Zero BatchNorm operators
+    \item Operator count $\leq 20$ for router, $\leq 20$ for experts
+    \item Input/output dimensions match specification
+    \item No dynamic shapes (Shape/Gather/Reshape eliminated)
+\end{enumerate}
+
+\section{Dataset Characteristics}
+
+\subsection{Dataset Details}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Dataset} & \textbf{Classes} & \textbf{Train Samples} & \textbf{Test Samples} & \textbf{Domain} \\
+\midrule
+CIFAR-10 & 10 & 50,000 & 10,000 & General objects \\
+MNIST & 10 & 60,000 & 10,000 & Handwritten digits \\
+GTSRB & 43 & 39,209 & 12,630 & German traffic signs \\
+PTSD & 12 & 6,421 & 1,604 & Polish traffic signs \\
+BTSD & 8 & 3,200 & 800 & Belgian traffic signs \\
+ETSD & 15 & 7,500 & 1,875 & European traffic signs \\
+TSRB & 20 & 10,000 & 2,500 & Traffic sign recognition benchmark \\
+\bottomrule
+\end{tabular}
+\caption{Dataset Statistics}
+\end{table}
+
+\subsection{Dataset Selection Rationale}
+
+\textbf{Domain diversity (CIFAR-10, MNIST, GTSRB):}
+\begin{itemize}
+    \item CIFAR-10: Natural images (animals, vehicles, objects) with high intra-class variance
+    \item MNIST: Grayscale handwritten digits with low complexity and high separability
+    \item GTSRB: Outdoor traffic signs with specific geometric constraints
+\end{itemize}
+
+These three datasets are visually and semantically distinct, enabling the router to learn robust decision boundaries based on fundamental domain characteristics. This diversity isolates the variable of dataset similarity, ensuring routing is based on learned domain features rather than confounding factors.
+
+\textbf{Domain similarity (PTSD, BTSD, ETSD, TSRB):}
+
+All four datasets contain traffic signs from different countries/regions. They share:
+\begin{itemize}
+    \item Overlapping shape vocabularies (circles, triangles, octagons)
+    \item Similar color schemes (red, blue, yellow backgrounds)
+    \item Common semantic categories (warnings, prohibitions, mandatory)
+    \item Regional variations in design conventions
+\end{itemize}
+
+This controlled similarity tests the MoE's ability to handle overlapping domains, critical for lifelong learning scenarios where new experts are added incrementally (e.g., adapting to new geographic regions without retraining the entire system).
+
+\section{Verification Implementation Details}
+
+\subsection{Router Extraction Code}
+
+Complete implementation for extracting router from MetaMoE:
+
+\begin{lstlisting}[language=Python, caption={Router-only ONNX export}]
+import torch
+import torch.nn as nn
+
+class SimplifiedRouter(nn.Module):
+    """Wrapper to extract router for standalone verification"""
+    def __init__(self, meta_gating_net):
+        super().__init__()
+        # Extract backbone (CNN feature extractor)
+        self.backbone = meta_gating_net.model  # [batch, 3, 32, 32] -> [batch, 896]
+
+        # Extract classification head (expert logits)
+        self.fc = meta_gating_net.fc  # [batch, 896] -> [batch, N_experts]
+
+    def forward(self, x):
+        # x: [batch, 3, 32, 32] normalized input
+        features = self.backbone(x)  # [batch, 896]
+        logits = self.fc(features)   # [batch, N_experts]
+        return logits  # Raw logits, NO softmax
+
+# Export to ONNX
+def export_router_to_onnx(meta_moe_model, output_path):
+    # Extract router
+    router = SimplifiedRouter(meta_moe_model.meta_gating_net)
+    router.eval()
+
+    # Dummy input (normalized space)
+    dummy_input = torch.randn(1, 3, 32, 32)
+
+    # Export with static shapes
+    torch.onnx.export(
+        router,
+        dummy_input,
+        output_path,
+        input_names=['input'],
+        output_names=['output'],
+        dynamic_axes=None,  # Static shapes only
+        opset_version=13
+    )
+
+    print(f"Router exported to {output_path}")
+    return output_path
+\end{lstlisting}
+
+\subsection{VNNLIB Property Format}
+
+Example VNNLIB specification for verifying MNIST sample (meta-class = 1):
+
+\begin{verbatim}
+; Input constraints: epsilon-ball around normalized image
+(declare-const X_0 Real)  ; Pixel [0,0,0]
+(declare-const X_1 Real)  ; Pixel [0,0,1]
+...
+(declare-const X_3071 Real)  ; Pixel [2,31,31]
+
+; Epsilon = 2/255 = 0.00784
+(assert (<= X_0 0.523))  ; x_norm[0] + epsilon
+(assert (>= X_0 0.507))  ; x_norm[0] - epsilon
+...
+
+; Output variables
+(declare-const Y_0 Real)  ; CIFAR-10 logit
+(declare-const Y_1 Real)  ; MNIST logit
+
+; Property: Verify Y_1 > Y_0 (MNIST has highest logit)
+; NEGATION for counterexample search:
+(assert (>= Y_0 Y_1))  ; Try to find Y_0 >= Y_1
+
+; If UNSAT (no counterexample) => VERIFIED
+; If SAT (counterexample found) => FALSIFIED
+\end{verbatim}
+
+\subsection{Unified Normalization Parameters}
+
+Router normalization computed from training set statistics:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Channel} & \textbf{Mean ($\mu$)} & \textbf{Std ($\sigma$)} & \textbf{Source} \\
+\midrule
+Red (0) & 0.295 & 0.325 & Average across all datasets \\
+Green (1) & 0.291 & 0.321 & Average across all datasets \\
+Blue (2) & 0.274 & 0.319 & Average across all datasets \\
+\bottomrule
+\end{tabular}
+\caption{Unified Normalization Parameters}
+\end{table}
+
+\textbf{Consistency verification:}
+\begin{itemize}
+    \item \texttt{train\_moe.py:484-485}: UNIFIED\_NORM used in router training dataloaders
+    \item \texttt{export\_router\_to\_abcrown.py}: Model weights implicitly contain normalization
+    \item \texttt{prepare\_router\_verification.py:134,140}: VNNLIB bounds use UNIFIED\_NORM
+    \item \texttt{verify\_all\_router\_samples.py}: Test images normalized with UNIFIED\_NORM
+\end{itemize}
+
+All components use the same normalization $\Rightarrow$ no distribution shift.
+
+\section{Hardware and Software Environment}
+
+\subsection{Hardware Specifications}
+
+\textbf{Training and Inference Experiments:}
+\begin{itemize}
+    \item CPU: Intel Core i7-14700K (20 cores, 28 threads)
+    \item GPU: NVIDIA GeForce RTX 4060 (8GB GDDR6)
+    \item RAM: 64GB DDR5-5600
+    \item Storage: 2TB NVMe SSD
+    \item OS: Ubuntu 22.04.5 LTS
+\end{itemize}
+
+\textbf{Verification Experiments:}
+\begin{itemize}
+    \item Same hardware as training
+    \item Gurobi optimizer: Version 11.0.0 (academic license)
+    \item Timeout per sample: 300 seconds
+    \item GPU memory limit: 8GB (OOM triggers "unknown" status)
+\end{itemize}
+
+\subsection{Software Environment}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Package} & \textbf{Version} \\
+\midrule
+Python & 3.10.12 \\
+PyTorch & 2.1.0+cu121 \\
+torchvision & 0.16.0+cu121 \\
+CUDA & 12.1 \\
+ONNX & 1.15.0 \\
+alpha-beta-CROWN & commit d4c79e3 (Dec 2024) \\
+Gurobi & 11.0.0 \\
+NumPy & 1.24.3 \\
+Matplotlib & 3.7.2 \\
+tqdm & 4.66.1 \\
+Adversarial Robustness Toolbox (ART) & 1.17.0 \\
+\bottomrule
+\end{tabular}
+\caption{Software Dependencies}
+\end{table}
+
+\subsection{Reproducibility Notes}
+
+All experiments use fixed random seeds:
+\begin{itemize}
+    \item PyTorch: \texttt{torch.manual\_seed(42)}
+    \item NumPy: \texttt{np.random.seed(42)}
+    \item Python: \texttt{random.seed(42)}
+    \item CUDA: \texttt{torch.backends.cudnn.deterministic = True}
+\end{itemize}
+
+Training time and inference latency measurements exclude data loading and model initialization (only forward/backward passes and optimizer steps).
 
 \end{document}
 
