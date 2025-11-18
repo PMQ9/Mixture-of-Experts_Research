@@ -5,14 +5,14 @@ This script provides a high-level interface for verifying expert models using al
 It handles data loading, ONNX export, and verification execution.
 
 Usage:
-    # Verify GTSRB expert
-    python verify_expert_abcrown.py --model_path artifacts/gtsrb_small_cnn_best.pth --dataset GTSRB --epsilon 0.00784
+    # Verify GTSRB expert (default epsilon=8/255)
+    python verify_expert_abcrown.py --model_path artifacts/gtsrb_ultra_verifiable_cnn_best.pth --dataset GTSRB
 
-    # Verify CIFAR-10 expert
-    python verify_expert_abcrown.py --model_path artifacts/cifar10_tiny_cnn_best.pth --dataset CIFAR10 --epsilon 0.00784
+    # Verify CIFAR-10 expert with custom epsilon
+    python verify_expert_abcrown.py --model_path artifacts/cifar10_ultra_verifiable_cnn_best.pth --dataset CIFAR10 --epsilon 0.03137
 
     # Custom verification settings
-    python verify_expert_abcrown.py --model_path artifacts/gtsrb_small_cnn_best.pth --dataset GTSRB --epsilon 0.00784 --num_images 50 --timeout 600
+    python verify_expert_abcrown.py --model_path artifacts/gtsrb_ultra_verifiable_cnn_best.pth --dataset GTSRB --num_images 50 --timeout 600
 """
 
 import torch
@@ -341,8 +341,8 @@ def main():
                         help='Path to dataset directory')
 
     # Verification settings
-    parser.add_argument('--epsilon', type=float, default=0.00784313725490196,
-                        help='Perturbation bound (default: 2/255 = 0.00784)')
+    parser.add_argument('--epsilon', type=float, default=8.0/255.0,
+                        help='Perturbation bound (default: 8/255 to match expert training epsilon)')
     parser.add_argument('--num_images', type=int, default=100,
                         help='Number of images to verify')
     parser.add_argument('--timeout', type=int, default=300,
