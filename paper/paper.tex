@@ -56,187 +56,57 @@ Together, these results provide a unified empirical-formal perspective on robust
 
 \section{Problem Formulation}
 
-Let:
-\begin{equation}
-    x \in \mathbb{R}^{C \times H \times W}
-\end{equation}
-
-denote an input image, normalized to a fixed resolution $H = W = 32$. The goal of a heterogeneous Mixture-of-Experts (MoE) classifier is to predict a semantic class:
-
-\begin{equation}
-    y \in \{1, \ldots, C_{total}\}, \quad C_{total} = \sum_{i=1}^{N} C_i,
-\end{equation}
-
-where $C_i$ is the number of classes belonging to dataset/domain $i$, and $N$ is the total number of pretrained experts.
-
-The MoE consists of two components:
+Let $x \in \mathbb{R}^{C \times H \times W}$ denote an input image (normalized, $H = W = 32$) with target class $y \in \{1, \ldots, C_{total}\}$ where $C_{total} = \sum_{i=1}^{N} C_i$, and $C_i$ is the number of classes in dataset $i$. A heterogeneous MoE consists of:
 
 \begin{enumerate}
-    \item \textbf{Expert Model:}
-    \begin{equation}
-        E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}, \quad y_i = E_i(x)
-    \end{equation}
-    where $y_i$ is the logit vector for domain $i$
-
-    \item \textbf{Gating (Routing) Network:}
-    \begin{equation}
-        \mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N, \quad g = \mathcal{G}(x)
-    \end{equation}
-    where $g_i$ denotes the router logit for selecting expert $i$
+    \item \textbf{Experts:} $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ producing logits $y_i = E_i(x)$ for domain $i$
+    \item \textbf{Router:} $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ producing routing logits $g = \mathcal{G}(x)$
 \end{enumerate}
 
-The router predicts a meta-class
-\begin{equation}
-    m^* = \arg\max_i g_i
-\end{equation}
-identifying the most suitable expert for the input.
-
-\subsection{Adversarial Threat Model}
-
-We consider an $L_\infty$-bounded adversary generating perturbations:
-\begin{equation}
-    \delta \in \mathbb{R}^{C \times H \times W}
-\end{equation}
-
-Such that
-\begin{equation}
-    \|\delta\|_\infty \leq \varepsilon
-\end{equation}
-
-yielding adversarial examples
-\begin{equation}
-    x' = x + \delta.
-\end{equation}
-
-An MoE classifier is robust at $x$ if
-\begin{equation}
-    \arg\max_c \hat{y}_c(x') = y, \quad \forall x' \in B_\varepsilon(x)
-\end{equation}
-where $B_\varepsilon(x)$ is the closed $\varepsilon$-ball around $x$, and $\hat{y}$ is the MoE prediction defined below.
-
-\subsection{Mixture-of-Experts Inference Rule}
-
-Given router logits $g$, we consider a sparse top-$k$ selection mechanism. Let
-\begin{equation}
-    \mathcal{I}_k(g) = \{i_1, \ldots, i_k\}, \quad g_{i_1} \geq g_{i_2} \geq \cdots \geq g_{i_k},
-\end{equation}
-denote the indices of the selected experts.
-
-Normalized mixing weights are computed as
-\begin{equation}
-    w_j = \frac{g_{i_j}}{\sum_{\ell=1}^k g_{i_\ell}}, \quad j = 1, \ldots, k.
-\end{equation}
-
-Each expert output $y_i$ occupies a dataset-specific region in the global logit vector. Using offsets
-\begin{equation}
-    o_i = \sum_{m<i} C_m,
-\end{equation}
-
-the final MoE logits $\hat{y} \in \mathbb{R}^{C_{total}}$ satisfy
+The router selects expert $m^* = \arg\max_i g_i$. For top-$k$ routing, let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ be the selected expert indices with normalized weights $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$. The MoE output is $\hat{y} \in \mathbb{R}^{C_{total}}$ with class offsets $o_i = \sum_{m<i} C_m$:
 \begin{equation}
     \hat{y}_c = \begin{cases}
         w_j \cdot y_{i_j}[c - o_{i_j}], & \text{if } c \in \{o_{i_j}, \ldots, o_{i_j} + C_{i_j} - 1\} \\
-        0, & \text{otherwise.}
+        0, & \text{otherwise}
     \end{cases}
 \end{equation}
 
-The predicted class is
+\subsection{Adversarial Threat Model and Robustness}
+
+We consider $L_\infty$-bounded perturbations $\delta$ with $\|\delta\|_\infty \leq \varepsilon$, producing adversarial examples $x' = x + \delta$ in the $\varepsilon$-ball $B_\varepsilon(x)$. Robustness requires:
+
+\begin{itemize}
+    \item \textbf{Expert $E_i$:} $\arg\max y_i(x') = y \quad \forall x' \in B_\varepsilon(x)$
+    \item \textbf{Router $\mathcal{G}$:} $m^*(x') = m^*(x) \quad \forall x' \in B_\varepsilon(x)$, or equivalently $g_{m^*}(x') - g_j(x') > 0$ for all $j \neq m^*$
+    \item \textbf{MoE:} $\arg\max_c \hat{y}_c(x') = y \quad \forall x' \in B_\varepsilon(x)$
+\end{itemize}
+
+Certified robustness accuracy (CRA) measures the fraction of samples verified robust:
 \begin{equation}
-    \hat{y}^* = \arg\max_c \hat{y}_c.
+    \text{CRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbb{1}[\text{Verify}(f, x, \varepsilon)]
 \end{equation}
 
-\subsection{Robustness Objectives}
+\subsection{Compositional Robustness}
 
-\subsubsection{Expert Robustness}
-
-An expert $E_i$ is $\varepsilon$-robust at $x$ if
+MoE robustness decomposes as:
 \begin{equation}
-    \arg\max y_i(x') = y \quad \forall x' \in B_\varepsilon(x).
+    \text{MoE robust at } x \Longleftrightarrow \text{Router robust} \land \text{Expert } E_{m^*} \text{ robust}
 \end{equation}
 
-Certified robustness accuracy (CRA) for expert $E_i$ is
-\begin{equation}
-    \text{CRA}_i(\varepsilon) = \frac{1}{|D_i|} \sum_{(x,y) \in D_i} \mathbb{1}[\text{Verify}(E_i, x, \varepsilon) = \text{True}].
-\end{equation}
+This enables modular verification: verify router and experts independently, then compose guarantees.
 
-\subsubsection{Router Robustness}
+\subsection{Empirical-Formal Gap}
 
-Router robustness requires
-\begin{equation}
-    m^*(x') = m^*(x) \quad \forall x' \in B_\varepsilon(x)
-\end{equation}
-
-or in logit form, for all incorrect classes $j \neq m^*$:
-\begin{equation}
-    g_{m^*}(x') - g_j(x') > 0.
-\end{equation}
-
-CRA for the router is defined analogously.
-
-\subsection{Compositional Robustness of MoE}
-
-A central question is whether robustness composes:
-
-If the router is robust (selects the same expert under perturbation) and the selected expert is robust (predicts the same class), does the entire MoE remain robust?
-
-Formally, MetaMoE is $\varepsilon$-robust at $x$ if
-\begin{equation}
-    \forall x' \in B_\varepsilon(x): m^*(x') = m^*(x) \text{ and } \arg\max y_{m^*}(x') = y.
-\end{equation}
-
-Thus,
-\begin{equation}
-    \text{MoE is robust at } x \Longleftrightarrow \underbrace{\text{Router robust}}_{\mathcal{G}} \land \underbrace{\text{Expert } E_{m^*} \text{ robust}}_{\text{selected expert}}
-\end{equation}
-
-This motivates a modular verification pipeline:
-\begin{enumerate}
-    \item Verify router invariance under perturbations.
-    \item Verify each expert independently.
-    \item Combine guarantees compositionally.
-\end{enumerate}
-
-\subsection{Empirical vs. Formal Robustness Gap}
-
-For any model $f$, define empirical adversarial accuracy (AA) under PGD and certified robustness accuracy (CRA). The certification gap is
-\begin{equation}
-    \delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon),
-\end{equation}
-
-which quantifies the conservatism of formal verification relative to empirical attacks.
-
-A key hypothesis of this work is:
-\begin{equation}
-    \text{CRA}(\varepsilon) \approx \text{AA}(\varepsilon) + \delta, \quad |\delta| \text{ small,}
-\end{equation}
-
-indicating that empirical adversarial robustness is predictive of formal certifiability, especially for verification-aware architectures.
+The certification gap $\delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability.
 
 \subsection{Problem Statement}
 
-Given:
-\begin{itemize}
-    \item $N$ pretrained heterogeneous experts $\{E_i\}$,
-    \item a verifiable router $\mathcal{G}$,
-    \item an $L_\infty$-bounded adversary with radius $\varepsilon$,
-\end{itemize}
-
-we seek to determine:
+Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adversary with radius $\varepsilon$, we investigate:
 
 \begin{enumerate}
-    \item \textbf{Compositional Robustness} \\
-    Does robust training of experts and router yield an MoE system whose robustness provably composes?
-
-    \item \textbf{Empirical-Formal Correlation} \\
-    How tightly does empirical robustness (PGD AA) predict formal robustness (CRA) across components?
-
-    \item \textbf{Scalability} \\
-    Can modular robustness be achieved with:
-    \begin{itemize}
-        \item reduced retraining time (lifelong learning),
-        \item linear inference scaling $O(k)$,
-        \item and stable verification performance?
-    \end{itemize}
+    \item \textbf{Compositional Robustness:} Does robust training of components yield provably robust MoE composition?
+    \item \textbf{Empirical-Formal Correlation:} Does PGD adversarial accuracy predict certified robustness accuracy?
+    \item \textbf{Scalability:} Can modular robustness achieve reduced retraining time, linear inference $O(k)$, and stable verification?
 \end{enumerate}
 
 \section{Literature Review and Related Work}
