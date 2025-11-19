@@ -155,15 +155,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 \section{Methodology}
 
-Consider an input image $x \in \mathbb{R}^{C \times H \times W}$, where $C$ is the number of color channels and $H = W = 32$ is the spatial resolution after preprocessing. The goal is to classify $x$ into one of $C_{total}$ classes, where $C_{total} = \sum_{i=1}^N C_i$, and $C_i$ is the number of classes in the $i$-th dataset.
-
-\subsection{Pretrained Experts}
-
-Define a set of $N$ pre-trained models $\{E_i\}_{i=1}^N$, where each $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ maps the input $x$ to a vector of logits $y_i = E_i(x) \in \mathbb{R}^{C_i}$ over the classes specific to the $i$-th dataset.
-
-The Experts are trained on 7 distinct image-based datasets. Each Expert uses a Convolutional Neural Network (CNN) backbone simplified for formal verification while preserving performance. Both Non-Robust-Training (NRT) and Robust-Training (RT) versions are created. After training, Experts are frozen, fixing their parameters for subsequent stages.
-
-We evaluate on 7 datasets: CIFAR-10, MNIST, and GTSRB provide domain diversity for robust routing, while PTSD, BTSD, ETSD, and TSRB test performance on similar traffic sign domains for lifelong learning scenarios (see Appendix C for detailed dataset characteristics).
+Given input $x \in \mathbb{R}^{3 \times 32 \times 32}$ and $N$ datasets with $C_i$ classes each, we train $N$ frozen experts $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ and a router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ to select appropriate experts. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains) and PTSD, BTSD, ETSD, TSRB (similar traffic sign domains for lifelong learning).
 
 \begin{table}[H]
 \centering
@@ -181,275 +173,40 @@ ETSD & $E_5$ & $E_{5\_CNN\_NRT}$ & $E_{5\_CNN\_RT}$ \\
 TSRB & $E_6$ & $E_{6\_CNN\_NRT}$ & $E_{6\_CNN\_RT}$ \\
 \bottomrule
 \end{tabular}
-\caption{Dataset and Expert Notation}
+\caption{Dataset and Expert Notation (see Appendix C for dataset characteristics)}
 \end{table}
 
-\subsection{Pretrained Experts Architecture for Verifiability}
+\subsection{Verification-Aware CNN Architecture}
 
-The Expert CNNs are designed with formal verification as a primary constraint, balancing classification accuracy, parameter efficiency, and mathematical simplicity.
+Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alpha$-$\beta$-CROWN compatibility: (1) average pooling instead of max pooling for linearity; (2) no BatchNorm (compensated by increased channel capacity $20 \to 28 \to 40 \to 56$); (3) minimal ONNX operators via static shapes. Architecture: 4 conv layers with gradual channel growth, global average pooling, and 2-layer FC head (detailed specifications in Appendix F).
 
-\subsubsection{Verification-Aware Design Principles}
+\textbf{Training:} Experts trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\epsilon = 8/255$, 7 steps). See Appendix A for full hyperparameters.
 
-Traditional CNNs include operations challenging verification tools. To mitigate this:
+\textbf{Metrics:} Clean Accuracy (CA), Adversarial Accuracy (AA), Robustness Gap (ERP = CA - AA).
 
-\begin{enumerate}
-    \item \textbf{Linear Operations Preferred:} Average pooling is used over max pooling, as it is linear and facilitates bound propagation in tools like $\alpha - \beta$-CROWN. Max pooling adds non-linearity and verification complexity.
-    \item \textbf{Elimination of Batch Normalization:} Avoids train/eval mode discrepancies; normalization is achieved via increased channel capacity.
-    \item \textbf{Minimal Operator Complexity:} Reduces ONNX operator count by flattening operations and fixing shapes.
-    \item \textbf{Convolutional-Only Feature Extraction:} Uses fixed kernel sizes for efficient bound propagation.
-\end{enumerate}
+\textbf{ONNX Export:} BatchNorm folded into conv weights during export (see Appendix B), eliminating BatchNorm operators from verification graph.
 
-\subsubsection{Expert Architecture Specifications}
+\subsection{Router (GatingNet)}
 
-The VerifiableCNN architecture:
+The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting raw logits $g_i$ for each expert, with predicted meta-class $m^* = \arg\max_i g_i$. Architecture mirrors expert CNN (96.5K params) but outputs $N$ logits instead of class predictions.
 
-\begin{itemize}
-    \item \textbf{Input:} $3 \times 32 \times 32$ (normalized images)
-    \item \textbf{Feature Extraction:}
-    \begin{itemize}
-        \item Conv Layer 1: $3 \to 20$ channels, $3 \times 3$ kernel, stride 1, padding 1; ReLU activation
-        \item Average Pooling: $2 \times 2$ stride 2
-        \item Conv Layer 2: $20 \to 28$ channels, $3 \times 3$ kernel, stride 1, padding 1; ReLU activation
-        \item Average Pooling: $2 \times 2$ stride 2
-        \item Conv Layer 3: $28 \to 40$ channels, $3 \times 3$ kernel, stride 1, padding 1; ReLU activation
-        \item Average Pooling: $2 \times 2$ stride 2
-        \item Conv Layer 4: $40 \to 56$ channels, $3 \times 3$ kernel, stride 1, padding 1; ReLU activation
-        \item Global Average Pooling to 56-D vector
-    \end{itemize}
-    \item \textbf{Classification Head:}
-    \begin{itemize}
-        \item FC Layer: $56 \to 128$ units. ReLU
-        \item FC Layer: $128 \to C_i$ (dataset-specific classes)
-    \end{itemize}
-\end{itemize}
+\textbf{Unified Normalization:} To prevent distribution mismatch, router uses dataset-averaged normalization: $\mu_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$, $\sigma_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$ (Appendix D).
 
-\textbf{Parameter Count:} 96.5K parameters. The gradually increasing channel capacity ($20 \to 28 \to 40 \to 56$) compensates for batch norm removal.
+\textbf{Training:} Router trained after freezing experts using meta-class labels. NRT minimizes $\mathcal{L}_{NRT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT adds adversarial loss $\mathcal{L}_{RT} = \mathcal{L}_{NRT} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{adv}), m)]$ with PGD-generated $x^{adv}$ ($\epsilon = 8/255$).
 
-\subsubsection{Training Configuration}
+\textbf{Verification Property:} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \epsilon$ via VNNLIB counterexample search (Appendix D).
 
-Experts are trained independently using Adam optimizer with label smoothing cross entropy loss. NRT uses standard supervised learning; RT employs PGD adversarial training with $\epsilon = 8/255$ (full hyperparameters in Appendix A.1).
+\textbf{Compositional Guarantee:} Verified router + verified expert $\implies$ verified MoE, enabling modular certification.
 
-\textbf{Metrics:}
+\subsection{Training Paradigms and MoE Composition}
 
-\begin{itemize}
-    \item Clean Accuracy (CA):
-    \begin{equation}
-        CA = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbbm{1}\left[\arg\max_i E_i(x) = y\right]
-    \end{equation}
+\textbf{Non-Robust Training (NRT):} Standard supervised learning minimizing $\mathcal{L}_{NRT} = \mathbb{E}[\text{CE}(f(x), y)]$. Achieves high clean accuracy but low adversarial robustness.
 
-    \item Adversarial Accuracy (AA):
-    \begin{equation}
-        AA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,y) \in D_{test}} \mathbbm{1}\left[\arg\max_i E_i(x^{adv}) = y\right]
-    \end{equation}
+\textbf{Robust Training (RT):} Adversarial training via PGD-generated perturbations: $\mathcal{L}_{RT} = \mathbb{E}[\text{CE}(f(x), y) + \text{CE}(f(x^{adv}), y)]$ where $x_{t+1}^{adv} = \Pi_{\mathcal{B}_\epsilon(x)} (x_t^{adv} + \alpha \cdot \text{sign}(\nabla_x \mathcal{L}))$ with $\epsilon = 8/255$, $\alpha = 2/255$, $T = 7$ iterations. Trades clean accuracy for adversarial robustness.
 
-    \item Expert Robustness Gap:
-    \begin{equation}
-        ERP = CA - AA(\epsilon)
-    \end{equation}
-\end{itemize}
+\textbf{MoE Output:} Router selects top-$k$ experts with normalized weights $w_j = g_{i_j} / \sum_{l=1}^k g_{i_l}$. Final logits combine expert outputs with class offsets: $\hat{y}_l = w_j \cdot y_{i_j}[l - o_{i_j}]$ where $o_i = \sum_{m<i} C_m$.
 
-RT increases $AA(\epsilon)$ but decreases CA, validating Hypothesis 1.
-
-\subsubsection{ONNX Export and BatchNorm Folding}
-
-Experts are exported to ONNX with BatchNorm parameters folded into convolutional layer weights, eliminating BatchNorm from the computational graph and improving verification performance (see Appendix B for folding equations).
-
-\subsection{GatingNet}
-
-\subsubsection{Overview}
-
-GatingNet, denoted $\mathcal{G}(x)$ performs dataset-level expert selection. Given an input image $x \in \mathbb{R}^{C \times H \times W}$ the router predicts which expert (dataset) is most appropriate: $\mathcal{G}(x) = [g_0, g_1, \cdots, g_{N-1}]^T \in \mathbb{R}^N$ where $g_i$ is the raw logit representing the router's confidence for dataset $i$, and $N$ is the total number of datasets. The predicted meta-class is: $m^* = \arg\max_i g_i$
-
-\subsubsection{Architecture}
-
-The gating network architecture mirrors the expert CNN but with $N$ output logits:
-
-\begin{itemize}
-    \item \textbf{Input:} $3 \times 32 \times 32$ (normalized images)
-    \item \textbf{Feature Extraction:}
-    \begin{itemize}
-        \item 4 convolutional layers (channels: $3 \to 20 \to 28 \to 40 \to 56$)
-        \item Each: Conv($3 \times 3$) + ReLU + AvgPool($2 \times 2$, stride 2)
-        \item Total spatial reduction: $8\times$ ($32 \to 4 \to 1$)
-    \end{itemize}
-    \item \textbf{Global Average Pooling:} To 56-D vector
-    \item \textbf{Classification Head:} FC ($56 \to 128$) + ReLU + FC ($128 \to N$)
-    \item \textbf{Output:} Raw logits $g \in \mathbb{R}^N$
-\end{itemize}
-
-\textbf{Parameter Count:} 96.5K parameters
-
-\subsubsection{Unified Input Normalization}
-
-The router uses unified normalization across all datasets to ensure consistent input distribution:
-\begin{equation}
-    x_{norm} = \frac{x - \mu_{unified}}{\sigma_{unified} + \epsilon}
-\end{equation}
-
-Where:
-\begin{equation}
-    \mu_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i, \quad \sigma_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i
-\end{equation}
-
-are computed from training data. This prevents router-expert mismatch.
-
-\subsubsection{Expert Selection Mechanism}
-
-Sparse routing (top-$k < N$): Activate top-$k$ experts by logit scores. Dense routing (top-$k = N$): Activate all.
-
-\subsubsection{Training Procedure}
-
-Router is trained after experts are frozen, using meta-class label.
-
-Non-Robust-Training (NRT):
-\begin{equation}
-    \mathcal{L}_{NRT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]
-\end{equation}
-
-Robust-Training (RT):
-\begin{equation}
-    \mathcal{L}_{RT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m) + \text{CE}(\mathcal{G}(x^{adv}), m)]
-\end{equation}
-
-With $x^{adv}$ from PGD ($\varepsilon = 8/255$, 7 steps). Training uses Adam optimizer with mixed-dataset batches (full configuration in Appendix A.1).
-
-\subsection{GatingNet Architecture for Verifiability}
-
-\subsubsection{Verification Specific Design}
-
-To support compositional verification:
-
-\begin{enumerate}
-    \item \textbf{Raw Logits Output:} No softmax, preserving linearity.
-    \item \textbf{Average Pooling:} Linear, avoids max pooling's enumeration.
-    \item \textbf{No Batch Normalization:} Compensated by channel growth ($3 \to 20 \to 28 \to 40 \to 56$)
-\end{enumerate}
-
-\subsubsection{Verification Property Specification}
-
-For image $x$ with true meta\_class $m^*$, we verify: $\arg\max_i G_i(x') = m^*$ $\forall \|x' - x\|_\infty \leq \epsilon$. VNNLIB negation: e.g., for MNIST ($m^* = 1$): (assert ($>=$  Y\_0 Y\_1)). No counterexample implies verified.
-
-\subsubsection{Gating Accuracy Metrics}
-
-\begin{itemize}
-    \item Clean Gating Accuracy (GA):
-    \begin{equation}
-        GA = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i G_i(x) = m^*\right]
-    \end{equation}
-
-    \item Adversarial Gating Accuracy (AGA):
-    \begin{equation}
-        AGA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i G_i(x^{adv}) = m^*\right]
-    \end{equation}
-
-    \item Certified Robustness Accuracy (formally verified):
-    \begin{equation}
-        CRA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}[\alpha - \beta - \text{CROWN}(x, m^*, \epsilon)]
-    \end{equation}
-
-    \item Gating Robustness Gap:
-    \begin{equation}
-        GRP = GA - AGA(\epsilon)
-    \end{equation}
-\end{itemize}
-
-\subsubsection{Compositional Verification Guarantee}
-
-Verified router (correct selection) + verified expert (correct classification) implies verified MoE, supporting Hypotheses 2 and 3.
-
-\subsubsection{ONNX Export for GatingNet}
-
-Router export ensures deterministic behavior (eval mode), static input shape, raw logits output, and BatchNorm folding, resulting in $\leq 20$ operators with no BatchNorm layers (details in Appendix B).
-
-\subsection{Non-Robust-Training (NRT) and Robust-Training (RT)}
-
-\subsubsection{Overview}
-
-Two training paradigms investigate Hypothesis 1:
-\begin{enumerate}
-    \item NRT: Standard supervised learning
-    \item RT: PGD-based perturbations adversarial training
-\end{enumerate}
-
-\subsubsection{Non-Robust Training}
-
-Objective:
-\begin{equation}
-    \mathcal{L}_{NRT} = \mathbb{E}_{(x,y)}[\text{CE}(f(x), y)]
-\end{equation}
-
-Characteristics: High CA; no robustness; faster convergence; lower cost.
-
-Expected: High CA; low AA; large ERP/GRP
-
-\subsubsection{Robust Training}
-
-Objective:
-\begin{equation}
-    \mathcal{L}_{RT} = \mathbb{E}_{(x,y)}[\text{CE}(f(x), y) + \text{CE}(f(x^{adv}), y)]
-\end{equation}
-
-Where $x^{adv}$ is an adversarial example generated via PGD attack.
-
-PGD Attack Generation:
-\begin{equation}
-    x_{t+1}^{adv} = \Pi_{\mathcal{B}_\epsilon(x)} \left(x_t^{adv} + \alpha \cdot \text{sign}\left(\nabla_x \mathcal{L}(f(x_t^{adv}), y)\right)\right)
-\end{equation}
-
-Where:
-\begin{itemize}
-    \item $\Pi$ denotes projection back into the $\epsilon$-ball around $x$
-    \item $\varepsilon = 8/255$ (perturbation bound)
-    \item $\alpha = 2/255$ (step size)
-    \item $T = 7$ (number of iterations)
-\end{itemize}
-
-Characteristics: Robust to $\epsilon$-ball; higher cost; slower convergence.
-
-Expected: Lower CA; higher AA; smaller gap; improved CRA.
-
-\subsection{Top-\texorpdfstring{$k$}{k} Expert Selection}
-
-From the gating logits $g$, select top-$k$ Indices $\mathcal{I} = \{i_1, i_2, \ldots, i_k\}$ where $g_{i_1} \geq g_{i_2} \geq \cdots \geq g_{i_k}$
-
-The weights for these experts are computed by normalizing their logits over the top-$k$ subset:
-\begin{equation}
-    w_j = \frac{g_{i_j}}{\sum_{l=1}^k g_{i_l}}, \quad j = 1, 2, \ldots, k
-\end{equation}
-
-\subsection{MoE Output}
-
-The final logits $\hat{y} \in \mathbb{R}^{C_{total}}$ are formed by combining the scaled expert outputs, with class offset $o_i = \sum_{m=0}^{i-1} C_m$ and $o_0 = 0$:
-
-\begin{equation}
-    \hat{y}_l = \begin{cases}
-        w_j \cdot y_{i_j}[l - o_{i_j}], & o_{i_j} \leq l \leq o_{i_j} + C_{i_j}, j = 1, \ldots, k \\
-        0, & \text{otherwise}
-    \end{cases}
-\end{equation}
-
-Where $y_{i_j} = E_{i_j}(x)$ are the logits from the expert $i_j$
-
-\subsection{Loss Function}
-
-The model is trained to minimize two losses:
-
-\begin{enumerate}
-    \item \textbf{Classification loss:} Given the true class label $y \in \{0, 1, \ldots, C_{total} - 1\}$, the cross-entropy loss is:
-    \begin{equation}
-        \mathcal{L}_{cls} = -\log\left(\frac{\exp(\hat{y}_y)}{\sum_{c=0}^{C_{total}-1} \exp(\hat{y}_c)}\right)
-    \end{equation}
-
-    \item \textbf{Gating loss:} Given the true expert index $m \in \{1, 2, \ldots, N\}$, the gating loss is:
-    \begin{equation}
-        \mathcal{L}_{gate} = -\log\left(\frac{\exp(g_m)}{\sum_{n=0}^N \exp(g_n)}\right)
-    \end{equation}
-
-    \item \textbf{Total Loss:} The combined loss, with a weighting hyperparameter $\lambda$:
-    \begin{equation}
-        \mathcal{L} = \mathcal{L}_{cls} + \lambda \mathcal{L}_{gate}
-    \end{equation}
-\end{enumerate}
+\textbf{MetaMoE Loss:} Combined classification and gating objectives: $\mathcal{L} = \mathcal{L}_{cls} + \lambda \mathcal{L}_{gate}$ where $\mathcal{L}_{cls}$ enforces correct class prediction and $\mathcal{L}_{gate}$ ensures correct expert selection.
 
 \section{Compositional Verification with alpha-beta-CROWN}
 
@@ -907,47 +664,27 @@ This validates Hypothesis 3: Inference time scales linearly with activated exper
 
 \section{Discussion}
 
-The results collectively demonstrate that robustness in heterogeneous Mixture-of-Experts systems can be both empirically achieved and formally verified when modular design principles are respected. Specifically, robustness at the expert level propagates through composition when the router maintains consistent expert selection under perturbation. The alignment between empirical and formal robustness validates the central hypothesis that compositional verification is achievable through coordinated training and architecture design.
+Results demonstrate that robustness in heterogeneous MoE systems can be both empirically achieved and formally verified through modular design. Expert-level robustness propagates compositionally when routers maintain consistent selection under perturbation, validating that coordinated training and verification-aware architecture enable compositional certification.
 
-\subsection{Empirical \texorpdfstring{$\leftrightarrow$}{↔} Formal Robustness Relationship}
+\subsection{Empirical-Formal Robustness Correlation}
 
-A key observation is the correspondence between Adversarially trained models' empirical performance and their formal verifiability. Robust trained (RT) experts and routers consistently achieved higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than non-robust counterparts. For instance, RT experts verified successfully up to 100\% of MNIST and 90\% of CIFAR-10 samples at $\varepsilon = 2/255$, while NRT variants failed verification almost entirely. This supports the hypothesis that empirical robustness under adversarial training serves as a reliable proxy for formal certifiability.
+RT models consistently achieve higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than NRT: MNIST-RT verified 100\% vs 70\% for NRT at $\varepsilon = 2/255$, CIFAR-10-RT 90\% vs 10\%. The certification gap $\delta = \text{CRA} - \text{AA}$ quantifies verification conservatism: routers exhibit $\delta \approx 0\%$ (near-perfect empirical-formal alignment), while experts show $\delta = 5$--$55\%$ depending on dataset complexity and perturbation budget. Adversarial training reduces $\delta$ by smoothing decision boundaries, improving both empirical robustness and formal certifiability.
 
-To rigorously validate Hypothesis 2, we quantify the certification gap $\delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$, measuring the conservatism of formal verification relative to empirical attacks. For the router, $\delta$ remains remarkably small: NRT configuration achieves AGA (empirical adversarial accuracy) of 100\% and CRA of 97.5\%, yielding $\delta \approx -2.5\%$; RT improves to AGA $\approx$ 100\% and CRA $\approx$ 100\%, with $\delta \approx 0\%$. This near-perfect correlation validates that empirical robustness serves as an accurate proxy for formal certifiability. For expert models, $\delta$ is larger (ranging from 5\% to 55\% depending on dataset and perturbation bound), reflecting greater verification difficulty with larger perturbation budgets. Notably, adversarial training consistently reduces $\delta$ by improving both AA and CRA, confirming that robust training bridges the empirical-formal divide. The small $\delta$ values demonstrate that $\alpha$--$\beta$-CROWN certification bounds are tight for verification-optimized architectures, and that empirical robustness provides meaningful information for formal guarantees.
-
-The underlying reason lies in how adversarial training regularizes model gradients, smoothing decision boundaries and reducing nonlinearity. These properties directly benefit linear relaxation--based verifiers such as $\alpha$--$\beta$-CROWN. Empirical robustness thus improves the tightness of certification bounds and reduces verification timeouts. Conversely, formal verification complements empirical evaluation by identifying boundary-sensitive samples or input regions that adversarial attacks may overlook. Verification ``unknown'' outcomes frequently correspond to near-boundary cases, which can inform targeted retraining or adaptive data augmentation. Together, the two perspectives form a mutually reinforcing cycle: empirical robustness promotes certifiability, while formal analysis guides empirical improvement.
+This mutual reinforcement operates bidirectionally: adversarial training regularizes gradients, tightening $\alpha$-$\beta$-CROWN bounds and reducing timeouts; conversely, formal verification identifies boundary-sensitive samples overlooked by PGD, informing targeted retraining. Verification ``unknown'' outcomes correlate with near-boundary cases, enabling adaptive data augmentation.
 
 \subsection{Compositional Robustness and System Behavior}
 
-The compositional nature of the MetaMoE architecture provides an interpretable framework for analyzing robustness propagation. Verified routers maintained 100\% gating accuracy under adversarial perturbations, ensuring that expert routing decisions remained stable within bounded $\varepsilon$-balls. This property allows verified experts to preserve their guarantees end-to-end, creating a chain of correctness:
+Verified routers maintaining 100\% gating accuracy enable compositional guarantees: Verified router $\to$ Verified expert $\to$ Verified system. Ablation studies reveal expert training dominates system robustness (15.39\% AA difference between RT/NRT experts) while router training shows negligible impact ($\Delta < 0.1\%$). This asymmetry arises from perfect routing stability: the router acts as a reliable switch, faithfully propagating expert properties. For dissimilar datasets (CIFAR-10 vs MNIST), routing remains stable without adversarial training, though similar domains may require different strategies.
 
-\begin{equation*}
-    \text{Verified router} \to \text{Verified expert} \to \text{Verified system}
-\end{equation*}
+System robustness decomposes modularly: RT experts yield 41.17\% AA regardless of router training; NRT experts yield 25.78\% AA. Mixed configurations (30.75--36.12\%) demonstrate compositional tradeoffs. The weakest expert constrains system robustness (expert bottleneck), enabling predictable component-level verification without full-system retraining.
 
-\textbf{Expert Robustness Dominates System Behavior.} The ablation study reveals that expert training method determines system robustness (15.39\% adversarial accuracy difference between RT and NRT experts), while router training method shows negligible impact ($\Delta < 0.1\%$). This asymmetry arises from perfect router gating accuracy (100\% clean and adversarial): when routing decisions are stable, the router acts as a reliable switch, faithfully propagating expert robustness properties. For the visually dissimilar datasets tested (CIFAR-10 vs MNIST), routing stability holds even without adversarial router training, though similar datasets may require different strategies.
+\subsection{Scalability and Practical Implications}
 
-Empirically, this compositional robustness manifests as: (1) RT experts yield 41.17\% adversarial accuracy regardless of router training (RT router: 41.12\%, NRT router: 41.22\%); (2) NRT experts yield 25.78\% adversarial accuracy regardless of router (RT: 25.83\%, NRT: 25.78\%). Mixed expert configurations offer intermediate tradeoffs (30.75--36.12\%), demonstrating modular robustness composition. The weakest expert constrains system-level robustness (expert bottleneck effect), confirming that component-level verification composes predictably without requiring full-system retraining.
+Compositional design achieves 16.7\% training time reduction for multi-dataset integration via expert freezing and router fine-tuning. NRT router training is 2.30$\times$ faster than RT (2585s vs 5939s) with identical performance for dissimilar datasets, suggesting selective adversarial training when routing is inherently stable. Inference scales linearly $O(k)$ with activated experts, enabling efficient continual deployment: new experts integrate without re-verifying the entire system, provided router decision regions remain invariant—aligning with compositional verification theory.
 
-\subsection{Scalability and Lifelong Learning Implications}
+\textbf{Limitations:} Current work uses small verification-compatible CNNs; scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity (CIFAR-10 vs MNIST); overlapping domains require adversarial router training investigation. \textbf{Future directions:} (1) probabilistic verification (conformal/randomized smoothing) for larger models; (2) adaptive gating via reinforcement learning for similar datasets; (3) hybrid training regimes balancing robustness and clean accuracy.
 
-Beyond robustness, compositional design enables substantial efficiency gains. Freezing pre-trained experts and retraining only the router reduced incremental training time by 16.7\% for multi-dataset integration, demonstrating scalability for lifelong learning. Inference latency scaled linearly with the number of activated experts $O(k)$, validating the expected sublinear behavior relative to total model size.
-
-\textbf{Router Training Efficiency.} NRT router training is 2.30$\times$ faster than RT (2585s vs 5939s) with identical performance for dissimilar datasets. This suggests selective adversarial training strategies may be viable when routing is inherently stable, though similar datasets require further investigation.
-
-These results confirm that heterogeneous MoE systems can be both verifiable and computationally scalable, addressing two traditionally conflicting objectives. The modular structure provides a practical pathway for continual deployment: new experts can be integrated without re-verifying the entire model, provided that the router's certified decision region remains invariant. This property aligns with formal compositional verification theory, which emphasizes modular certification as a scalable alternative to full-system proofs.
-
-\subsection{Limitations and Future Directions}
-
-The current experiments are limited to small CNN architectures designed for verification compatibility. Scaling formal analysis to deeper or transformer-based experts remains computationally expensive due to verifier memory constraints and nonlinearity growth. The perfect gating accuracy observed relies on dataset dissimilarity (CIFAR-10 vs MNIST); overlapping domains (e.g., regional traffic sign variants) will require investigation of adversarial router training and adaptive gating mechanisms. Future work will address these issues through:
-
-\begin{itemize}
-    \item Probabilistic verification (e.g., conformal or randomized smoothing) to approximate CRA for larger models.
-    \item Adaptive gating mechanisms that use reinforcement learning or uncertainty-aware routing to handle similar datasets.
-    \item Hybrid training regimes that combine adversarial and self-supervised objectives to improve clean accuracy without sacrificing robustness.
-\end{itemize}
-
-Ultimately, the findings suggest that empirical robustness and formal verification are not opposing paradigms but components of a unified robustness framework. By designing architectures that are verification-aware yet empirically effective, heterogeneous MoE systems like MetaMoE can achieve both provable safety guarantees and scalable, real-world performance.
+Findings demonstrate empirical robustness and formal verification form a unified framework: verification-aware architectures achieve both provable guarantees and scalable real-world performance.
 
 \section{Conclusion}
 
@@ -1344,6 +1081,111 @@ All experiments use fixed random seeds:
 \end{itemize}
 
 Training time and inference latency measurements exclude data loading and model initialization (only forward/backward passes and optimizer steps).
+
+\section{Detailed Architecture Specifications}
+
+\subsection{VerifiableCNN Architecture}
+
+The VerifiableCNN architecture used for both experts and router (with different output dimensions):
+
+\textbf{Input Layer:}
+\begin{itemize}
+    \item Input shape: $3 \times 32 \times 32$ (RGB normalized images)
+\end{itemize}
+
+\textbf{Convolutional Feature Extraction:}
+\begin{itemize}
+    \item \textbf{Conv Block 1:}
+    \begin{itemize}
+        \item Conv2d: in\_channels=3, out\_channels=20, kernel\_size=3, stride=1, padding=1
+        \item ReLU activation
+        \item AvgPool2d: kernel\_size=2, stride=2
+        \item Output shape: $20 \times 16 \times 16$
+    \end{itemize}
+
+    \item \textbf{Conv Block 2:}
+    \begin{itemize}
+        \item Conv2d: in\_channels=20, out\_channels=28, kernel\_size=3, stride=1, padding=1
+        \item ReLU activation
+        \item AvgPool2d: kernel\_size=2, stride=2
+        \item Output shape: $28 \times 8 \times 8$
+    \end{itemize}
+
+    \item \textbf{Conv Block 3:}
+    \begin{itemize}
+        \item Conv2d: in\_channels=28, out\_channels=40, kernel\_size=3, stride=1, padding=1
+        \item ReLU activation
+        \item AvgPool2d: kernel\_size=2, stride=2
+        \item Output shape: $40 \times 4 \times 4$
+    \end{itemize}
+
+    \item \textbf{Conv Block 4:}
+    \begin{itemize}
+        \item Conv2d: in\_channels=40, out\_channels=56, kernel\_size=3, stride=1, padding=1
+        \item ReLU activation
+        \item Global Average Pooling (adaptive average over spatial dimensions)
+        \item Output shape: $56 \times 1 \times 1 \to 56$
+    \end{itemize}
+\end{itemize}
+
+\textbf{Classification Head:}
+\begin{itemize}
+    \item Flatten to 56-dimensional vector
+    \item \textbf{FC Layer 1:}
+    \begin{itemize}
+        \item Linear: in\_features=56, out\_features=128
+        \item ReLU activation
+    \end{itemize}
+
+    \item \textbf{FC Layer 2 (Output):}
+    \begin{itemize}
+        \item For Experts: Linear: in\_features=128, out\_features=$C_i$ (dataset-specific class count)
+        \item For Router: Linear: in\_features=128, out\_features=$N$ (number of experts/datasets)
+        \item Output: Raw logits (no softmax applied)
+    \end{itemize}
+\end{itemize}
+
+\textbf{Total Parameters:}
+\begin{itemize}
+    \item Conv layers: $\sim$85K parameters
+    \item FC layers: $\sim$11.5K parameters (varies slightly with output dimension)
+    \item Total: $\sim$96.5K parameters
+\end{itemize}
+
+\textbf{Design Rationale:}
+\begin{itemize}
+    \item \textbf{Gradual Channel Growth:} $3 \to 20 \to 28 \to 40 \to 56$ compensates for absence of BatchNorm
+    \item \textbf{Average Pooling:} Linear operation facilitates LP-based verification (vs. max pooling's piecewise max)
+    \item \textbf{No BatchNorm:} Eliminates train/eval mode discrepancies and reduces ONNX operators
+    \item \textbf{Fixed Kernel Sizes:} All $3 \times 3$ convolutions for uniform bound propagation
+    \item \textbf{Global Average Pooling:} Reduces spatial dimensions to single vector while maintaining linearity
+\end{itemize}
+
+\subsection{Gating Accuracy Metrics}
+
+For completeness, the full gating metrics definitions:
+
+\textbf{Clean Gating Accuracy (GA):}
+\begin{equation}
+    GA = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i \mathcal{G}_i(x) = m^*\right]
+\end{equation}
+
+\textbf{Adversarial Gating Accuracy (AGA):}
+\begin{equation}
+    AGA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i \mathcal{G}_i(x^{adv}) = m^*\right]
+\end{equation}
+
+\textbf{Certified Robustness Accuracy (CRA):}
+\begin{equation}
+    CRA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}[\text{Verify}_{\alpha-\beta-\text{CROWN}}(x, m^*, \epsilon)]
+\end{equation}
+
+\textbf{Gating Robustness Gap (GRP):}
+\begin{equation}
+    GRP = GA - AGA(\epsilon)
+\end{equation}
+
+Where $m^* \in \{0, 1, \ldots, N-1\}$ is the true meta-class (expert index) for input $x$.
 
 \end{document}
 
