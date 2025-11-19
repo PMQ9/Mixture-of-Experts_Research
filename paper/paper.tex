@@ -113,35 +113,13 @@ Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adv
 
 \section{Literature Review and Related Work}
 
-\subsection{Foundations of Mixture-of-Experts (MoE)}
+The Mixture-of-Experts (MoE) paradigm, introduced by Jacobs et al. \cite{jacobs1991}, decomposes complex problems into specialized subtasks coordinated via a gating network. Shazeer et al. \cite{shazeer2017} scaled this concept through sparsely-gated MoE layers, enabling billion-parameter models with sublinear computational scaling via noisy top-k gating and load balancing. Riquelme et al. \cite{riquelme2021} extended MoE to computer vision by integrating sparse expert activation into Vision Transformers (V-MoE), achieving sparsity-driven efficiency improvements on ImageNet.
 
-The Mixture-of-Experts paradigm originated with Jacobs et al. \cite{jacobs1991}, who proposed an adaptive framework for decomposing intricate problems into subtasks managed by specialized experts, coordinated via a gating network. This approach emphasized competitive learning, where experts focus on distinct input regions under a ``winner-takes-most'' strategy. Shazeer et al. \cite{shazeer2017} advanced this concept for large-scale deep learning through sparsely-gated MoE layers, facilitating models with billions of parameters while achieving sublinear computational scaling. Key contributions included noisy top-k gating to promote load balancing, expert capacity thresholds to prevent overload, and distributed training protocols for hardware acceleration. These elements have underpinned subsequent developments in natural language processing, as seen in GShard and the Switch Transformer, which demonstrate enhanced expressivity without proportional resource demands.
+Transfer learning in modular architectures enables compositional MoE designs. Fedus et al. \cite{fedus2023} demonstrated that pretraining and freezing domain-specific experts reduces retraining costs while facilitating incremental integration—critical for lifelong learning. Heterogeneous expert compositions (e.g., CNN-ViT hybrids) benefit from architectural diversity, as shown by Dosovitskiy et al. \cite{dosovitskiy2021} (ViTs for global context) and Liu et al. \cite{liu2022} (ConvNeXt for efficient feature extraction). Eigen et al. \cite{eigen2017} explored mixed architectures for continual learning, demonstrating enhanced generalization across domain shifts.
 
-\subsection{MoE in Vision Transformer Architecture}
+MoE frameworks support lifelong learning by enabling expert addition without catastrophic forgetting \cite{ramasesh2023}, with gating strategies evolving from unsupervised \cite{jordan1991} to supervised approaches \cite{riquelme2021}. Recent work integrates formal verification tools like $\alpha$--$\beta$-CROWN \cite{wang2021} for compositional robustness certification, though empirical-formal correlations and heterogeneous verifiability remain underexplored.
 
-Riquelme et al. \cite{riquelme2021} extended sparse MoE principles to computer vision by incorporating them into Vision Transformers (ViTs), resulting in the Vision MoE (V-MoE) model. Architectural adaptations involved replacing select feed-forward network (FFN) blocks with MoE layers, enabling selective expert activation for image inputs. This integration preserved ViT's attention mechanisms while introducing sparsity, yielding improvements in accuracy on benchmarks like ImageNet. Further refinements addressed challenges such as training instability and routing efficiency, highlighting MoE's potential for vision tasks.
-
-\subsection{Transfer Learning and Modular Composition}
-
-Transfer learning has been instrumental in modular neural architectures, as explored by Fedus et al. \cite{fedus2023} in the context of MoE scalability. By pretraining experts on domain-specific data and freezing them for composition, such methods reduce retraining costs and facilitate incremental integration. Heterogeneous compositions, combining CNNs and ViTs, draw from works like those by Dosovitskiy et al. \cite{dosovitskiy2021} on ViTs, which emphasize global context capture, and Liu et al. \cite{liu2022} on ConvNeXt, which modernizes CNNs for efficiency. These approaches underscore the benefits of architectural diversity in robustness propagation.
-
-\subsection{Heterogeneous Expert Architecture}
-
-While homogeneous MoE dominates, heterogeneous designs offer untapped potential. Eigen et al. \cite{eigen2017} investigated mixed architectures for continual learning, demonstrating that diverse experts (e.g., CNN-ViT hybrids) enhance generalization across shifts. In traffic sign recognition, datasets like GTSRB \cite{gtsrb} and PTSD \cite{ptsd} have been used to test domain adaptation, revealing that heterogeneity aids in handling regional variations without full retraining.
-
-\subsection{MoE for Continual and Lifelong Learning}
-
-MoE frameworks support lifelong learning by enabling expert addition without catastrophic forgetting. Ramasesh et al. \cite{ramasesh2023} analyzed gating strategies for sequential task integration, showing efficiency gains in multi-dataset scenarios. This aligns with formal verification efforts, such as those using tools like $\alpha,\beta$-CROWN \cite{wang2021}, to certify compositional robustness in evolving systems.
-
-\subsection{Gating Mechanism: From Unsupervised to Supervised}
-
-Early gating was unsupervised, as in Jordan and Jacobs \cite{jordan1991}, but supervised variants, per Riquelme et al. \cite{riquelme2021}, improve precision. MetaGatingNet, as proposed here, builds on these by incorporating adversarial training to ensure robust routing.
-
-\subsection{Knowledge Gaps}
-
-Existing literature focuses on homogeneous MoE scalability but underexplores heterogeneous robustness, particularly in verifiable compositions for safety-critical applications like traffic sign recognition. This paper addresses these gaps through empirical and theoretical analyses.
-
-We ask: Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated through adversarial training?
+\textbf{Research Gap:} Existing literature focuses on homogeneous MoE scalability but underexplores heterogeneous robustness and verifiable compositions for safety-critical applications. This paper addresses these gaps by combining adversarial training with formal verification to investigate: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?}
 
 \section{Hypotheses}
 
@@ -817,16 +795,18 @@ Router & RT & 100.00 & 100.00 & -2.5 \\
 
     \item \textbf{Robust Training Bridges Empirical-Formal Gap:} RT models achieve higher AA (87.05\% for MNIST, 16.96\% for CIFAR-10) compared to NRT (47.03\% and 0.00\%, respectively), with corresponding improvements in CRA (100\% and 90\% vs. 70\% and 10\%).
 
-    \item \textbf{Router Exhibits Near-Perfect Correlation:} The router maintains 100\% empirical gating accuracy under PGD attack, which is matched by 97.5--100\% formal verification success. This suggests that the router's routing decisions are inherently robust across both empirical and formal domains.
+    \item \textbf{Router Exhibits Near-Perfect Correlation:} As demonstrated in Section 8.2, the router maintains 100\% clean and adversarial gating accuracy across all 40 experimental runs (RT and NRT configurations, all expert combinations). This perfect empirical performance is matched by 97.5--100\% formal verification success (CRA), yielding $\delta \approx 0\%$. The near-zero certification gap indicates that the router's routing decisions are inherently robust and that empirical attacks fully explore the router's decision boundaries for dissimilar datasets (CIFAR-10 vs MNIST).
 
-    \item \textbf{Larger $\delta$ for RT Reflects Verification Conservatism:} The gap increases for RT models ($\delta$ up to 73\% for CIFAR-10) because formal verification approaches provable guarantees (CRA $\to$ 100\%) while empirical attacks have limited coverage. This is not a weakness but demonstrates that formal verification is conservative relative to sampling-based attacks.
+    \item \textbf{Router Training Method Independence (Section 8.2):} The negligible difference between RT and NRT router performance ($\Delta < 0.1\%$ in both clean and adversarial accuracy) extends to formal verification: both configurations achieve near-identical CRA. This confirms that for visually dissimilar datasets, adversarial router training provides minimal robustness improvement, as the routing task is inherently stable. The perfect gating accuracy (Section 8.2) validates the compositional verification property: router correctness + expert correctness $\implies$ system correctness.
 
-    \item \textbf{Expert Difficulty Correlates Across Domains:} MNIST (easier classification task) achieves $\delta \approx 13\%$ for RT, while CIFAR-10 (harder task) achieves $\delta \approx 73\%$, showing that both empirical robustness and formal verification consistently rank task difficulty.
+    \item \textbf{Expert Configuration Dominates System Robustness:} Consistent with Section 8.2 findings, expert training method determines both empirical AA and formal CRA. The 15.39\% adversarial accuracy difference between RT and NRT experts (Section 8.2) corresponds to substantial CRA differences (13--73\% certification gaps depending on dataset complexity). This confirms that expert robustness propagates compositionally: the weakest expert constrains system-level verifiability.
+
+    \item \textbf{Larger $\delta$ for RT Reflects Verification Conservatism:} The gap increases for RT models ($\delta$ up to 73\% for CIFAR-10) because formal verification approaches provable guarantees (CRA $\to$ 100\%) while empirical attacks have limited coverage. This is not a weakness but demonstrates that formal verification is conservative relative to sampling-based attacks. MNIST (easier task) achieves $\delta \approx 13\%$ for RT, while CIFAR-10 (harder task) achieves $\delta \approx 73\%$, showing consistent difficulty ranking across empirical and formal domains.
 \end{enumerate}
 
 \textbf{Interpretation (Hypothesis 2 Validation):}
 
-The empirical-formal correlation strongly supports Hypothesis 2. Empirical adversarial accuracy serves as a reliable proxy for formal certifiability: models with higher AA consistently achieve higher CRA. The near-perfect router performance (100\% AGA matching 97.5--100\% CRA) further demonstrates that modular components can be jointly optimized for both empirical and formal robustness. Together, these results confirm that sampling-based adversarial attacks, when combined with careful architectural design, effectively predict formal verification outcomes.
+The empirical-formal correlation strongly supports Hypothesis 2. Empirical adversarial accuracy serves as a reliable proxy for formal certifiability: models with higher AA consistently achieve higher CRA. The near-perfect router performance (100\% AGA matching 97.5--100\% CRA across all Section 8.2 configurations) demonstrates that modular components can be jointly optimized for both empirical and formal robustness. The alignment between Section 8.2's compositional robustness findings (expert-dominated system behavior, router training independence) and formal verification outcomes confirms that sampling-based adversarial attacks, when combined with verification-aware architectural design, effectively predict formal certification success.
 
 \subsection{Scalability of training time}
 
