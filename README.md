@@ -14,7 +14,7 @@ Research MoE application in safety-critical system at Institute of Software Inte
 
 - Python 3.10
 - `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
-- `pip install tqdm matplotlib netron onnx adversarial-robustness-toolbox`
+- `pip install tqdm matplotlib netron onnx adversarial-robustness-toolbox timm`
 
 - NNV and GNNV modules for robustness verification: `git submodule update --init --recursive`
 
