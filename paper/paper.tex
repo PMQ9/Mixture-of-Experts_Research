@@ -50,7 +50,7 @@ This paper introduces MetaMoE, a heterogeneous, verifiable MoE architecture comp
 \begin{enumerate}
     \item A compositional robustness framework linking adversarial training and formal verification.
     \item Verification-aware CNN architecture designed for $\alpha - \beta$-CROWN.
-    \item Empirical--formal correlation analysis showing $AA \approx CRA - \delta$.
+    \item Empirical--formal correlation analysis showing $AA \approx CRA - \Delta$.
     \item Scalability results showing 16.7\% faster incremental training and linear inference scaling
 \end{enumerate}
 
@@ -99,7 +99,7 @@ This enables modular verification: verify router and experts independently, then
 
 \subsection{Empirical-Formal Gap}
 
-The certification gap $\delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability.
+The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\Delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability.
 
 \subsection{Problem Statement}
 
@@ -129,7 +129,7 @@ The following hypotheses are posited regarding the compositional robustness and 
 
 Adversarial training (AT) of both Experts and the Router exhibits:
 \begin{itemize}
-    \item Higher robustness, quantified as a smaller drop in adversarial accuracy under perturbation within an $L_\infty$-ball of radius $\epsilon$
+    \item Higher robustness, quantified as a smaller drop in adversarial accuracy under perturbation within an $L_\infty$-ball of radius $\varepsilon$
     \item Lower clean accuracy on unperturbed inputs
 \end{itemize}
 
@@ -137,7 +137,7 @@ Compared to non-robustly trained (NRT) counterparts. This trade-off arises from 
 
 \paragraph{Hypothesis 2. Sampling-Based Empirical Verification Translates to Formal Verification}
 
-Experts and Routers demonstrating higher empirical adversarial accuracy (measured via Projected Gradient Descent (PGD) attacks) will achieve Certified Robustness Accuracy $CRA(\epsilon) \geq AA(\epsilon) - \delta$ for some small $\delta > 0$ when formally verified using $\alpha - \beta$-CROWN at equivalent perturbation bounds $\epsilon$. This posits that empirical robustness serves as a reliable proxy for provable guarantees, bridging sampling-based attacks to sound verification.
+Experts and Routers demonstrating higher empirical adversarial accuracy (measured via Projected Gradient Descent (PGD) attacks) will achieve Certified Robustness Accuracy $CRA(\varepsilon) \geq AA(\varepsilon) - \Delta$ for some small $\Delta > 0$ when formally verified using $\alpha - \beta$-CROWN at equivalent perturbation bounds $\varepsilon$. This posits that empirical robustness serves as a reliable proxy for provable guarantees, bridging sampling-based attacks to sound verification.
 
 \paragraph{Hypothesis 3. Compositional Robustness}
 
@@ -180,7 +180,7 @@ TSRB & $E_6$ & $E_{6\_CNN\_NRT}$ & $E_{6\_CNN\_RT}$ \\
 
 Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alpha$-$\beta$-CROWN compatibility: (1) average pooling instead of max pooling for linearity; (2) no BatchNorm (compensated by increased channel capacity $20 \to 28 \to 40 \to 56$); (3) minimal ONNX operators via static shapes. Architecture: 4 conv layers with gradual channel growth, global average pooling, and 2-layer FC head (detailed specifications in Appendix F).
 
-\textbf{Training:} Experts trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\epsilon = 8/255$, 7 steps). See Appendix A for full hyperparameters.
+\textbf{Training:} Experts trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\varepsilon = 8/255$, 7 steps). See Appendix A for full hyperparameters.
 
 \textbf{Metrics:} Clean Accuracy (CA), Adversarial Accuracy (AA), Robustness Gap (ERP = CA - AA).
 
@@ -192,9 +192,9 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 \textbf{Unified Normalization:} To prevent distribution mismatch, router uses dataset-averaged normalization: $\mu_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$, $\sigma_{unified} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$ (Appendix D).
 
-\textbf{Training:} Router trained after freezing experts using meta-class labels. NRT minimizes $\mathcal{L}_{NRT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT adds adversarial loss $\mathcal{L}_{RT} = \mathcal{L}_{NRT} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{adv}), m)]$ with PGD-generated $x^{adv}$ ($\epsilon = 8/255$).
+\textbf{Training:} Router trained after freezing experts using meta-class labels. NRT minimizes $\mathcal{L}_{NRT} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT adds adversarial loss $\mathcal{L}_{RT} = \mathcal{L}_{NRT} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{adv}), m)]$ with PGD-generated $x^{adv}$ ($\varepsilon = 8/255$).
 
-\textbf{Verification Property:} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \epsilon$ via VNNLIB counterexample search (Appendix D).
+\textbf{Verification Property:} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$ via VNNLIB counterexample search (Appendix D).
 
 \textbf{Compositional Guarantee:} Verified router + verified expert $\implies$ verified MoE, enabling modular certification.
 
@@ -202,7 +202,7 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 \textbf{Non-Robust Training (NRT):} Standard supervised learning minimizing $\mathcal{L}_{NRT} = \mathbb{E}[\text{CE}(f(x), y)]$. Achieves high clean accuracy but low adversarial robustness.
 
-\textbf{Robust Training (RT):} Adversarial training via PGD-generated perturbations: $\mathcal{L}_{RT} = \mathbb{E}[\text{CE}(f(x), y) + \text{CE}(f(x^{adv}), y)]$ where $x_{t+1}^{adv} = \Pi_{\mathcal{B}_\epsilon(x)} (x_t^{adv} + \alpha \cdot \text{sign}(\nabla_x \mathcal{L}))$ with $\epsilon = 8/255$, $\alpha = 2/255$, $T = 7$ iterations. Trades clean accuracy for adversarial robustness.
+\textbf{Robust Training (RT):} Adversarial training via PGD-generated perturbations: $\mathcal{L}_{RT} = \mathbb{E}[\text{CE}(f(x), y) + \text{CE}(f(x^{adv}), y)]$ where $x_{t+1}^{adv} = \Pi_{\mathcal{B}_\varepsilon(x)} (x_t^{adv} + \alpha \cdot \text{sign}(\nabla_x \mathcal{L}))$ with $\varepsilon = 8/255$, $\alpha = 2/255$, $T = 7$ iterations. Trades clean accuracy for adversarial robustness.
 
 \textbf{MoE Output:} Router selects top-$k$ experts with normalized weights $w_j = g_{i_j} / \sum_{l=1}^k g_{i_l}$. Final logits combine expert outputs with class offsets: $\hat{y}_l = w_j \cdot y_{i_j}[l - o_{i_j}]$ where $o_i = \sum_{m<i} C_m$.
 
@@ -223,7 +223,7 @@ This reduces verification from 2M to 96K parameters (20$\times$ reduction).
 
 \textbf{1. Router-Only ONNX Export:} Extract router as standalone model outputting raw logits (not softmax). Since $\arg\max(\text{logits}) = \arg\max(\text{softmax}(\text{logits}/T))$, this is mathematically equivalent while enabling tighter CROWN bounds by avoiding exponential operations.
 
-\textbf{2. Property Specification via Negation:} For image $x$ with true meta-class $m^*$, verify $\arg\max_i G_i(x') = m^*$ for all $x' \in \mathcal{B}_\epsilon(x)$ by asserting the negation in VNNLIB and searching for counterexamples (standard bounded model checking).
+\textbf{2. Property Specification via Negation:} For image $x$ with true meta-class $m^*$, verify $\arg\max_i G_i(x') = m^*$ for all $x' \in \mathcal{B}_\varepsilon(x)$ by asserting the negation in VNNLIB and searching for counterexamples (standard bounded model checking).
 
 \textbf{3. Unified Normalization:} Router and verification use identical normalization parameters across all datasets ($\mu = [0.295, 0.291, 0.274]$, $\sigma = [0.325, 0.321, 0.319]$) to prevent distribution shift.
 
@@ -252,14 +252,14 @@ Verified Models:
 
 Approach: Verify Experts individually, then Router separately. Properties for Router:
 \begin{equation}
-    \arg\max_i G_i(x') = m^* \quad \forall \|x' - x\|_\infty \leq \epsilon
+    \arg\max_i G_i(x') = m^* \quad \forall \|x' - x\|_\infty \leq \varepsilon
 \end{equation}
 
 Similar for Experts.
 
 \subsubsection{Verification Setup}
 
-Router: VerifiableCNN with average pooling, no batch norm, raw logits. Test set: 40 samples (20 CIFAR-10, 20 MNIST), $\epsilon = 2/255, 4/255, 8/255$. VNNLIB negation for counterexample search.
+Router: VerifiableCNN with average pooling, no batch norm, raw logits. Test set: 40 samples (20 CIFAR-10, 20 MNIST), $\varepsilon = 2/255, 4/255, 8/255$. VNNLIB negation for counterexample search.
 
 \subsubsection{Router Verification Results}
 
@@ -270,7 +270,7 @@ Router: VerifiableCNN with average pooling, no batch norm, raw logits. Test set:
 \small
 \begin{tabular}{lllllll}
 \toprule
-$\epsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
  & & samples & samples & samples & (\%) & (s) \\
 \midrule
 2/255 & MNIST & $19.4 \pm 0.9$ & $0.0 \pm 0.0$ & $0.6 \pm 0.9$ & \multirow{2}{*}{$98.0 \pm 0.0$} & \multirow{2}{*}{$9.08 \pm 0.5$} \\
@@ -291,7 +291,7 @@ $\epsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time 
 \small
 \begin{tabular}{lllllll}
 \toprule
-$\epsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
  & & samples & samples & samples & (\%) & (s) \\
 \midrule
 2/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$99.0 \pm 0.0$} & \multirow{2}{*}{$9.20 \pm 0.9$} \\
@@ -326,7 +326,7 @@ $\epsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time 
 
 Individual Experts on MNIST and CIFAR-10 verified to baseline robustness.
 
-Expert Architecture: VerifiableCNN (96K parameters); RT/NRT with PGD ($\epsilon = 8/255$); ONNX with folding, raw logits; $\alpha - \beta$-CROWN with Gurobi.
+Expert Architecture: VerifiableCNN (96K parameters); RT/NRT with PGD ($\varepsilon = 8/255$); ONNX with folding, raw logits; $\alpha - \beta$-CROWN with Gurobi.
 
 \textbf{CIFAR-10 Expert Verification:}
 
@@ -336,7 +336,7 @@ Non-Robust Training:
 \centering
 \begin{tabular}{llllll}
 \toprule
-$\epsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
 2/255 (0.00784) & 2 & 0 & 18 & 10\% & 313.0s \\
 4/255 (0.01569) & 0 & 0 & 20 & 0\% & 323.2s \\
@@ -352,7 +352,7 @@ Robust Training:
 \centering
 \begin{tabular}{llllll}
 \toprule
-$\epsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
 2/255 (0.00784) & 18 & 0 & 2 & 90.0\% & 32.3s \\
 4/255 (0.01569) & 11 & 0 & 9 & 55.0\% & 153.5s \\
@@ -370,7 +370,7 @@ Non-Robust Training:
 \centering
 \begin{tabular}{llllll}
 \toprule
-$\epsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
 2/255 (0.00784) & 14 & 0 & 6 & 70.0\% & 100.6s \\
 4/255 (0.01569) & 0 & 0 & 20 & 0.0\% & 344.8s \\
@@ -386,7 +386,7 @@ Robust Training:
 \centering
 \begin{tabular}{llllll}
 \toprule
-$\epsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
+$\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
 2/255 (0.00784) & 20 & 0 & 0 & 100\% & 0.5s \\
 4/255 (0.01569) & 20 & 0 & 0 & 100\% & 0.5s \\
@@ -410,7 +410,7 @@ $\epsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 
 To evaluate compositional robustness empirically, we employed the Adversarial Robustness Toolbox (ART) with Projected Gradient Descent (PGD) attacks. This section establishes a different approach to robustness verification for compositional analysis.
 
-Test on CIFAR-10/MNIST; $32 \times 32$ images; $\epsilon = 8/255$, 7 iterations, step $2/255$. NRT/RT configurations; VerifiableCNN Experts; 100\% gating accuracy router.
+Test on CIFAR-10/MNIST; $32 \times 32$ images; $\varepsilon = 8/255$, 7 iterations, step $2/255$. NRT/RT configurations; VerifiableCNN Experts; 100\% gating accuracy router.
 
 \subsubsection{Individual Expert Robustness}
 
@@ -433,7 +433,7 @@ Observations: Validates Hypothesis 1; MNIST naturally robust; RT recovers adv ac
 
 \subsubsection{MetaMoE Compositional Robustness}
 
-To comprehensively evaluate compositional robustness, we tested all combinations of router training methods (RT/NRT) and expert configurations (4 combinations of CIFAR-10 and MNIST expert training types). Each configuration was trained 5 times to establish statistical significance. Test conditions: $\epsilon = 8/255$, PGD-7 attack, 50 epochs router training.
+To comprehensively evaluate compositional robustness, we tested all combinations of router training methods (RT/NRT) and expert configurations (4 combinations of CIFAR-10 and MNIST expert training types). Each configuration was trained 5 times to establish statistical significance. Test conditions: $\varepsilon = 8/255$, PGD-7 attack, 50 epochs router training.
 
 \textbf{Dataset Selection:} CIFAR-10 and MNIST were intentionally chosen for their visual dissimilarity (natural objects vs. grayscale digits), facilitating reliable routing and isolating compositional robustness effects. Similar datasets would introduce routing ambiguity, addressed in future work (Section 7.4).
 
@@ -519,13 +519,13 @@ $\Delta$ (NRT - RT) & $+0.04\%$ & $+0.01\%$ & $\mathbf{-56.5\%}$ \\
 
 \subsection{Quantitative Empirical-Formal Robustness Verification Correlation Analysis}
 
-To validate Hypothesis 2, we analyze the quantitative relationship between empirical adversarial accuracy (AA) from PGD attacks and certified robustness accuracy (CRA) from $\alpha$-$\beta$-CROWN verification. We compute the certification gap $\delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ for each model, measuring the conservatism of formal verification relative to empirical attacks.
+To validate Hypothesis 2, we analyze the quantitative relationship between empirical adversarial accuracy (AA) from PGD attacks and certified robustness accuracy (CRA) from $\alpha$-$\beta$-CROWN verification. We compute the certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ for each model, measuring the conservatism of formal verification relative to empirical attacks.
 
 \begin{table}[H]
 \centering
 \begin{tabular}{lllll}
 \toprule
-\textbf{Model} & \textbf{Type} & \textbf{AA(\%)} & \textbf{CRA(\%)} & $\boldsymbol{\delta}$\textbf{(\%)} \\
+\textbf{Model} & \textbf{Type} & \textbf{AA(\%)} & \textbf{CRA(\%)} & $\boldsymbol{\Delta}$\textbf{(\%)} \\
 \midrule
 CIFAR-10 Expert & NRT & 0.00 & 10.00 & 10.0 \\
 CIFAR-10 Expert & RT & 16.96 & 90.00 & 73.0 \\
@@ -535,30 +535,30 @@ Router & NRT & 100.00 & 100.00 & 0.0 \\
 Router & RT & 100.00 & 100.00 & -2.5 \\
 \bottomrule
 \end{tabular}
-\caption{Empirical-Formal Robustness Gap Analysis ($\epsilon = 2/255$)}
+\caption{Empirical-Formal Robustness Gap Analysis ($\varepsilon = 2/255$)}
 \end{table}
 
 \textbf{Summary:}
 \begin{itemize}
-    \item NRT Models: $\delta = 15.5\% \pm 8.2\%$
-    \item RT Models: $\delta = 43.0\% \pm 30.1\%$
-    \item Router: $\delta \approx -1.2\%$ (near-perfect agreement)
+    \item NRT Models: $\Delta = 15.5\% \pm 8.2\%$
+    \item RT Models: $\Delta = 43.0\% \pm 30.1\%$
+    \item Router: $\Delta \approx -1.2\%$ (near-perfect agreement)
 \end{itemize}
 
 \textbf{Key Findings:}
 
 \begin{enumerate}
-    \item \textbf{CRA $\geq$ AA Universally Holds:} All configurations satisfy $\text{CRA} \geq \text{AA} - \delta$ with $\delta \geq 0$ (except router, where they nearly coincide), validating the hypothesis that formal verification provides tight bounds relative to empirical attacks.
+    \item \textbf{CRA $\geq$ AA Universally Holds:} All configurations satisfy $\text{CRA} \geq \text{AA} - \Delta$ with $\Delta \geq 0$ (except router, where they nearly coincide), validating the hypothesis that formal verification provides tight bounds relative to empirical attacks.
 
     \item \textbf{Robust Training Bridges Empirical-Formal Gap:} RT models achieve higher AA (87.05\% for MNIST, 16.96\% for CIFAR-10) compared to NRT (47.03\% and 0.00\%, respectively), with corresponding improvements in CRA (100\% and 90\% vs. 70\% and 10\%).
 
-    \item \textbf{Router Exhibits Near-Perfect Correlation:} As demonstrated in Section 8.2, the router maintains 100\% clean and adversarial gating accuracy across all 40 experimental runs (RT and NRT configurations, all expert combinations). This perfect empirical performance is matched by 97.5--100\% formal verification success (CRA), yielding $\delta \approx 0\%$. The near-zero certification gap indicates that the router's routing decisions are inherently robust and that empirical attacks fully explore the router's decision boundaries for dissimilar datasets (CIFAR-10 vs MNIST).
+    \item \textbf{Router Exhibits Near-Perfect Correlation:} As demonstrated in Section 8.2, the router maintains 100\% clean and adversarial gating accuracy across all 40 experimental runs (RT and NRT configurations, all expert combinations). This perfect empirical performance is matched by 97.5--100\% formal verification success (CRA), yielding $\Delta \approx 0\%$. The near-zero certification gap indicates that the router's routing decisions are inherently robust and that empirical attacks fully explore the router's decision boundaries for dissimilar datasets (CIFAR-10 vs MNIST).
 
     \item \textbf{Router Training Method Independence (Section 8.2):} The negligible difference between RT and NRT router performance ($\Delta < 0.1\%$ in both clean and adversarial accuracy) extends to formal verification: both configurations achieve near-identical CRA. This confirms that for visually dissimilar datasets, adversarial router training provides minimal robustness improvement, as the routing task is inherently stable. The perfect gating accuracy (Section 8.2) validates the compositional verification property: router correctness + expert correctness $\implies$ system correctness.
 
     \item \textbf{Expert Configuration Dominates System Robustness:} Consistent with Section 8.2 findings, expert training method determines both empirical AA and formal CRA. The 15.39\% adversarial accuracy difference between RT and NRT experts (Section 8.2) corresponds to substantial CRA differences (13--73\% certification gaps depending on dataset complexity). This confirms that expert robustness propagates compositionally: the weakest expert constrains system-level verifiability.
 
-    \item \textbf{Larger $\delta$ for RT Reflects Verification Conservatism:} The gap increases for RT models ($\delta$ up to 73\% for CIFAR-10) because formal verification approaches provable guarantees (CRA $\to$ 100\%) while empirical attacks have limited coverage. This is not a weakness but demonstrates that formal verification is conservative relative to sampling-based attacks. MNIST (easier task) achieves $\delta \approx 13\%$ for RT, while CIFAR-10 (harder task) achieves $\delta \approx 73\%$, showing consistent difficulty ranking across empirical and formal domains.
+    \item \textbf{Larger $\Delta$ for RT Reflects Verification Conservatism:} The gap increases for RT models ($\Delta$ up to 73\% for CIFAR-10) because formal verification approaches provable guarantees (CRA $\to$ 100\%) while empirical attacks have limited coverage. This is not a weakness but demonstrates that formal verification is conservative relative to sampling-based attacks. MNIST (easier task) achieves $\Delta \approx 13\%$ for RT, while CIFAR-10 (harder task) achieves $\Delta \approx 73\%$, showing consistent difficulty ranking across empirical and formal domains.
 \end{enumerate}
 
 \textbf{Interpretation (Hypothesis 2 Validation):}
@@ -668,7 +668,7 @@ Results demonstrate that robustness in heterogeneous MoE systems can be both emp
 
 \subsection{Empirical-Formal Robustness Correlation}
 
-RT models consistently achieve higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than NRT: MNIST-RT verified 100\% vs 70\% for NRT at $\varepsilon = 2/255$, CIFAR-10-RT 90\% vs 10\%. The certification gap $\delta = \text{CRA} - \text{AA}$ quantifies verification conservatism: routers exhibit $\delta \approx 0\%$ (near-perfect empirical-formal alignment), while experts show $\delta = 5$--$55\%$ depending on dataset complexity and perturbation budget. Adversarial training reduces $\delta$ by smoothing decision boundaries, improving both empirical robustness and formal certifiability.
+RT models consistently achieve higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than NRT: MNIST-RT verified 100\% vs 70\% for NRT at $\varepsilon = 2/255$, CIFAR-10-RT 90\% vs 10\%. The certification gap $\Delta = \text{CRA} - \text{AA}$ quantifies verification conservatism: routers exhibit $\Delta \approx 0\%$ (near-perfect empirical-formal alignment), while experts show $\Delta = 5$--$55\%$ depending on dataset complexity and perturbation budget. Adversarial training reduces $\Delta$ by smoothing decision boundaries, improving both empirical robustness and formal certifiability.
 
 This mutual reinforcement operates bidirectionally: adversarial training regularizes gradients, tightening $\alpha$-$\beta$-CROWN bounds and reducing timeouts; conversely, formal verification identifies boundary-sensitive samples overlooked by PGD, informing targeted retraining. Verification ``unknown'' outcomes correlate with near-boundary cases, enabling adaptive data augmentation.
 
@@ -1172,17 +1172,17 @@ For completeness, the full gating metrics definitions:
 
 \textbf{Adversarial Gating Accuracy (AGA):}
 \begin{equation}
-    AGA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i \mathcal{G}_i(x^{adv}) = m^*\right]
+    AGA(\varepsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}\left[\arg\max_i \mathcal{G}_i(x^{adv}) = m^*\right]
 \end{equation}
 
 \textbf{Certified Robustness Accuracy (CRA):}
 \begin{equation}
-    CRA(\epsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}[\text{Verify}_{\alpha-\beta-\text{CROWN}}(x, m^*, \epsilon)]
+    CRA(\varepsilon) = \frac{1}{|D_{test}|} \sum_{(x,m^*) \in D_{test}} \mathbbm{1}[\text{Verify}_{\alpha-\beta-\text{CROWN}}(x, m^*, \varepsilon)]
 \end{equation}
 
 \textbf{Gating Robustness Gap (GRP):}
 \begin{equation}
-    GRP = GA - AGA(\epsilon)
+    GRP = GA - AGA(\varepsilon)
 \end{equation}
 
 Where $m^* \in \{0, 1, \ldots, N-1\}$ is the true meta-class (expert index) for input $x$.
