@@ -49,7 +49,7 @@ This paper introduces MetaMoE, a heterogeneous, verifiable MoE architecture comp
 
 \begin{enumerate}
     \item A compositional robustness framework linking adversarial training and formal verification.
-    \item Verification-aware CNN architecture designed for $\alpha - \beta$-CROWN.
+    \item Verification-aware CNN architecture designed for $\alpha$--$\beta$-CROWN.
     \item Empirical--formal correlation analysis showing $AA \approx CRA - \Delta$.
     \item Scalability results showing 16.7\% faster incremental training and linear inference scaling
 \end{enumerate}
@@ -137,7 +137,7 @@ Compared to non-robustly trained (NRT) counterparts. This trade-off arises from 
 
 \paragraph{Hypothesis 2. Sampling-Based Empirical Verification Translates to Formal Verification}
 
-Experts and Routers demonstrating higher empirical adversarial accuracy (measured via Projected Gradient Descent (PGD) attacks) will achieve Certified Robustness Accuracy $CRA(\varepsilon) \geq AA(\varepsilon) - \Delta$ for some small $\Delta > 0$ when formally verified using $\alpha - \beta$-CROWN at equivalent perturbation bounds $\varepsilon$. This posits that empirical robustness serves as a reliable proxy for provable guarantees, bridging sampling-based attacks to sound verification.
+Experts and Routers demonstrating higher empirical adversarial accuracy (measured via Projected Gradient Descent (PGD) attacks) will achieve Certified Robustness Accuracy $CRA(\varepsilon) \geq AA(\varepsilon) - \Delta$ for some small $\Delta > 0$ when formally verified using $\alpha$--$\beta$-CROWN at equivalent perturbation bounds $\varepsilon$. This posits that empirical robustness serves as a reliable proxy for provable guarantees, bridging sampling-based attacks to sound verification.
 
 \paragraph{Hypothesis 3. Compositional Robustness}
 
@@ -178,7 +178,7 @@ TSRB & $E_6$ & $E_{6\_CNN\_NRT}$ & $E_{6\_CNN\_RT}$ \\
 
 \subsection{Verification-Aware CNN Architecture}
 
-Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alpha$-$\beta$-CROWN compatibility: (1) average pooling instead of max pooling for linearity; (2) no BatchNorm (compensated by increased channel capacity $20 \to 28 \to 40 \to 56$); (3) minimal ONNX operators via static shapes. Architecture: 4 conv layers with gradual channel growth, global average pooling, and 2-layer FC head (detailed specifications in Appendix F).
+Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alpha$--$\beta$-CROWN compatibility: (1) average pooling instead of max pooling for linearity; (2) no BatchNorm (compensated by increased channel capacity $20 \to 28 \to 40 \to 56$); (3) minimal ONNX operators via static shapes. Architecture: 4 conv layers with gradual channel growth, global average pooling, and 2-layer FC head (detailed specifications in Appendix F).
 
 \textbf{Training:} Experts trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\varepsilon = 8/255$, 7 steps). See Appendix A for full hyperparameters.
 
@@ -241,7 +241,7 @@ This reduces verification from 2M to 96K parameters (20$\times$ reduction).
 
 \subsubsection{Overview}
 
-Formal verification of neural networks is critical for safety-critical applications like autonomous vehicle decision-making. We employed $\alpha - \beta$-CROWN, the state-of-the-art neural network verifier that won VNN-COMP 2021-2024, to provide provable robustness guarantees for both individual Experts and the Router.
+Formal verification of neural networks is critical for safety-critical applications like autonomous vehicle decision-making. We employed $\alpha$--$\beta$-CROWN, the state-of-the-art neural network verifier that won VNN-COMP 2021-2024, to provide provable robustness guarantees for both individual Experts and the Router.
 
 Verified Models:
 \begin{itemize}
@@ -326,7 +326,7 @@ $\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Ti
 
 Individual Experts on MNIST and CIFAR-10 verified to baseline robustness.
 
-Expert Architecture: VerifiableCNN (96K parameters); RT/NRT with PGD ($\varepsilon = 8/255$); ONNX with folding, raw logits; $\alpha - \beta$-CROWN with Gurobi.
+Expert Architecture: VerifiableCNN (96K parameters); RT/NRT with PGD ($\varepsilon = 8/255$); ONNX with folding, raw logits; $\alpha$--$\beta$-CROWN with Gurobi.
 
 \textbf{CIFAR-10 Expert Verification:}
 
@@ -519,7 +519,7 @@ $\Delta$ (NRT - RT) & $+0.04\%$ & $+0.01\%$ & $\mathbf{-56.5\%}$ \\
 
 \subsection{Quantitative Empirical-Formal Robustness Verification Correlation Analysis}
 
-To validate Hypothesis 2, we analyze the quantitative relationship between empirical adversarial accuracy (AA) from PGD attacks and certified robustness accuracy (CRA) from $\alpha$-$\beta$-CROWN verification. We compute the certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ for each model, measuring the conservatism of formal verification relative to empirical attacks.
+To validate Hypothesis 2, we analyze the quantitative relationship between empirical adversarial accuracy (AA) from PGD attacks and certified robustness accuracy (CRA) from $\alpha$--$\beta$-CROWN verification. We compute the certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ for each model, measuring the conservatism of formal verification relative to empirical attacks.
 
 \begin{table}[H]
 \centering
@@ -670,7 +670,7 @@ Results demonstrate that robustness in heterogeneous MoE systems can be both emp
 
 RT models consistently achieve higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than NRT: MNIST-RT verified 100\% vs 70\% for NRT at $\varepsilon = 2/255$, CIFAR-10-RT 90\% vs 10\%. The certification gap $\Delta = \text{CRA} - \text{AA}$ quantifies verification conservatism: routers exhibit $\Delta \approx 0\%$ (near-perfect empirical-formal alignment), while experts show $\Delta = 5$--$55\%$ depending on dataset complexity and perturbation budget. Adversarial training reduces $\Delta$ by smoothing decision boundaries, improving both empirical robustness and formal certifiability.
 
-This mutual reinforcement operates bidirectionally: adversarial training regularizes gradients, tightening $\alpha$-$\beta$-CROWN bounds and reducing timeouts; conversely, formal verification identifies boundary-sensitive samples overlooked by PGD, informing targeted retraining. Verification ``unknown'' outcomes correlate with near-boundary cases, enabling adaptive data augmentation.
+This mutual reinforcement operates bidirectionally: adversarial training regularizes gradients, tightening $\alpha$--$\beta$-CROWN bounds and reducing timeouts; conversely, formal verification identifies boundary-sensitive samples overlooked by PGD, informing targeted retraining. Verification ``unknown'' outcomes correlate with near-boundary cases, enabling adaptive data augmentation.
 
 \subsection{Compositional Robustness and System Behavior}
 
