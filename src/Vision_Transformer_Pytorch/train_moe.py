@@ -168,7 +168,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     total_images = 0
     
-    for batch_idx, batch in enumerate(tqdm(loader, desc="Training")):
+    for batch_idx, batch in enumerate(tqdm(loader, desc="Training", ncols=80)):
         if args.meta_moe:
             data, target, meta_class = batch
         else:
@@ -276,7 +276,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     
     with torch.no_grad():
-        for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing")):
+        for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing", ncols=80)):
             data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
             if args.meta_moe:
                 with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
@@ -370,7 +370,7 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
         expert_correct_adv = [0] * model.num_experts
         expert_total = [0] * model.num_experts
     
-    for data, target, meta_class in tqdm(test_loader, desc="Adversarial Testing"):
+    for data, target, meta_class in tqdm(test_loader, desc="Adversarial Testing", ncols=80):
         data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
         data.requires_grad_(True)  # Enable gradients for input
         
