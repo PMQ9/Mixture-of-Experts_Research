@@ -17,10 +17,15 @@ import re
 import numpy as np
 from datetime import datetime
 import platform
+import select
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src" / "Vision_Transformer_Pytorch"))
+
+# Import pty only on Unix-like systems
+if platform.system() != "Windows":
+    import pty
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -30,20 +35,100 @@ def clear_screen():
         os.system('clear')
 
 def run_command(cmd, shell=False):
-    """Run a command and stream output in real-time."""
+    """Run a command and stream output in real-time with proper tqdm support."""
     print(f"\n{'='*80}")
     print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     print(f"{'='*80}\n")
 
-    # Set environment variables for real-time output and tqdm
+    # Set environment variables for real-time output
     env = os.environ.copy()
     env['PYTHONUNBUFFERED'] = '1'
-    env['TQDM_MININTERVAL'] = '0.1'  # Update tqdm more frequently
 
-    # Use Popen to stream output in real-time
+    # Use pty on Unix-like systems for proper tqdm display
+    if platform.system() != "Windows":
+        return _run_command_pty(cmd, env)
+    else:
+        return _run_command_windows(cmd, env)
+
+def _run_command_pty(cmd, env):
+    """Run command with pty for proper terminal emulation (Unix/Linux/Mac)."""
+    import fcntl
+    import termios
+    import struct
+
+    output_lines = []
+
+    def read_output(fd):
+        """Read and handle output from the pty."""
+        try:
+            data = os.read(fd, 1024).decode('utf-8', errors='replace')
+            if data:
+                # Print to terminal (preserves tqdm formatting)
+                sys.stdout.write(data)
+                sys.stdout.flush()
+                # Save to log
+                output_lines.append(data)
+            return data
+        except OSError:
+            return None
+
+    # Create pseudo-terminal
+    master_fd, slave_fd = pty.openpty()
+
+    # Set terminal size to prevent wrapping issues
+    size = struct.pack('HHHH', 24, 80, 0, 0)
+    fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, size)
+
+    # Start process with pty
     process = subprocess.Popen(
         cmd,
-        shell=shell,
+        stdin=slave_fd,
+        stdout=slave_fd,
+        stderr=slave_fd,
+        cwd=project_root,
+        env=env,
+        close_fds=True
+    )
+
+    os.close(slave_fd)  # Close slave in parent process
+
+    # Read output from master
+    try:
+        while True:
+            # Check if process is still running
+            if process.poll() is not None:
+                # Process finished, read remaining output
+                while True:
+                    data = read_output(master_fd)
+                    if not data:
+                        break
+                break
+
+            # Wait for data with timeout
+            ready, _, _ = select.select([master_fd], [], [], 0.1)
+            if ready:
+                data = read_output(master_fd)
+                if not data:
+                    break
+    finally:
+        os.close(master_fd)
+
+    # Wait for process to complete
+    returncode = process.wait()
+
+    # Combine all output
+    full_output = ''.join(output_lines)
+
+    if returncode != 0:
+        print(f"\nWarning: Command failed with return code {returncode}")
+
+    return full_output, ""
+
+def _run_command_windows(cmd, env):
+    """Run command on Windows (fallback without pty)."""
+    process = subprocess.Popen(
+        cmd,
+        shell=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -56,18 +141,14 @@ def run_command(cmd, shell=False):
     # Capture output while printing in real-time
     output_lines = []
     for line in process.stdout:
-        print(line, end='', flush=True)  # Print immediately
+        print(line, end='', flush=True)
         output_lines.append(line)
 
-    # Wait for process to complete
     process.wait()
-
-    # Combine all output
     full_output = ''.join(output_lines)
 
     if process.returncode != 0:
         print(f"\nWarning: Command failed with return code {process.returncode}")
-        # Don't raise exception, just return the output
 
     return full_output, ""
 
