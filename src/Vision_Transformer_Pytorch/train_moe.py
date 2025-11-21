@@ -82,7 +82,8 @@ parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', ch
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_*_best.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
-parser.add_argument('--art_attack', action='store_true', help='Initiate Adversarial Robustness Toolbox')
+parser.add_argument('--art_attack', dest='art_attack', action='store_true', help='Enable Adversarial Robustness Toolbox (enabled by default)')
+parser.add_argument('--no-art-attack', dest='art_attack', action='store_false', help='Disable Adversarial Robustness Toolbox')
 parser.add_argument('--art_attack_mode', type=str, default='PGD', choices=['FGM', 'PGD'], help='Attack mode in ART')
 parser.add_argument('--at_mode', type=str, default='PGD', choices=['PGD', 'TRADES'], help='Attack modes')
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
@@ -92,6 +93,7 @@ parser.add_argument('--trades_beta', type=float, default=6.0, help='Beta for TRA
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
 parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
+parser.set_defaults(art_attack=True)
 args = parser.parse_args()
 
 BATCH_SIZE = args.batch_size
