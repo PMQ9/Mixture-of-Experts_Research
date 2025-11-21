@@ -16,36 +16,54 @@ from pathlib import Path
 import re
 import numpy as np
 from datetime import datetime
+import platform
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src" / "Vision_Transformer_Pytorch"))
 
+def clear_screen():
+    """Clear the terminal screen."""
+    if platform.system() == "Windows":
+        os.system('cls')
+    else:
+        os.system('clear')
+
 def run_command(cmd, shell=False):
-    """Run a command and return output."""
+    """Run a command and stream output in real-time."""
     print(f"\n{'='*80}")
     print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     print(f"{'='*80}\n")
 
-    result = subprocess.run(
+    # Use Popen to stream output in real-time
+    process = subprocess.Popen(
         cmd,
         shell=shell,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,
+        universal_newlines=True,
         cwd=project_root
     )
 
-    # Print output in real-time style
-    if result.stdout:
-        print(result.stdout)
-    if result.stderr:
-        print(result.stderr, file=sys.stderr)
+    # Capture output while printing in real-time
+    output_lines = []
+    for line in process.stdout:
+        print(line, end='', flush=True)  # Print immediately
+        output_lines.append(line)
 
-    if result.returncode != 0:
-        print(f"\nWarning: Command failed with return code {result.returncode}")
+    # Wait for process to complete
+    process.wait()
+
+    # Combine all output
+    full_output = ''.join(output_lines)
+
+    if process.returncode != 0:
+        print(f"\nWarning: Command failed with return code {process.returncode}")
         # Don't raise exception, just return the output
 
-    return result.stdout, result.stderr
+    return full_output, ""
 
 def extract_metrics(log_text):
     """Extract test accuracy and robust accuracy from training logs."""
@@ -85,7 +103,7 @@ def extract_metrics(log_text):
 
     return metrics
 
-def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_number):
+def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_number, total_run_number=None):
     """
     Train a single expert model for one run.
 
@@ -94,9 +112,20 @@ def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_
         expert_id: 'E_0' (CIFAR10) or 'E_1' (MNIST)
         is_adversarial: True for AT, False for NAT
         output_dir: Directory to save artifacts for this run
-        run_number: Run number (1-5)
+        run_number: Run number within this expert (1-5)
+        total_run_number: Total run number across all experts (1-20)
     """
+    # Clear screen before starting new training run
+    clear_screen()
+
     training_type = "AT" if is_adversarial else "NAT"
+
+    # Show overall progress if total_run_number is provided
+    if total_run_number is not None:
+        print(f"\n{'='*80}")
+        print(f"OVERALL PROGRESS: RUN {total_run_number}/20")
+        print(f"{'='*80}")
+
     print(f"\n{'#'*80}")
     print(f"# Training {expert_id} ({dataset}) - {training_type} - RUN {run_number}/5")
     print(f"# Output directory: {output_dir}")
@@ -198,7 +227,7 @@ def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_
 
     return metrics
 
-def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_dir, num_runs=5):
+def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_dir, num_runs=5, starting_run_number=1):
     """
     Train a single expert model multiple times.
 
@@ -208,6 +237,7 @@ def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_d
         is_adversarial: True for AT, False for NAT
         base_output_dir: Base directory to save all runs
         num_runs: Number of times to train (default: 5)
+        starting_run_number: Starting total run number for progress display (default: 1)
 
     Returns:
         dict: Statistics including mean and std for each metric
@@ -223,6 +253,7 @@ def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_d
     # Train num_runs times
     for run_num in range(1, num_runs + 1):
         run_dir = base_output_dir / f"run_{run_num}"
+        total_run_num = starting_run_number + run_num - 1
 
         try:
             metrics = train_expert_single_run(
@@ -230,7 +261,8 @@ def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_d
                 expert_id=expert_id,
                 is_adversarial=is_adversarial,
                 output_dir=run_dir,
-                run_number=run_num
+                run_number=run_num,
+                total_run_number=total_run_num
             )
 
             # Store metrics
@@ -335,13 +367,21 @@ def main():
     all_stats = []
 
     # Train each expert 5 times
+    num_runs_per_expert = 5
     for i, expert_config in enumerate(experts, 1):
         print(f"\n\n{'#'*80}")
         print(f"# EXPERT {i}/4: {expert_config['expert_id']} ({expert_config['dataset']}) - {'AT' if expert_config['is_adversarial'] else 'NAT'}")
         print(f"{'#'*80}\n")
 
+        # Calculate starting run number for this expert
+        starting_run = (i - 1) * num_runs_per_expert + 1
+
         try:
-            stats = train_expert_multiple_runs(**expert_config)
+            stats = train_expert_multiple_runs(
+                **expert_config,
+                num_runs=num_runs_per_expert,
+                starting_run_number=starting_run
+            )
             all_stats.append(stats)
         except Exception as e:
             print(f"\nError training expert {i}: {e}")

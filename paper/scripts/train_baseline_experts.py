@@ -14,36 +14,54 @@ import subprocess
 import shutil
 from pathlib import Path
 import re
+import platform
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src" / "Vision_Transformer_Pytorch"))
 
+def clear_screen():
+    """Clear the terminal screen."""
+    if platform.system() == "Windows":
+        os.system('cls')
+    else:
+        os.system('clear')
+
 def run_command(cmd, shell=False):
-    """Run a command and return output."""
+    """Run a command and stream output in real-time."""
     print(f"\n{'='*80}")
     print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     print(f"{'='*80}\n")
 
-    result = subprocess.run(
+    # Use Popen to stream output in real-time
+    process = subprocess.Popen(
         cmd,
         shell=shell,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,
+        universal_newlines=True,
         cwd=project_root
     )
 
-    # Print output in real-time style
-    if result.stdout:
-        print(result.stdout)
-    if result.stderr:
-        print(result.stderr, file=sys.stderr)
+    # Capture output while printing in real-time
+    output_lines = []
+    for line in process.stdout:
+        print(line, end='', flush=True)  # Print immediately
+        output_lines.append(line)
 
-    if result.returncode != 0:
-        print(f"\nError: Command failed with return code {result.returncode}")
-        raise subprocess.CalledProcessError(result.returncode, cmd)
+    # Wait for process to complete
+    process.wait()
 
-    return result.stdout, result.stderr
+    # Combine all output
+    full_output = ''.join(output_lines)
+
+    if process.returncode != 0:
+        print(f"\nError: Command failed with return code {process.returncode}")
+        raise subprocess.CalledProcessError(process.returncode, cmd)
+
+    return full_output, ""
 
 def extract_metrics(log_text):
     """Extract test accuracy and robust accuracy from training logs."""
@@ -91,6 +109,9 @@ def train_expert(dataset, expert_id, is_adversarial, output_dir):
         is_adversarial: True for AT, False for NAT
         output_dir: Directory to save artifacts
     """
+    # Clear screen before starting new training run
+    clear_screen()
+
     training_type = "AT" if is_adversarial else "NAT"
     print(f"\n{'#'*80}")
     print(f"# Training {expert_id} ({dataset}) - {training_type}")
