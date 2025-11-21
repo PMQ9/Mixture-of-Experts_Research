@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import platform
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,9 +18,13 @@ import torch.multiprocessing
 import logging
 import timm
 import math
+import warnings
 from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 from torch.nn import KLDivLoss
+
+# Suppress CUDA expandable_segments warning (Windows doesn't support this feature)
+warnings.filterwarnings('ignore', message='.*expandable_segments not supported.*')
 
 from vision_transformer_moe import VisionTransformer, VisionTransformerConfig, LabelSmoothingCrossEntropy, TrafficSignTrainDataset, TrafficSignTestDataset
 from vision_transformer_moe import MetaGatingNet, CombinedDataset, MetaMoE
@@ -166,11 +169,7 @@ def pgd_gating_attack(model, data, meta_class, epsilon=8.0/255.0, alpha=0.01, nu
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = 0
-    # Use new API on Linux/WSL2, keep old API on Windows for compatibility
-    if platform.system() == 'Linux':
-        scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
-    else:
-        scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
+    scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
     gating_criterion = nn.CrossEntropyLoss()
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     total_images = 0
