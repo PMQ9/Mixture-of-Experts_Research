@@ -33,6 +33,11 @@ def run_command(cmd, shell=False):
     print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     print(f"{'='*80}\n")
 
+    # Set environment variables for real-time output and tqdm
+    env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
+    env['TQDM_MININTERVAL'] = '0.1'  # Update tqdm more frequently
+
     # Use Popen to stream output in real-time
     process = subprocess.Popen(
         cmd,
@@ -42,7 +47,8 @@ def run_command(cmd, shell=False):
         text=True,
         bufsize=1,
         universal_newlines=True,
-        cwd=project_root
+        cwd=project_root,
+        env=env
     )
 
     # Capture output while printing in real-time
@@ -126,6 +132,7 @@ def train_expert(dataset, expert_id, is_adversarial, output_dir):
 
     cmd = [
         sys.executable,
+        "-u",  # Unbuffered mode for real-time output
         str(train_script),
         "--dataset", dataset,
         "--model_arch", "ultra_verifiable_cnn",
