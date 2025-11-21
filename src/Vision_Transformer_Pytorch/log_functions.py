@@ -317,7 +317,7 @@ def export_to_onnx(model, config, device, output_dir, dataset_name, model_arch):
             "input": {0: "batch_size"},
             **{name: {0: "batch_size"} for name in output_names}
         },
-        verbose=True,
+        verbose=False,
         do_constant_folding=True,
     )
     print(f"ONNX model saved to: {onnx_path}")

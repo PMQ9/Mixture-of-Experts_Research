@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import platform
 import numpy as np
 import torch
 import torch.nn as nn
@@ -165,7 +166,11 @@ def pgd_gating_attack(model, data, meta_class, epsilon=8.0/255.0, alpha=0.01, nu
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = 0
-    scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
+    # Use new API on Linux/WSL2, keep old API on Windows for compatibility
+    if platform.system() == 'Linux':
+        scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
+    else:
+        scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
     gating_criterion = nn.CrossEntropyLoss()
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     total_images = 0
@@ -599,8 +604,8 @@ def main():
     print(f"Training with {'MetaMoE' if args.meta_moe else args.dataset} with number of classes: {config.num_class}")
     if args.meta_moe:
         print(f"Meta_MoE architecture: activate {args.meta_top_k} of {num_meta_experts} experts")
-    else:
-        print(f"Using config: {asdict(config)}")
+    # else:
+    #     print(f"Using config: {asdict(config)}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     log_file_handle = setup_logging(OUTPUT_DIR)
 
