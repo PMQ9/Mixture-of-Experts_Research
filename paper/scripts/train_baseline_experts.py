@@ -124,31 +124,29 @@ def _run_command_pty(cmd, env):
     return full_output, ""
 
 def _run_command_windows(cmd, env):
-    """Run command on Windows (fallback without pty)."""
+    """Run command on Windows - output goes directly to terminal."""
+    # Don't pipe stdout/stderr - let them go directly to terminal
+    # This allows tqdm to work properly with single-bar updates
     process = subprocess.Popen(
         cmd,
         shell=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        universal_newlines=True,
         cwd=project_root,
         env=env
     )
 
-    # Capture output while printing in real-time
-    output_lines = []
-    for line in process.stdout:
-        print(line, end='', flush=True)
-        output_lines.append(line)
+    # Wait for process to complete
+    returncode = process.wait()
 
-    process.wait()
-    full_output = ''.join(output_lines)
+    # Read log from artifacts directory after training completes
+    full_output = ""
+    artifacts_log = project_root / "artifacts" / "training_log.txt"
+    if artifacts_log.exists():
+        with open(artifacts_log, 'r', encoding='utf-8', errors='replace') as f:
+            full_output = f.read()
 
-    if process.returncode != 0:
-        print(f"\nError: Command failed with return code {process.returncode}")
-        raise subprocess.CalledProcessError(process.returncode, cmd)
+    if returncode != 0:
+        print(f"\nError: Command failed with return code {returncode}")
+        raise subprocess.CalledProcessError(returncode, cmd)
 
     return full_output, ""
 
