@@ -3,6 +3,8 @@ Run alpha-beta-CROWN Verification on MetaMoE Router
 
 This script runs formal verification to prove that the router maintains
 correct expert selection under adversarial perturbations.
+
+NOTE: This is a legacy script. Use verify_all_router_samples.py at the repository root instead.
 """
 
 import subprocess
@@ -10,11 +12,14 @@ import sys
 from pathlib import Path
 import os
 
+# Repository root (navigate from paper/scripts/ back to root)
+repo_root = Path(__file__).parent.parent.parent
+
 # Configuration
-abcrown_dir = Path("modules/alpha-beta-CROWN/complete_verifier")
-onnx_model = Path("artifacts/abcrown_models/meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx").resolve()
-config_file = Path("artifacts/router_verification_config.yaml").resolve()
-vnnlib_dir = Path("artifacts/vnnlib_specs/router").resolve()
+abcrown_dir = repo_root / "modules/alpha-beta-CROWN/complete_verifier"
+onnx_model = (repo_root / "artifacts/abcrown_models/meta_moe_ultra_verifiable_cnn_best_og_router_only.onnx").resolve()
+config_file = (repo_root / "artifacts/router_verification_config.yaml").resolve()
+vnnlib_dir = (repo_root / "artifacts/vnnlib_specs/router").resolve()
 
 print("="*80)
 print("MetaMoE Router Formal Verification with alpha-beta-CROWN")
