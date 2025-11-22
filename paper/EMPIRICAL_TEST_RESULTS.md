@@ -23,9 +23,9 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | 83.27% |
-| Adversarial Accuracy (PGD, ε=8/255) | 0.00% |
-| Robustness Gap | 83.27% |
+| Clean Accuracy | - |
+| Adversarial Accuracy (PGD, ε=8/255) | - |
+| Robustness Gap | - |
 
 **Interpretation**: Without adversarial training, CIFAR-10 expert is completely vulnerable to PGD attacks. Model collapses entirely under adversarial perturbations.
 
@@ -33,9 +33,9 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | 77.50% |
-| Adversarial Accuracy (PGD, ε=8/255) | 16.96% |
-| Robustness Gap | 60.54% |
+| Clean Accuracy | - |
+| Adversarial Accuracy (PGD, ε=8/255) | - |
+| Robustness Gap | - |
 
 **Interpretation**: Adversarial training recovers 16.96% adversarial accuracy at the cost of 5.77% clean accuracy trade-off. Significant vulnerability remains.
 
@@ -47,9 +47,9 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | 99.18% |
-| Adversarial Accuracy (PGD, ε=8/255) | 47.03% |
-| Robustness Gap | 52.15% |
+| Clean Accuracy | - |
+| Adversarial Accuracy (PGD, ε=8/255) | - |
+| Robustness Gap | - |
 
 **Interpretation**: MNIST demonstrates better baseline robustness than CIFAR-10 even without adversarial training (47.03% vs 0.00%). This reflects domain-specific characteristics rather than inherent superiority. Both domains require robust training for effective defense.
 
@@ -57,9 +57,9 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | 99.06% |
-| Adversarial Accuracy (PGD, ε=8/255) | 87.05% |
-| Robustness Gap | 12.01% |
+| Clean Accuracy | - |
+| Adversarial Accuracy (PGD, ε=8/255) | - |
+| Robustness Gap | - |
 
 **Interpretation**: Exceptional performance. Only 0.12% clean accuracy drop while achieving 87.05% adversarial accuracy. MNIST expert is highly robust.
 
@@ -71,12 +71,12 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Overall Clean Accuracy | 91.08% |
-| Overall Adversarial Accuracy (PGD, ε=8/255) | 25.81% |
-| **Clean Gating Accuracy** | 100.00% |
-| **Adversarial Gating Accuracy** | 100.00% |
-| **Expert 0 Component** | Clean: 83.07%, Adv: 0.01% |
-| **Expert 1 Component** | Clean: 99.12%, Adv: 51.70% |
+| Overall Clean Accuracy | - |
+| Overall Adversarial Accuracy (PGD, ε=8/255) | - |
+| **Clean Gating Accuracy** | - |
+| **Adversarial Gating Accuracy** | - |
+| **Expert 0 Component** | - |
+| **Expert 1 Component** | - |
 
 **Key Finding**: Router is perfectly robust under adversarial attack (100% gating accuracy), but overall system performance limited by Expert 0 vulnerability.
 
@@ -89,12 +89,12 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Metric | Value |
 |--------|-------|
-| Overall Clean Accuracy | 88.21% |
-| Overall Adversarial Accuracy (PGD, ε=8/255) | 41.68% |
-| **Clean Gating Accuracy** | 100.00% |
-| **Adversarial Gating Accuracy** | 100.00% |
-| **Expert 0 Component** | Clean: 77.47%, Adv: 9.98% |
-| **Expert 1 Component** | Clean: 98.96%, Adv: 73.56% |
+| Overall Clean Accuracy | - |
+| Overall Adversarial Accuracy (PGD, ε=8/255) | - |
+| **Clean Gating Accuracy** | - |
+| **Adversarial Gating Accuracy** | - |
+| **Expert 0 Component** | - |
+| **Expert 1 Component** | - |
 
 **Key Finding**: Router maintains perfect robustness (100% adversarial gating accuracy) while experts improve significantly with AT.
 
@@ -112,12 +112,12 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Model | Clean Acc | Adv Acc | Gap | Training |
 |-------|-----------|---------|-----|----------|
-| E₀_CNN_NRT | 83.27% | 0.00% | 83.27% | NRT |
-| E₀_CNN_AT | 77.50% | 16.96% | 60.54% | AT |
-| E₁_CNN_NRT | 99.18% | 47.03% | 52.15% | NRT |
-| E₁_CNN_AT | 99.06% | 87.05% | 12.01% | AT |
-| MoE_CNN_NRT | 91.08% | 25.81% | 65.27% | NRT |
-| MoE_CNN_AT | 88.21% | 41.68% | 46.53% | AT |
+| E₀_CNN_NRT | - | - | - | NRT |
+| E₀_CNN_AT | - | - | - | AT |
+| E₁_CNN_NRT | - | - | - | NRT |
+| E₁_CNN_AT | - | - | - | AT |
+| MoE_CNN_NRT | - | - | - | NRT |
+| MoE_CNN_AT | - | - | - | AT |
 
 ### Key Observations
 
@@ -172,8 +172,8 @@ This document consolidates all empirical test results (PGD adversarial accuracy 
 
 | Verification Type | Accuracy | Interpretation |
 |-------------------|----------|-----------------|
-| **Empirical AA** | 87.05% | Survived PGD attacks on test set |
-| **Formal CRA** | 95.0% | Formally verified robustness |
+| **Empirical AA** | - | Survived PGD attacks on test set |
+| **Formal CRA** | - | Formally verified robustness |
 
 **Note**: Formal verification shows 95% CRA, which is higher than empirical 87.05% AA. This occurs because:
 - Empirical tests specific attack algorithm (PGD)
@@ -209,12 +209,12 @@ Evidence:
 
 | Metric | Value |
 |--------|-------|
-| **Strongest Expert** | E₁_CNN_AT: 87.05% adversarial accuracy |
-| **Weakest Expert** | E₀_CNN_NAT: 0.00% adversarial accuracy |
-| **Best MetaMoE** | MoE_CNN_AT: 41.68% adversarial accuracy |
-| **Average Expert AT Improvement** | +28.49% improvement in adversarial accuracy |
-| **Average Expert Clean Loss** | 2.95% with adversarial training |
-| **Router Robustness** | 100% gating accuracy (clean and adversarial) |
+| **Strongest Expert** | - |
+| **Weakest Expert** | - |
+| **Best MetaMoE** | - |
+| **Average Expert AT Improvement** | - |
+| **Average Expert Clean Loss** | - |
+| **Router Robustness** | - |
 
 ---
 
