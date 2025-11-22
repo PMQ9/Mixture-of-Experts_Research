@@ -6,14 +6,14 @@ Run all verifications and automatically update `VERIFICATION_RESULTS.md`:
 
 ```bash
 cd paper
-python run_all_verifications.py
+python run_all_empirical_verifications.py
 ```
 
 ## Usage
 
 ### Run All Verifications (Default)
 ```bash
-python run_all_verifications.py
+python run_all_empirical_verifications.py
 ```
 - Runs all 12 expert verifications (4 models × 3 epsilons)
 - Runs all 6 router verifications (2 models × 3 epsilons)
@@ -21,25 +21,25 @@ python run_all_verifications.py
 
 ### Skip Experts (Router Only)
 ```bash
-python run_all_verifications.py --skip-experts
+python run_all_empirical_verifications.py --skip-experts
 ```
 Runs only router verification (2 models × 3 epsilons = 6 tests)
 
 ### Skip Routers (Experts Only)
 ```bash
-python run_all_verifications.py --skip-routers
+python run_all_empirical_verifications.py --skip-routers
 ```
 Runs only expert verification (4 models × 3 epsilons = 12 tests)
 
 ### Run Specific Models
 ```bash
-python run_all_verifications.py --models E_0_CNN_NAT,MoE_CNN_NAT
+python run_all_empirical_verifications.py --models E_0_CNN_NAT,MoE_CNN_NAT
 ```
 Runs only E_0_CNN_NAT and MoE_CNN_NAT models with all epsilons
 
 ### Dry Run (Preview Commands)
 ```bash
-python run_all_verifications.py --dry-run
+python run_all_empirical_verifications.py --dry-run
 ```
 Prints all commands without executing (useful for testing)
 
