@@ -273,12 +273,12 @@ Router: VerifiableCNN with average pooling, no batch norm, raw logits. Test set:
 $\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
  & & samples & samples & samples & (\%) & (s) \\
 \midrule
-2/255 & MNIST & $19.4 \pm 0.9$ & $0.0 \pm 0.0$ & $0.6 \pm 0.9$ & \multirow{2}{*}{$98.0 \pm 0.0$} & \multirow{2}{*}{$9.08 \pm 0.5$} \\
-(0.00784) & CIFAR-10 & $19.8 \pm 0.4$ & $0.0 \pm 0.0$ & $0.2 \pm 0.4$ & & \\
-4/255 & MNIST & $19.8 \pm 0.4$ & $0.0 \pm 0.0$ & $0.2 \pm 0.4$ & \multirow{2}{*}{$99.5 \pm 0.0$} & \multirow{2}{*}{$8.76 \pm 0.3$} \\
-(0.01569) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & & \\
-8/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0 \pm 0.0$} & \multirow{2}{*}{$9.4 \pm 1.4$} \\
-(0.03137) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & & \\
+2/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.00784) & CIFAR-10 & - & - & - & & \\
+4/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.01569) & CIFAR-10 & - & - & - & & \\
+8/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.03137) & CIFAR-10 & - & - & - & & \\
 \bottomrule
 \end{tabular}
 \caption{Router Verification Results - NRT}
@@ -294,12 +294,12 @@ $\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Ti
 $\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate & Avg Time \\
  & & samples & samples & samples & (\%) & (s) \\
 \midrule
-2/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$99.0 \pm 0.0$} & \multirow{2}{*}{$9.20 \pm 0.9$} \\
-(0.00784) & CIFAR-10 & $19.6 \pm 0.9$ & $0.0 \pm 0.0$ & $0.4 \pm 0.9$ & & \\
-4/255 & MNIST & $19.8 \pm 0.4$ & $0.0 \pm 0.0$ & $0.2 \pm 0.4$ & \multirow{2}{*}{$99.0 \pm 0.0$} & \multirow{2}{*}{$9.10 \pm 0.7$} \\
-(0.01569) & CIFAR-10 & $19.6 \pm 0.5$ & $0.0 \pm 0.0$ & $0.4 \pm 0.5$ & & \\
-8/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0 \pm 0.0$} & \multirow{2}{*}{$9.2 \pm 0.9$} \\
-(0.03137) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & & \\
+2/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.00784) & CIFAR-10 & - & - & - & & \\
+4/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.01569) & CIFAR-10 & - & - & - & & \\
+8/255 & MNIST & - & - & - & \multirow{2}{*}{-} & \multirow{2}{*}{-} \\
+(0.03137) & CIFAR-10 & - & - & - & & \\
 \bottomrule
 \end{tabular}
 \caption{Router Verification Results - RT}
@@ -338,9 +338,9 @@ Non-Robust Training:
 \toprule
 $\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
-2/255 (0.00784) & 2 & 0 & 18 & 10\% & 313.0s \\
-4/255 (0.01569) & 0 & 0 & 20 & 0\% & 323.2s \\
-8/255 (0.03137) & 0 & 0 & 20 & 0\% & 321.5s \\
+2/255 (0.00784) & - & - & - & - & - \\
+4/255 (0.01569) & - & - & - & - & - \\
+8/255 (0.03137) & - & - & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{CIFAR-10 Expert Verification - NRT}
@@ -354,9 +354,9 @@ Robust Training:
 \toprule
 $\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
-2/255 (0.00784) & 18 & 0 & 2 & 90.0\% & 32.3s \\
-4/255 (0.01569) & 11 & 0 & 9 & 55.0\% & 153.5s \\
-8/255 (0.03137) & 0 & 0 & 20 & 0.0\% & 314.7s \\
+2/255 (0.00784) & - & - & - & - & - \\
+4/255 (0.01569) & - & - & - & - & - \\
+8/255 (0.03137) & - & - & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{CIFAR-10 Expert Verification - RT}
@@ -372,9 +372,9 @@ Non-Robust Training:
 \toprule
 $\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
-2/255 (0.00784) & 14 & 0 & 6 & 70.0\% & 100.6s \\
-4/255 (0.01569) & 0 & 0 & 20 & 0.0\% & 344.8s \\
-8/255 (0.03137) & 0 & 0 & 20 & 0.0\% & 338.3s \\
+2/255 (0.00784) & - & - & - & - & - \\
+4/255 (0.01569) & - & - & - & - & - \\
+8/255 (0.03137) & - & - & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{MNIST Expert Verification - NRT}
@@ -388,9 +388,9 @@ Robust Training:
 \toprule
 $\varepsilon$ & Verified & Falsified & Unknown & Success Rate & Avg Time \\
 \midrule
-2/255 (0.00784) & 20 & 0 & 0 & 100\% & 0.5s \\
-4/255 (0.01569) & 20 & 0 & 0 & 100\% & 0.5s \\
-8/255 (0.03137) & 19 & 0 & 1 & 95\% & 20.9s \\
+2/255 (0.00784) & - & - & - & - & - \\
+4/255 (0.01569) & - & - & - & - & - \\
+8/255 (0.03137) & - & - & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{MNIST Expert Verification - RT}
@@ -420,10 +420,10 @@ Test on CIFAR-10/MNIST; $32 \times 32$ images; $\varepsilon = 8/255$, 7 iteratio
 \toprule
 Expert & Dataset & Architecture & Training & Clean Acc (\%) & Adv Acc (\%) & Robustness Gap (\%) \\
 \midrule
-$E_0$ & CIFAR-10 & VerifiableCNN & NRT & $83.81 \pm 0.18$ & $0.01 \pm 0.01$ & 83.79 \\
-$E_0$ & CIFAR-10 & VerifiableCNN & RT & $77.66 \pm 0.11$ & $17.13 \pm 0.44$ & 60.53 \\
-$E_1$ & MNIST & VerifiableCNN & NRT & $99.18 \pm 0.06$ & $55.18 \pm 6.15$ & 44.00 \\
-$E_1$ & MNIST & VerifiableCNN & RT & $99.13 \pm 0.06$ & $92.30 \pm 4.09$ & 6.82 \\
+$E_0$ & CIFAR-10 & VerifiableCNN & NRT & - & - & - \\
+$E_0$ & CIFAR-10 & VerifiableCNN & RT & - & - & - \\
+$E_1$ & MNIST & VerifiableCNN & NRT & - & - & - \\
+$E_1$ & MNIST & VerifiableCNN & RT & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{Expert Robustness (Clean vs. Adversarial Accuracy)}
@@ -445,15 +445,15 @@ To comprehensively evaluate compositional robustness, we tested all combinations
 \textbf{Router} & \textbf{Expert Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
 \textbf{Training} & & Mean $\pm$ Std & Mean $\pm$ Std \\
 \midrule
-\multirow{4}{*}{RT Router} & CIFAR10-RT + MNIST-RT & $88.19 \pm 0.09$ & $41.12 \pm 0.57$ \\
-& CIFAR10-NRT + MNIST-NRT & $91.00 \pm 0.08$ & $25.83 \pm 0.36$ \\
-& CIFAR10-RT + MNIST-NRT & $88.25 \pm 0.05$ & $30.70 \pm 0.21$ \\
-& CIFAR10-NRT + MNIST-RT & $90.95 \pm 0.09$ & $36.17 \pm 0.38$ \\
+\multirow{4}{*}{RT Router} & CIFAR10-RT + MNIST-RT & - & - \\
+& CIFAR10-NRT + MNIST-NRT & - & - \\
+& CIFAR10-RT + MNIST-NRT & - & - \\
+& CIFAR10-NRT + MNIST-RT & - & - \\
 \midrule
-\multirow{4}{*}{NRT Router} & CIFAR10-RT + MNIST-RT & $88.17 \pm 0.05$ & $41.22 \pm 0.38$ \\
-& CIFAR10-NRT + MNIST-NRT & $91.06 \pm 0.03$ & $25.78 \pm 0.16$ \\
-& CIFAR10-RT + MNIST-NRT & $88.29 \pm 0.04$ & $30.80 \pm 0.52$ \\
-& CIFAR10-NRT + MNIST-RT & $91.00 \pm 0.01$ & $36.07 \pm 0.26$ \\
+\multirow{4}{*}{NRT Router} & CIFAR10-RT + MNIST-RT & - & - \\
+& CIFAR10-NRT + MNIST-NRT & - & - \\
+& CIFAR10-RT + MNIST-NRT & - & - \\
+& CIFAR10-NRT + MNIST-RT & - & - \\
 \bottomrule
 \end{tabular}
 \caption{MetaMoE Compositional Robustness: End-to-End System Accuracy (40 runs total: 8 configurations $\times$ 5 runs each)}
@@ -468,10 +468,10 @@ To comprehensively evaluate compositional robustness, we tested all combinations
 \toprule
 \textbf{Expert Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
 \midrule
-Both RT & $88.18 \pm 0.05$ & $\mathbf{41.17 \pm 0.39}$ \\
-Both NRT & $\mathbf{91.03 \pm 0.08}$ & $25.78 \pm 0.19$ \\
-CIFAR10-RT + MNIST-NRT & $88.27 \pm 0.04$ & $30.75 \pm 0.40$ \\
-CIFAR10-NRT + MNIST-RT & $\mathbf{90.98 \pm 0.09}$ & $36.12 \pm 0.33$ \\
+Both RT & - & - \\
+Both NRT & - & - \\
+CIFAR10-RT + MNIST-NRT & - & - \\
+CIFAR10-NRT + MNIST-RT & - & - \\
 \bottomrule
 \end{tabular}
 \caption{Expert Configuration Impact (averaged across router training methods)}
@@ -484,10 +484,10 @@ CIFAR10-NRT + MNIST-RT & $\mathbf{90.98 \pm 0.09}$ & $36.12 \pm 0.33$ \\
 \toprule
 \textbf{Router Training} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} & \textbf{Training Time (s)} \\
 \midrule
-RT Router & $89.60 \pm 0.08$ & $33.46 \pm 0.40$ & $5938.94 \pm 102.54$ \\
-NRT Router & $89.64 \pm 0.04$ & $33.47 \pm 0.34$ & $2584.72 \pm 59.87$ \\
+RT Router & - & - & - \\
+NRT Router & - & - & - \\
 \midrule
-$\Delta$ (NRT - RT) & $+0.04\%$ & $+0.01\%$ & $\mathbf{-56.5\%}$ \\
+$\Delta$ (NRT - RT) & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{Router Training Method Comparison (averaged across expert configurations)}
@@ -527,12 +527,12 @@ To validate Hypothesis 2, we analyze the quantitative relationship between empir
 \toprule
 \textbf{Model} & \textbf{Type} & \textbf{AA(\%)} & \textbf{CRA(\%)} & $\boldsymbol{\Delta}$\textbf{(\%)} \\
 \midrule
-CIFAR-10 Expert & NRT & 0.00 & 10.00 & 10.0 \\
-CIFAR-10 Expert & RT & 16.96 & 90.00 & 73.0 \\
-MNIST Expert & NRT & 47.03 & 70.00 & 23.0 \\
-MNIST Expert & RT & 87.05 & 100.00 & 13.0 \\
-Router & NRT & 100.00 & 100.00 & 0.0 \\
-Router & RT & 100.00 & 100.00 & -2.5 \\
+CIFAR-10 Expert & NRT & - & - & - \\
+CIFAR-10 Expert & RT & - & - & - \\
+MNIST Expert & NRT & - & - & - \\
+MNIST Expert & RT & - & - & - \\
+Router & NRT & - & - & - \\
+Router & RT & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{Empirical-Formal Robustness Gap Analysis ($\varepsilon = 2/255$)}
@@ -579,11 +579,11 @@ We compared MetaMoE compositional training against monolithic single-model train
 \toprule
 \textbf{Configuration} & \textbf{Training Time} & \textbf{Clean Accuracy} & \textbf{Configuration Details} \\
 \midrule
-OneModel & 91.5 mins & 93.15\% & GTSRB + CIFAR-10 combined \\
+OneModel & - & - & GTSRB + CIFAR-10 combined \\
 (2 datasets) & & & \\
-MetaMoE & 99.5 mins & 92.8\% & GTSRB: 33.5 mins \\
-(2 Experts) & & & CIFAR-10: 54 mins \\
- & & & Gating training: 15 mins \\
+MetaMoE & - & - & GTSRB: - \\
+(2 Experts) & & & CIFAR-10: - \\
+ & & & Gating training: - \\
 \bottomrule
 \end{tabular}
 \caption{Training Time and Accuracy Comparison (2 Datasets)}
@@ -595,11 +595,11 @@ MetaMoE & 99.5 mins & 92.8\% & GTSRB: 33.5 mins \\
 \toprule
 \textbf{Configuration} & \textbf{Training Time} & \textbf{Clean Accuracy} & \textbf{Configuration Details} \\
 \midrule
-OneModel & 242.5 mins & 94.97\% & Initial CIFAR-10+MNIST: 91.5 mins \\
-(3 datasets) & & & Retrain to add MNIST: 151 mins \\
-MetaMoE & 202 mins & 93.61\% & Initial 2-expert MoE: 99.5 mins \\
-(3 Experts) & & & Add MNIST expert: 72.5 mins \\
- & & & Fine tune router: 30 mins \\
+OneModel & - & - & Initial CIFAR-10+MNIST: - \\
+(3 datasets) & & & Retrain to add MNIST: - \\
+MetaMoE & - & - & Initial 2-expert MoE: - \\
+(3 Experts) & & & Add MNIST expert: - \\
+ & & & Fine tune router: - \\
 \bottomrule
 \end{tabular}
 \caption{Training Time and Accuracy Comparison (3 Datasets with incremental addition)}
@@ -631,10 +631,10 @@ We measured inference latency as a function of activated experts (meta\_top\_k) 
 \textbf{Total Experts} & \multicolumn{5}{c}{\textbf{meta\_top\_k}} \\
  & 1 & 2 & 3 & 4 & 5 \\
 \midrule
-2 & 0.071 & 0.079 & - & - & - \\
-3 & 0.074 & 0.092 & 0.094 & - & - \\
-4 & 0.077 & 0.106 & 0.117 & 0.128 & - \\
-5 & 0.078 & 0.118 & 0.132 & 0.146 & 0.156 \\
+2 & - & - & - & - & - \\
+3 & - & - & - & - & - \\
+4 & - & - & - & - & - \\
+5 & - & - & - & - & - \\
 \bottomrule
 \end{tabular}
 \caption{Inference Latency (seconds) vs Number of Experts vs meta\_top\_k}
