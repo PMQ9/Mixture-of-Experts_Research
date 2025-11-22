@@ -32,22 +32,22 @@ TIMEOUT = 300
 MODELS = {
     "MNIST_NRT": {
         "dataset": "MNIST",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_og.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_NRT.pth",
         "label": "MNIST NRT",
     },
     "MNIST_AT": {
         "dataset": "MNIST",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "mnist_ultra_verifiable_cnn_best_robust.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth",
         "label": "MNIST AT",
     },
     "CIFAR10_NRT": {
         "dataset": "CIFAR10",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_og.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_NRT.pth",
         "label": "CIFAR10 NRT",
     },
     "CIFAR10_AT": {
         "dataset": "CIFAR10",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_robust.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth",
         "label": "CIFAR10 AT",
     },
 }

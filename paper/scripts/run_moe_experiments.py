@@ -26,10 +26,10 @@ PAPER_ARTIFACTS_DIR = REPO_ROOT / "paper" / "artifacts"
 SUMMARY_FILE = REPO_ROOT / "test_summary_moe.txt"
 
 # Expert model paths
-CIFAR10_AT = PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_robust.pth"
-CIFAR10_NAT = PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_og.pth"
-MNIST_AT = PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "mnist_ultra_verifiable_cnn_best_robust.pth"
-MNIST_NAT = PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_og.pth"
+CIFAR10_AT = PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth"
+CIFAR10_NAT = PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_NRT.pth"
+MNIST_AT = PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth"
+MNIST_NAT = PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_NRT.pth"
 
 # Training parameters
 MODEL_ARCH = "ultra_verifiable_cnn"
