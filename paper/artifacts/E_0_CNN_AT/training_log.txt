@@ -1,1245 +1,1250 @@
-Training started at 2025-11-06 00:08:17.845208
+Training started at 2025-11-21 01:59:30.524012
 
-Logging to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/training_log.txt
-2025-11-06 00:09:00.393669
+Logging to: D:\Mixture-of-Experts_Research\artifacts\training_log.txt
+2025-11-21 02:03:43.274359
 Epoch 1/200:
-Train loss: 2.1947, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.2266, Train Gating Acc: 0.0000
-Test loss: 1.8721, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.3896, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000337 seconds
-Epoch time: 42.29 seconds
-New best accuracy: 0.3896
+Train loss: 2.1841, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.2225, Train Gating Acc: 0.0000
+Test loss: 1.8691, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.3753, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000137 seconds
+Epoch time: 252.67 seconds
+New best accuracy: 0.3753
 
-2025-11-06 00:09:39.679417
+2025-11-21 02:05:34.411844
 Epoch 2/200:
-Train loss: 2.0635, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3068, Train Gating Acc: 0.0000
-Epoch time: 39.28 seconds
+Train loss: 2.0572, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3090, Train Gating Acc: 0.0000
+Epoch time: 111.13 seconds
 
-2025-11-06 00:10:20.408839
+2025-11-21 02:07:37.846839
 Epoch 3/200:
-Train loss: 1.9951, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3500, Train Gating Acc: 0.0000
-Test loss: 1.6409, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.4766, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.73 seconds
-New best accuracy: 0.4766
+Train loss: 1.9938, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3488, Train Gating Acc: 0.0000
+Test loss: 1.6765, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.4643, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 123.43 seconds
+New best accuracy: 0.4643
 
-2025-11-06 00:11:00.223604
+2025-11-21 02:09:33.833358
 Epoch 4/200:
-Train loss: 1.9591, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3787, Train Gating Acc: 0.0000
-Epoch time: 39.81 seconds
+Train loss: 1.9637, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.3747, Train Gating Acc: 0.0000
+Epoch time: 115.93 seconds
 
-2025-11-06 00:11:40.788061
+2025-11-21 02:11:32.106340
 Epoch 5/200:
-Train loss: 1.9197, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4049, Train Gating Acc: 0.0000
-Test loss: 1.5151, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5524, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.56 seconds
-New best accuracy: 0.5524
+Train loss: 1.9057, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4064, Train Gating Acc: 0.0000
+Test loss: 1.5587, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5343, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 118.27 seconds
+New best accuracy: 0.5343
 
-2025-11-06 00:12:22.513033
+2025-11-21 02:13:28.242826
 Epoch 6/200:
-Train loss: 1.8814, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4278, Train Gating Acc: 0.0000
-Epoch time: 41.25 seconds
+Train loss: 1.8925, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4219, Train Gating Acc: 0.0000
+Epoch time: 115.12 seconds
 
-2025-11-06 00:13:07.192764
+2025-11-21 02:15:30.590325
 Epoch 7/200:
-Train loss: 1.8508, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4482, Train Gating Acc: 0.0000
-Test loss: 1.4725, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5811, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 44.68 seconds
-New best accuracy: 0.5811
+Train loss: 1.8683, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4344, Train Gating Acc: 0.0000
+Test loss: 1.4797, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5666, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000075 seconds
+Epoch time: 122.35 seconds
+New best accuracy: 0.5666
 
-2025-11-06 00:13:48.042411
+2025-11-21 02:17:33.368407
 Epoch 8/200:
-Train loss: 1.8449, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4597, Train Gating Acc: 0.0000
-Epoch time: 40.85 seconds
+Train loss: 1.8650, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4422, Train Gating Acc: 0.0000
+Epoch time: 122.77 seconds
 
-2025-11-06 00:14:28.934800
+2025-11-21 02:19:38.824320
 Epoch 9/200:
-Train loss: 1.8240, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4690, Train Gating Acc: 0.0000
-Test loss: 1.4346, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5833, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.89 seconds
-New best accuracy: 0.5833
+Train loss: 1.8341, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4564, Train Gating Acc: 0.0000
+Test loss: 1.4801, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.5655, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000094 seconds
+Epoch time: 125.46 seconds
 
-2025-11-06 00:15:09.794263
+2025-11-21 02:21:40.486435
 Epoch 10/200:
-Train loss: 1.8118, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4770, Train Gating Acc: 0.0000
-Epoch time: 40.86 seconds
+Train loss: 1.8298, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4668, Train Gating Acc: 0.0000
+Epoch time: 121.66 seconds
 
-2025-11-06 00:15:50.910625
+2025-11-21 02:23:46.925711
 Epoch 11/200:
-Train loss: 1.8127, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4842, Train Gating Acc: 0.0000
-Test loss: 1.4181, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6020, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.74 seconds
-New best accuracy: 0.6020
+Train loss: 1.8261, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4754, Train Gating Acc: 0.0000
+Test loss: 1.3985, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6267, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 125.62 seconds
+New best accuracy: 0.6267
 
-2025-11-06 00:16:30.578385
+2025-11-21 02:25:48.660839
 Epoch 12/200:
-Train loss: 1.7835, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5000, Train Gating Acc: 0.0000
-Epoch time: 39.66 seconds
+Train loss: 1.8009, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4899, Train Gating Acc: 0.0000
+Epoch time: 121.72 seconds
 
-2025-11-06 00:17:14.414863
+2025-11-21 02:27:54.785622
 Epoch 13/200:
-Train loss: 1.7595, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5136, Train Gating Acc: 0.0000
-Test loss: 1.3328, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6483, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 43.84 seconds
-New best accuracy: 0.6483
+Train loss: 1.7905, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.4983, Train Gating Acc: 0.0000
+Test loss: 1.3789, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6309, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000081 seconds
+Epoch time: 126.12 seconds
+New best accuracy: 0.6309
 
-2025-11-06 00:17:54.196496
+2025-11-21 02:29:57.998757
 Epoch 14/200:
-Train loss: 1.7600, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5172, Train Gating Acc: 0.0000
-Epoch time: 39.78 seconds
+Train loss: 1.7765, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5044, Train Gating Acc: 0.0000
+Epoch time: 123.20 seconds
 
-2025-11-06 00:18:34.710976
+2025-11-21 02:32:04.759715
 Epoch 15/200:
-Train loss: 1.7450, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5244, Train Gating Acc: 0.0000
-Test loss: 1.2926, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6672, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.51 seconds
-New best accuracy: 0.6672
+Train loss: 1.7283, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5268, Train Gating Acc: 0.0000
+Test loss: 1.3350, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6422, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000091 seconds
+Epoch time: 126.76 seconds
+New best accuracy: 0.6422
 
-2025-11-06 00:19:15.370566
+2025-11-21 02:34:08.843222
 Epoch 16/200:
-Train loss: 1.7294, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5348, Train Gating Acc: 0.0000
-Epoch time: 40.27 seconds
+Train loss: 1.7392, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5249, Train Gating Acc: 0.0000
+Epoch time: 123.17 seconds
 
-2025-11-06 00:19:55.909422
+2025-11-21 02:36:15.268596
 Epoch 17/200:
-Train loss: 1.7422, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5295, Train Gating Acc: 0.0000
-Test loss: 1.2952, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6704, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.54 seconds
-New best accuracy: 0.6704
+Train loss: 1.7571, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5192, Train Gating Acc: 0.0000
+Test loss: 1.3021, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6588, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 126.43 seconds
+New best accuracy: 0.6588
 
-2025-11-06 00:20:35.548173
+2025-11-21 02:38:16.145515
 Epoch 18/200:
-Train loss: 1.7217, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5406, Train Gating Acc: 0.0000
-Epoch time: 39.64 seconds
+Train loss: 1.7350, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5325, Train Gating Acc: 0.0000
+Epoch time: 120.86 seconds
 
-2025-11-06 00:21:15.750714
+2025-11-21 02:40:16.327903
 Epoch 19/200:
-Train loss: 1.7252, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5403, Train Gating Acc: 0.0000
-Test loss: 1.2733, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6769, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.20 seconds
-New best accuracy: 0.6769
+Train loss: 1.7204, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5400, Train Gating Acc: 0.0000
+Test loss: 1.2968, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6639, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 120.18 seconds
+New best accuracy: 0.6639
 
-2025-11-06 00:21:59.484949
+2025-11-21 02:42:12.766813
 Epoch 20/200:
-Train loss: 1.7184, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5466, Train Gating Acc: 0.0000
-Epoch time: 43.73 seconds
+Train loss: 1.7251, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5451, Train Gating Acc: 0.0000
+Epoch time: 116.43 seconds
 
-2025-11-06 00:22:40.450542
+2025-11-21 02:44:13.429918
 Epoch 21/200:
-Train loss: 1.7096, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5490, Train Gating Acc: 0.0000
-Test loss: 1.2602, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6989, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.58 seconds
-New best accuracy: 0.6989
+Train loss: 1.7218, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5397, Train Gating Acc: 0.0000
+Test loss: 1.2589, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6815, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000076 seconds
+Epoch time: 119.88 seconds
+New best accuracy: 0.6815
 
-2025-11-06 00:23:21.227234
+2025-11-21 02:46:10.008210
 Epoch 22/200:
-Train loss: 1.7060, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5530, Train Gating Acc: 0.0000
-Epoch time: 40.77 seconds
+Train loss: 1.7132, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5460, Train Gating Acc: 0.0000
+Epoch time: 116.57 seconds
 
-2025-11-06 00:24:02.864428
+2025-11-21 02:48:14.143977
 Epoch 23/200:
-Train loss: 1.7302, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5427, Train Gating Acc: 0.0000
-Test loss: 1.2598, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6918, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 41.64 seconds
+Train loss: 1.7163, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5488, Train Gating Acc: 0.0000
+Test loss: 1.2811, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6795, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000081 seconds
+Epoch time: 124.14 seconds
 
-2025-11-06 00:24:43.375090
+2025-11-21 02:50:17.817804
 Epoch 24/200:
-Train loss: 1.7274, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5481, Train Gating Acc: 0.0000
-Epoch time: 40.51 seconds
+Train loss: 1.6968, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5525, Train Gating Acc: 0.0000
+Epoch time: 123.67 seconds
 
-2025-11-06 00:25:27.698161
+2025-11-21 02:52:24.254249
 Epoch 25/200:
-Train loss: 1.6815, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5626, Train Gating Acc: 0.0000
-Test loss: 1.2567, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6902, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000018 seconds
-Epoch time: 44.32 seconds
+Train loss: 1.7002, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5548, Train Gating Acc: 0.0000
+Test loss: 1.2372, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6976, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 126.44 seconds
+New best accuracy: 0.6976
 
-2025-11-06 00:26:10.543716
+2025-11-21 02:54:28.625414
 Epoch 26/200:
-Train loss: 1.7051, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5557, Train Gating Acc: 0.0000
-Epoch time: 42.26 seconds
+Train loss: 1.7107, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5489, Train Gating Acc: 0.0000
+Epoch time: 123.46 seconds
 
-2025-11-06 00:26:52.182799
+2025-11-21 02:56:36.353736
 Epoch 27/200:
-Train loss: 1.6872, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5654, Train Gating Acc: 0.0000
-Test loss: 1.2332, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7049, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.64 seconds
-New best accuracy: 0.7049
+Train loss: 1.6925, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5576, Train Gating Acc: 0.0000
+Test loss: 1.2456, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6841, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 127.73 seconds
 
-2025-11-06 00:27:31.879976
+2025-11-21 02:58:38.969549
 Epoch 28/200:
-Train loss: 1.6896, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5637, Train Gating Acc: 0.0000
-Epoch time: 39.69 seconds
+Train loss: 1.6933, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5628, Train Gating Acc: 0.0000
+Epoch time: 122.62 seconds
 
-2025-11-06 00:28:12.262862
+2025-11-21 03:00:51.402311
 Epoch 29/200:
-Train loss: 1.6867, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5647, Train Gating Acc: 0.0000
-Test loss: 1.2398, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6862, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 40.38 seconds
+Train loss: 1.6895, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5647, Train Gating Acc: 0.0000
+Test loss: 1.2751, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6864, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 132.43 seconds
 
-2025-11-06 00:28:51.008255
+2025-11-21 03:02:53.941019
 Epoch 30/200:
-Train loss: 1.6868, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5688, Train Gating Acc: 0.0000
-Epoch time: 38.75 seconds
+Train loss: 1.6665, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5727, Train Gating Acc: 0.0000
+Epoch time: 122.54 seconds
 
-2025-11-06 00:29:34.713314
+2025-11-21 03:04:57.230952
 Epoch 31/200:
-Train loss: 1.6819, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5722, Train Gating Acc: 0.0000
-Test loss: 1.2129, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7175, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 43.33 seconds
-New best accuracy: 0.7175
+Train loss: 1.6892, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5674, Train Gating Acc: 0.0000
+Test loss: 1.2164, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7087, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000075 seconds
+Epoch time: 122.30 seconds
+New best accuracy: 0.7087
 
-2025-11-06 00:30:14.756662
+2025-11-21 03:06:54.694222
 Epoch 32/200:
-Train loss: 1.6692, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5781, Train Gating Acc: 0.0000
-Epoch time: 40.04 seconds
+Train loss: 1.6841, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5677, Train Gating Acc: 0.0000
+Epoch time: 117.46 seconds
 
-2025-11-06 00:30:54.101237
+2025-11-21 03:08:54.726806
 Epoch 33/200:
-Train loss: 1.6760, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5761, Train Gating Acc: 0.0000
-Test loss: 1.2241, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7039, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 39.34 seconds
+Train loss: 1.6812, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5689, Train Gating Acc: 0.0000
+Test loss: 1.2155, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7073, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 120.03 seconds
 
-2025-11-06 00:31:34.170242
+2025-11-21 03:10:50.606313
 Epoch 34/200:
-Train loss: 1.6415, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5919, Train Gating Acc: 0.0000
-Epoch time: 40.07 seconds
+Train loss: 1.6579, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5783, Train Gating Acc: 0.0000
+Epoch time: 115.88 seconds
 
-2025-11-06 00:32:15.432476
+2025-11-21 03:12:50.149898
 Epoch 35/200:
-Train loss: 1.6854, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5706, Train Gating Acc: 0.0000
-Test loss: 1.2072, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7160, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 41.26 seconds
+Train loss: 1.6614, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5806, Train Gating Acc: 0.0000
+Test loss: 1.2317, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.6941, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000081 seconds
+Epoch time: 119.54 seconds
 
-2025-11-06 00:32:56.542858
+2025-11-21 03:14:47.529974
 Epoch 36/200:
-Train loss: 1.6806, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5742, Train Gating Acc: 0.0000
-Epoch time: 40.71 seconds
+Train loss: 1.6614, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5791, Train Gating Acc: 0.0000
+Epoch time: 116.53 seconds
 
-2025-11-06 00:33:39.912193
+2025-11-21 03:16:47.443042
 Epoch 37/200:
-Train loss: 1.6604, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5817, Train Gating Acc: 0.0000
-Test loss: 1.2108, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7100, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000017 seconds
-Epoch time: 43.37 seconds
+Train loss: 1.6556, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5825, Train Gating Acc: 0.0000
+Test loss: 1.2344, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7058, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000088 seconds
+Epoch time: 119.91 seconds
 
-2025-11-06 00:34:19.805378
+2025-11-21 03:18:43.634194
 Epoch 38/200:
-Train loss: 1.6823, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5739, Train Gating Acc: 0.0000
-Epoch time: 39.89 seconds
+Train loss: 1.6574, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5824, Train Gating Acc: 0.0000
+Epoch time: 116.19 seconds
 
-2025-11-06 00:35:00.570022
+2025-11-21 03:20:43.643737
 Epoch 39/200:
-Train loss: 1.6674, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5835, Train Gating Acc: 0.0000
-Test loss: 1.2071, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7140, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.76 seconds
+Train loss: 1.6743, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5739, Train Gating Acc: 0.0000
+Test loss: 1.2057, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7079, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000081 seconds
+Epoch time: 120.01 seconds
 
-2025-11-06 00:35:41.271374
+2025-11-21 03:22:39.974211
 Epoch 40/200:
-Train loss: 1.6614, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5811, Train Gating Acc: 0.0000
-Epoch time: 40.70 seconds
+Train loss: 1.6574, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5839, Train Gating Acc: 0.0000
+Epoch time: 116.33 seconds
 
-2025-11-06 00:36:22.458903
+2025-11-21 03:24:46.814943
 Epoch 41/200:
-Train loss: 1.6684, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5754, Train Gating Acc: 0.0000
-Test loss: 1.1917, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7242, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000017 seconds
-Epoch time: 40.78 seconds
-New best accuracy: 0.7242
+Train loss: 1.6575, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5821, Train Gating Acc: 0.0000
+Test loss: 1.2063, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7125, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 125.92 seconds
+New best accuracy: 0.7125
 
-2025-11-06 00:37:03.051966
+2025-11-21 03:26:49.302803
 Epoch 42/200:
-Train loss: 1.6515, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5886, Train Gating Acc: 0.0000
-Epoch time: 40.59 seconds
+Train loss: 1.6507, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5860, Train Gating Acc: 0.0000
+Epoch time: 122.47 seconds
 
-2025-11-06 00:37:46.574499
+2025-11-21 03:28:55.819263
 Epoch 43/200:
-Train loss: 1.6508, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5894, Train Gating Acc: 0.0000
-Test loss: 1.2074, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7069, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 43.52 seconds
+Train loss: 1.6507, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5875, Train Gating Acc: 0.0000
+Test loss: 1.2059, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7184, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 126.52 seconds
+New best accuracy: 0.7184
 
-2025-11-06 00:38:26.835270
+2025-11-21 03:30:58.105563
 Epoch 44/200:
-Train loss: 1.6603, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5833, Train Gating Acc: 0.0000
-Epoch time: 40.26 seconds
+Train loss: 1.6410, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5908, Train Gating Acc: 0.0000
+Epoch time: 122.27 seconds
 
-2025-11-06 00:39:07.127899
+2025-11-21 03:33:04.836624
 Epoch 45/200:
-Train loss: 1.6492, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5902, Train Gating Acc: 0.0000
-Test loss: 1.1829, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7238, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.29 seconds
+Train loss: 1.6604, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5876, Train Gating Acc: 0.0000
+Test loss: 1.2093, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7235, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 126.73 seconds
+New best accuracy: 0.7235
 
-2025-11-06 00:39:47.525786
+2025-11-21 03:35:08.242580
 Epoch 46/200:
-Train loss: 1.6352, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5966, Train Gating Acc: 0.0000
-Epoch time: 40.02 seconds
+Train loss: 1.6597, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5840, Train Gating Acc: 0.0000
+Epoch time: 122.47 seconds
 
-2025-11-06 00:40:27.970045
+2025-11-21 03:37:15.671011
 Epoch 47/200:
-Train loss: 1.6347, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5989, Train Gating Acc: 0.0000
-Test loss: 1.2136, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7108, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.44 seconds
+Train loss: 1.6716, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5795, Train Gating Acc: 0.0000
+Test loss: 1.1843, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7289, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 127.43 seconds
+New best accuracy: 0.7289
 
-2025-11-06 00:41:07.827632
+2025-11-21 03:39:18.694221
 Epoch 48/200:
-Train loss: 1.6469, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5858, Train Gating Acc: 0.0000
-Epoch time: 39.86 seconds
+Train loss: 1.6423, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5943, Train Gating Acc: 0.0000
+Epoch time: 123.01 seconds
 
-2025-11-06 00:41:51.145480
+2025-11-21 03:41:25.209337
 Epoch 49/200:
-Train loss: 1.6352, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5994, Train Gating Acc: 0.0000
-Test loss: 1.1875, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7285, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 43.32 seconds
-New best accuracy: 0.7285
+Train loss: 1.6398, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5943, Train Gating Acc: 0.0000
+Test loss: 1.1857, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7229, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000081 seconds
+Epoch time: 126.52 seconds
 
-2025-11-06 00:42:31.152833
+2025-11-21 03:43:23.684326
 Epoch 50/200:
-Train loss: 1.6505, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5936, Train Gating Acc: 0.0000
-Epoch time: 40.00 seconds
+Train loss: 1.6270, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5999, Train Gating Acc: 0.0000
+Epoch time: 118.47 seconds
 
-2025-11-06 00:43:12.679160
+2025-11-21 03:45:30.564662
 Epoch 51/200:
-Train loss: 1.6195, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6059, Train Gating Acc: 0.0000
-Test loss: 1.1699, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7358, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.15 seconds
-New best accuracy: 0.7358
+Train loss: 1.6457, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5915, Train Gating Acc: 0.0000
+Test loss: 1.1897, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7290, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000088 seconds
+Epoch time: 126.16 seconds
+New best accuracy: 0.7290
 
-2025-11-06 00:43:53.864386
+2025-11-21 03:47:32.967339
 Epoch 52/200:
-Train loss: 1.6185, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6058, Train Gating Acc: 0.0000
-Epoch time: 41.18 seconds
+Train loss: 1.6426, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5920, Train Gating Acc: 0.0000
+Epoch time: 122.39 seconds
 
-2025-11-06 00:44:35.105136
+2025-11-21 03:49:45.306885
 Epoch 53/200:
-Train loss: 1.6454, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5911, Train Gating Acc: 0.0000
-Test loss: 1.1652, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7328, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.24 seconds
+Train loss: 1.6273, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5992, Train Gating Acc: 0.0000
+Test loss: 1.1704, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7335, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 132.34 seconds
+New best accuracy: 0.7335
 
-2025-11-06 00:45:16.189221
+2025-11-21 03:51:52.929017
 Epoch 54/200:
-Train loss: 1.6277, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6023, Train Gating Acc: 0.0000
-Epoch time: 41.08 seconds
+Train loss: 1.6330, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5978, Train Gating Acc: 0.0000
+Epoch time: 127.61 seconds
 
-2025-11-06 00:46:00.641700
+2025-11-21 03:54:06.605298
 Epoch 55/200:
-Train loss: 1.6464, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5970, Train Gating Acc: 0.0000
-Test loss: 1.2009, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7194, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 44.45 seconds
+Train loss: 1.6326, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5988, Train Gating Acc: 0.0000
+Test loss: 1.1845, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7262, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 133.68 seconds
 
-2025-11-06 00:46:41.423469
+2025-11-21 03:56:17.790464
 Epoch 56/200:
-Train loss: 1.6378, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5975, Train Gating Acc: 0.0000
-Epoch time: 40.39 seconds
+Train loss: 1.6348, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5955, Train Gating Acc: 0.0000
+Epoch time: 130.14 seconds
 
-2025-11-06 00:47:22.882617
+2025-11-21 03:58:31.643879
 Epoch 57/200:
-Train loss: 1.6475, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5911, Train Gating Acc: 0.0000
-Test loss: 1.1743, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7319, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 41.46 seconds
+Train loss: 1.6634, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5857, Train Gating Acc: 0.0000
+Test loss: 1.1686, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7334, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000079 seconds
+Epoch time: 133.85 seconds
 
-2025-11-06 00:48:03.465636
+2025-11-21 04:00:46.201413
 Epoch 58/200:
-Train loss: 1.6270, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6030, Train Gating Acc: 0.0000
-Epoch time: 40.58 seconds
+Train loss: 1.6324, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5974, Train Gating Acc: 0.0000
+Epoch time: 134.56 seconds
 
-2025-11-06 00:48:43.413011
+2025-11-21 04:02:59.720984
 Epoch 59/200:
-Train loss: 1.6492, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5953, Train Gating Acc: 0.0000
-Test loss: 1.1710, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7313, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 39.95 seconds
+Train loss: 1.6341, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5989, Train Gating Acc: 0.0000
+Test loss: 1.1877, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7221, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000088 seconds
+Epoch time: 133.52 seconds
 
-2025-11-06 00:49:23.868254
+2025-11-21 04:05:08.393997
 Epoch 60/200:
-Train loss: 1.6481, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5951, Train Gating Acc: 0.0000
-Epoch time: 40.46 seconds
+Train loss: 1.6323, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6004, Train Gating Acc: 0.0000
+Epoch time: 128.67 seconds
 
-2025-11-06 00:50:07.974912
+2025-11-21 04:07:21.588794
 Epoch 61/200:
-Train loss: 1.6482, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5951, Train Gating Acc: 0.0000
-Test loss: 1.1808, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7383, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 43.54 seconds
-New best accuracy: 0.7383
+Train loss: 1.6236, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6069, Train Gating Acc: 0.0000
+Test loss: 1.1539, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7401, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000078 seconds
+Epoch time: 132.36 seconds
+New best accuracy: 0.7401
 
-2025-11-06 00:50:48.578985
+2025-11-21 04:09:30.233331
 Epoch 62/200:
-Train loss: 1.6513, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5916, Train Gating Acc: 0.0000
-Epoch time: 40.60 seconds
+Train loss: 1.6491, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5946, Train Gating Acc: 0.0000
+Epoch time: 128.63 seconds
 
-2025-11-06 00:51:30.316804
+2025-11-21 04:11:43.045178
 Epoch 63/200:
-Train loss: 1.6584, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5864, Train Gating Acc: 0.0000
-Test loss: 1.1744, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7311, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.74 seconds
+Train loss: 1.6585, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5886, Train Gating Acc: 0.0000
+Test loss: 1.1822, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7227, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 132.81 seconds
 
-2025-11-06 00:52:10.548642
+2025-11-21 04:13:52.566010
 Epoch 64/200:
-Train loss: 1.6340, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6007, Train Gating Acc: 0.0000
-Epoch time: 40.23 seconds
+Train loss: 1.6279, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6020, Train Gating Acc: 0.0000
+Epoch time: 129.52 seconds
 
-2025-11-06 00:52:51.280278
+2025-11-21 04:16:05.641927
 Epoch 65/200:
-Train loss: 1.6438, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5975, Train Gating Acc: 0.0000
-Test loss: 1.1886, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7271, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.73 seconds
+Train loss: 1.6365, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5972, Train Gating Acc: 0.0000
+Test loss: 1.1700, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7322, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000094 seconds
+Epoch time: 133.08 seconds
 
-2025-11-06 00:53:34.395920
+2025-11-21 04:18:15.486845
 Epoch 66/200:
-Train loss: 1.6248, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6067, Train Gating Acc: 0.0000
-Epoch time: 42.72 seconds
+Train loss: 1.6166, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6089, Train Gating Acc: 0.0000
+Epoch time: 128.81 seconds
 
-2025-11-06 00:54:16.541924
+2025-11-21 04:20:27.794836
 Epoch 67/200:
-Train loss: 1.6524, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5904, Train Gating Acc: 0.0000
-Test loss: 1.1673, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7224, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 42.15 seconds
+Train loss: 1.6181, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6104, Train Gating Acc: 0.0000
+Test loss: 1.1597, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7370, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000092 seconds
+Epoch time: 132.30 seconds
 
-2025-11-06 00:54:58.128649
+2025-11-21 04:22:37.346591
 Epoch 68/200:
-Train loss: 1.6147, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6117, Train Gating Acc: 0.0000
-Epoch time: 41.59 seconds
+Train loss: 1.6164, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6070, Train Gating Acc: 0.0000
+Epoch time: 129.55 seconds
 
-2025-11-06 00:55:39.783838
+2025-11-21 04:24:49.626018
 Epoch 69/200:
-Train loss: 1.6243, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6050, Train Gating Acc: 0.0000
-Test loss: 1.1984, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7308, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.66 seconds
+Train loss: 1.6285, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6015, Train Gating Acc: 0.0000
+Test loss: 1.1666, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7402, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000079 seconds
+Epoch time: 132.28 seconds
+New best accuracy: 0.7402
 
-2025-11-06 00:56:19.212981
+2025-11-21 04:26:57.107644
 Epoch 70/200:
-Train loss: 1.6039, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6127, Train Gating Acc: 0.0000
-Epoch time: 39.43 seconds
+Train loss: 1.6357, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6025, Train Gating Acc: 0.0000
+Epoch time: 127.47 seconds
 
-2025-11-06 00:57:01.155386
+2025-11-21 04:29:09.580799
 Epoch 71/200:
-Train loss: 1.6272, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6061, Train Gating Acc: 0.0000
-Test loss: 1.1764, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7268, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.54 seconds
+Train loss: 1.6206, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6087, Train Gating Acc: 0.0000
+Test loss: 1.1663, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7351, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000068 seconds
+Epoch time: 131.52 seconds
 
-2025-11-06 00:57:45.360408
+2025-11-21 04:31:18.390177
 Epoch 72/200:
-Train loss: 1.6400, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5996, Train Gating Acc: 0.0000
-Epoch time: 44.20 seconds
+Train loss: 1.5985, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6172, Train Gating Acc: 0.0000
+Epoch time: 128.81 seconds
 
-2025-11-06 00:58:26.316878
+2025-11-21 04:33:32.120962
 Epoch 73/200:
-Train loss: 1.6202, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6095, Train Gating Acc: 0.0000
-Test loss: 1.1834, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7325, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.96 seconds
+Train loss: 1.6253, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6064, Train Gating Acc: 0.0000
+Test loss: 1.1735, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7389, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000096 seconds
+Epoch time: 133.73 seconds
 
-2025-11-06 00:59:07.405204
+2025-11-21 04:35:42.231731
 Epoch 74/200:
-Train loss: 1.6050, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6145, Train Gating Acc: 0.0000
-Epoch time: 41.09 seconds
+Train loss: 1.6117, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6116, Train Gating Acc: 0.0000
+Epoch time: 130.11 seconds
 
-2025-11-06 00:59:47.863609
+2025-11-21 04:37:55.852443
 Epoch 75/200:
-Train loss: 1.6094, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6138, Train Gating Acc: 0.0000
-Test loss: 1.1453, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7468, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 40.46 seconds
+Train loss: 1.6303, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6032, Train Gating Acc: 0.0000
+Test loss: 1.1616, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7366, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000087 seconds
+Epoch time: 133.62 seconds
+
+2025-11-21 04:40:04.530637
+Epoch 76/200:
+Train loss: 1.6192, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6105, Train Gating Acc: 0.0000
+Epoch time: 127.49 seconds
+
+2025-11-21 04:42:16.549960
+Epoch 77/200:
+Train loss: 1.6143, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6120, Train Gating Acc: 0.0000
+Test loss: 1.1626, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7423, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000096 seconds
+Epoch time: 132.02 seconds
+New best accuracy: 0.7423
+
+2025-11-21 04:44:25.412904
+Epoch 78/200:
+Train loss: 1.6156, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6054, Train Gating Acc: 0.0000
+Epoch time: 128.84 seconds
+
+2025-11-21 04:46:38.681701
+Epoch 79/200:
+Train loss: 1.6132, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6112, Train Gating Acc: 0.0000
+Test loss: 1.1545, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7352, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000099 seconds
+Epoch time: 133.27 seconds
+
+2025-11-21 04:48:49.202500
+Epoch 80/200:
+Train loss: 1.6066, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6131, Train Gating Acc: 0.0000
+Epoch time: 130.52 seconds
+
+2025-11-21 04:51:02.289886
+Epoch 81/200:
+Train loss: 1.6360, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.5998, Train Gating Acc: 0.0000
+Test loss: 1.1582, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7440, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000087 seconds
+Epoch time: 132.19 seconds
+New best accuracy: 0.7440
+
+2025-11-21 04:53:13.209890
+Epoch 82/200:
+Train loss: 1.6334, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6063, Train Gating Acc: 0.0000
+Epoch time: 130.90 seconds
+
+2025-11-21 04:55:27.827979
+Epoch 83/200:
+Train loss: 1.6198, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6077, Train Gating Acc: 0.0000
+Test loss: 1.1723, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7342, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 134.62 seconds
+
+2025-11-21 04:57:38.471044
+Epoch 84/200:
+Train loss: 1.6312, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6060, Train Gating Acc: 0.0000
+Epoch time: 130.64 seconds
+
+2025-11-21 04:59:57.447303
+Epoch 85/200:
+Train loss: 1.6321, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6047, Train Gating Acc: 0.0000
+Test loss: 1.1670, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7335, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000108 seconds
+Epoch time: 138.98 seconds
+
+2025-11-21 05:02:11.677061
+Epoch 86/200:
+Train loss: 1.6177, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6103, Train Gating Acc: 0.0000
+Epoch time: 132.79 seconds
+
+2025-11-21 05:04:25.283223
+Epoch 87/200:
+Train loss: 1.6274, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6083, Train Gating Acc: 0.0000
+Test loss: 1.1347, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7468, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000085 seconds
+Epoch time: 133.61 seconds
 New best accuracy: 0.7468
 
-2025-11-06 01:00:28.101387
-Epoch 76/200:
-Train loss: 1.6148, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6105, Train Gating Acc: 0.0000
-Epoch time: 39.83 seconds
-
-2025-11-06 01:01:11.536591
-Epoch 77/200:
-Train loss: 1.6383, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6025, Train Gating Acc: 0.0000
-Test loss: 1.1655, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7401, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 43.44 seconds
-
-2025-11-06 01:01:51.546805
-Epoch 78/200:
-Train loss: 1.6054, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6126, Train Gating Acc: 0.0000
-Epoch time: 40.01 seconds
-
-2025-11-06 01:02:32.231361
-Epoch 79/200:
-Train loss: 1.5968, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6213, Train Gating Acc: 0.0000
-Test loss: 1.1471, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7426, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.68 seconds
-
-2025-11-06 01:03:13.771885
-Epoch 80/200:
-Train loss: 1.6190, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6078, Train Gating Acc: 0.0000
-Epoch time: 41.54 seconds
-
-2025-11-06 01:03:56.430446
-Epoch 81/200:
-Train loss: 1.6426, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6000, Train Gating Acc: 0.0000
-Test loss: 1.1608, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7371, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 42.21 seconds
-
-2025-11-06 01:04:37.805995
-Epoch 82/200:
-Train loss: 1.6251, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6053, Train Gating Acc: 0.0000
-Epoch time: 41.38 seconds
-
-2025-11-06 01:05:19.731935
-Epoch 83/200:
-Train loss: 1.6119, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6159, Train Gating Acc: 0.0000
-Test loss: 1.1677, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7294, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.93 seconds
-
-2025-11-06 01:05:59.900543
-Epoch 84/200:
-Train loss: 1.6126, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6148, Train Gating Acc: 0.0000
-Epoch time: 40.17 seconds
-
-2025-11-06 01:06:41.879971
-Epoch 85/200:
-Train loss: 1.6139, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6109, Train Gating Acc: 0.0000
-Test loss: 1.1475, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7430, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000024 seconds
-Epoch time: 41.98 seconds
-
-2025-11-06 01:07:22.243726
-Epoch 86/200:
-Train loss: 1.5957, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6177, Train Gating Acc: 0.0000
-Epoch time: 39.95 seconds
-
-2025-11-06 01:08:03.763649
-Epoch 87/200:
-Train loss: 1.6295, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6059, Train Gating Acc: 0.0000
-Test loss: 1.1446, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7532, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.52 seconds
-New best accuracy: 0.7532
-
-2025-11-06 01:08:45.105602
+2025-11-21 05:06:34.362911
 Epoch 88/200:
-Train loss: 1.6255, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6087, Train Gating Acc: 0.0000
-Epoch time: 41.34 seconds
+Train loss: 1.6242, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6082, Train Gating Acc: 0.0000
+Epoch time: 129.07 seconds
 
-2025-11-06 01:09:26.771442
+2025-11-21 05:08:47.368030
 Epoch 89/200:
-Train loss: 1.6150, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6106, Train Gating Acc: 0.0000
-Test loss: 1.1563, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7438, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.67 seconds
+Train loss: 1.5981, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6168, Train Gating Acc: 0.0000
+Test loss: 1.1355, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7483, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000086 seconds
+Epoch time: 133.01 seconds
+New best accuracy: 0.7483
 
-2025-11-06 01:10:07.634963
+2025-11-21 05:10:52.254208
 Epoch 90/200:
-Train loss: 1.6233, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6099, Train Gating Acc: 0.0000
-Epoch time: 40.86 seconds
+Train loss: 1.6228, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6066, Train Gating Acc: 0.0000
+Epoch time: 124.88 seconds
 
-2025-11-06 01:10:48.866887
+2025-11-21 05:13:05.850700
 Epoch 91/200:
-Train loss: 1.6144, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6126, Train Gating Acc: 0.0000
-Test loss: 1.1385, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7456, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.83 seconds
+Train loss: 1.6152, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6129, Train Gating Acc: 0.0000
+Test loss: 1.1513, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7378, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000091 seconds
+Epoch time: 132.70 seconds
 
-2025-11-06 01:11:29.626247
+2025-11-21 05:15:14.944369
 Epoch 92/200:
-Train loss: 1.6051, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6186, Train Gating Acc: 0.0000
-Epoch time: 40.76 seconds
+Train loss: 1.6345, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6004, Train Gating Acc: 0.0000
+Epoch time: 129.09 seconds
 
-2025-11-06 01:12:10.484314
+2025-11-21 05:17:27.853958
 Epoch 93/200:
-Train loss: 1.6070, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6116, Train Gating Acc: 0.0000
-Test loss: 1.1546, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7400, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 40.86 seconds
+Train loss: 1.6157, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6088, Train Gating Acc: 0.0000
+Test loss: 1.1399, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7441, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000091 seconds
+Epoch time: 132.91 seconds
 
-2025-11-06 01:12:50.780895
+2025-11-21 05:19:36.584330
 Epoch 94/200:
-Train loss: 1.6189, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6100, Train Gating Acc: 0.0000
-Epoch time: 40.30 seconds
+Train loss: 1.5955, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6212, Train Gating Acc: 0.0000
+Epoch time: 128.73 seconds
 
-2025-11-06 01:13:31.583923
+2025-11-21 05:21:50.316236
 Epoch 95/200:
-Train loss: 1.6096, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6164, Train Gating Acc: 0.0000
-Test loss: 1.1617, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7311, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 40.80 seconds
+Train loss: 1.5933, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6202, Train Gating Acc: 0.0000
+Test loss: 1.1335, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7502, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 133.73 seconds
+New best accuracy: 0.7502
 
-2025-11-06 01:14:12.341200
+2025-11-21 05:23:59.904172
 Epoch 96/200:
-Train loss: 1.6011, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6214, Train Gating Acc: 0.0000
-Epoch time: 40.15 seconds
+Train loss: 1.6058, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6143, Train Gating Acc: 0.0000
+Epoch time: 128.51 seconds
 
-2025-11-06 01:14:53.773995
+2025-11-21 05:26:12.885932
 Epoch 97/200:
-Train loss: 1.6188, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6132, Train Gating Acc: 0.0000
-Test loss: 1.1499, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7392, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.43 seconds
+Train loss: 1.6189, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6125, Train Gating Acc: 0.0000
+Test loss: 1.1462, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7468, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 132.98 seconds
 
-2025-11-06 01:15:35.798350
+2025-11-21 05:28:21.962532
 Epoch 98/200:
-Train loss: 1.6076, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6129, Train Gating Acc: 0.0000
-Epoch time: 42.02 seconds
+Train loss: 1.6047, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6172, Train Gating Acc: 0.0000
+Epoch time: 129.08 seconds
 
-2025-11-06 01:16:18.249868
+2025-11-21 05:30:34.651223
 Epoch 99/200:
-Train loss: 1.5914, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6235, Train Gating Acc: 0.0000
-Test loss: 1.1408, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7414, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 42.45 seconds
+Train loss: 1.6026, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6185, Train Gating Acc: 0.0000
+Test loss: 1.1579, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7458, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000085 seconds
+Epoch time: 132.69 seconds
 
-2025-11-06 01:16:59.970617
+2025-11-21 05:32:43.894331
 Epoch 100/200:
-Train loss: 1.6045, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6177, Train Gating Acc: 0.0000
-Epoch time: 41.72 seconds
+Train loss: 1.6183, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6128, Train Gating Acc: 0.0000
+Epoch time: 129.24 seconds
 
-2025-11-06 01:17:42.525876
+2025-11-21 05:34:58.054186
 Epoch 101/200:
-Train loss: 1.5997, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6226, Train Gating Acc: 0.0000
-Test loss: 1.1305, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7470, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 42.13 seconds
+Train loss: 1.6033, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6189, Train Gating Acc: 0.0000
+Test loss: 1.1406, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7486, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 133.13 seconds
 
-2025-11-06 01:18:24.309874
+2025-11-21 05:37:06.627135
 Epoch 102/200:
-Train loss: 1.6090, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6193, Train Gating Acc: 0.0000
-Epoch time: 41.78 seconds
+Train loss: 1.5944, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6183, Train Gating Acc: 0.0000
+Epoch time: 128.57 seconds
 
-2025-11-06 01:19:07.029389
+2025-11-21 05:39:20.974849
 Epoch 103/200:
-Train loss: 1.5982, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6225, Train Gating Acc: 0.0000
-Test loss: 1.1490, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7421, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 42.72 seconds
+Train loss: 1.6081, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6190, Train Gating Acc: 0.0000
+Test loss: 1.1268, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7542, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 134.35 seconds
+New best accuracy: 0.7542
 
-2025-11-06 01:19:48.599832
+2025-11-21 05:41:29.623130
 Epoch 104/200:
-Train loss: 1.6075, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6190, Train Gating Acc: 0.0000
-Epoch time: 41.57 seconds
+Train loss: 1.6038, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6175, Train Gating Acc: 0.0000
+Epoch time: 128.64 seconds
 
-2025-11-06 01:20:30.409842
+2025-11-21 05:43:42.666394
 Epoch 105/200:
-Train loss: 1.6176, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6136, Train Gating Acc: 0.0000
-Test loss: 1.1520, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7480, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.81 seconds
+Train loss: 1.6205, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6105, Train Gating Acc: 0.0000
+Test loss: 1.1397, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7504, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000085 seconds
+Epoch time: 133.04 seconds
 
-2025-11-06 01:21:11.387179
+2025-11-21 05:45:52.378553
 Epoch 106/200:
-Train loss: 1.6204, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6153, Train Gating Acc: 0.0000
-Epoch time: 40.55 seconds
+Train loss: 1.5967, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6193, Train Gating Acc: 0.0000
+Epoch time: 128.70 seconds
 
-2025-11-06 01:21:52.806824
+2025-11-21 05:48:05.325749
 Epoch 107/200:
-Train loss: 1.6076, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6233, Train Gating Acc: 0.0000
-Test loss: 1.1335, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7513, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.42 seconds
+Train loss: 1.5978, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6231, Train Gating Acc: 0.0000
+Test loss: 1.1286, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7510, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000074 seconds
+Epoch time: 132.95 seconds
 
-2025-11-06 01:22:33.557429
+2025-11-21 05:50:13.833100
 Epoch 108/200:
-Train loss: 1.5856, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6275, Train Gating Acc: 0.0000
-Epoch time: 40.75 seconds
+Train loss: 1.5916, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6286, Train Gating Acc: 0.0000
+Epoch time: 128.51 seconds
 
-2025-11-06 01:23:14.908956
+2025-11-21 05:52:27.055463
 Epoch 109/200:
-Train loss: 1.5878, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6266, Train Gating Acc: 0.0000
-Test loss: 1.1294, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7546, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000025 seconds
-Epoch time: 41.35 seconds
-New best accuracy: 0.7546
+Train loss: 1.5950, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6221, Train Gating Acc: 0.0000
+Test loss: 1.1557, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7413, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 133.22 seconds
 
-2025-11-06 01:23:55.800482
+2025-11-21 05:54:35.911023
 Epoch 110/200:
-Train loss: 1.6188, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6147, Train Gating Acc: 0.0000
-Epoch time: 40.89 seconds
+Train loss: 1.6197, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6124, Train Gating Acc: 0.0000
+Epoch time: 128.86 seconds
 
-2025-11-06 01:24:36.919762
+2025-11-21 05:56:49.815610
 Epoch 111/200:
-Train loss: 1.6059, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6209, Train Gating Acc: 0.0000
-Test loss: 1.1309, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7507, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.70 seconds
+Train loss: 1.6048, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6182, Train Gating Acc: 0.0000
+Test loss: 1.1525, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7483, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000087 seconds
+Epoch time: 132.79 seconds
 
-2025-11-06 01:25:17.326042
+2025-11-21 05:58:59.224134
 Epoch 112/200:
-Train loss: 1.6143, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6188, Train Gating Acc: 0.0000
-Epoch time: 40.41 seconds
+Train loss: 1.6056, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6207, Train Gating Acc: 0.0000
+Epoch time: 129.41 seconds
 
-2025-11-06 01:25:58.248208
+2025-11-21 06:01:18.062963
 Epoch 113/200:
-Train loss: 1.6018, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6155, Train Gating Acc: 0.0000
-Test loss: 1.1361, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7497, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 40.92 seconds
+Train loss: 1.5870, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6217, Train Gating Acc: 0.0000
+Test loss: 1.1216, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7573, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000079 seconds
+Epoch time: 138.84 seconds
+New best accuracy: 0.7573
 
-2025-11-06 01:26:38.764875
+2025-11-21 06:03:27.964312
 Epoch 114/200:
-Train loss: 1.5981, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6268, Train Gating Acc: 0.0000
-Epoch time: 40.52 seconds
+Train loss: 1.5646, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6352, Train Gating Acc: 0.0000
+Epoch time: 129.89 seconds
 
-2025-11-06 01:27:19.701160
+2025-11-21 06:05:41.542632
 Epoch 115/200:
-Train loss: 1.6157, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6087, Train Gating Acc: 0.0000
-Test loss: 1.1284, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7524, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.94 seconds
+Train loss: 1.5792, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6282, Train Gating Acc: 0.0000
+Test loss: 1.1324, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7478, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000094 seconds
+Epoch time: 133.58 seconds
 
-2025-11-06 01:27:59.435748
+2025-11-21 06:07:51.552397
 Epoch 116/200:
-Train loss: 1.5835, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6259, Train Gating Acc: 0.0000
-Epoch time: 39.31 seconds
+Train loss: 1.6049, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6196, Train Gating Acc: 0.0000
+Epoch time: 129.03 seconds
 
-2025-11-06 01:28:41.110803
+2025-11-21 06:10:04.936673
 Epoch 117/200:
-Train loss: 1.5970, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6258, Train Gating Acc: 0.0000
-Test loss: 1.1307, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7549, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.67 seconds
-New best accuracy: 0.7549
+Train loss: 1.5909, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6206, Train Gating Acc: 0.0000
+Test loss: 1.1321, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7572, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 133.38 seconds
 
-2025-11-06 01:29:22.154426
+2025-11-21 06:12:13.907708
 Epoch 118/200:
-Train loss: 1.5911, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6252, Train Gating Acc: 0.0000
-Epoch time: 41.04 seconds
+Train loss: 1.6188, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6125, Train Gating Acc: 0.0000
+Epoch time: 128.97 seconds
 
-2025-11-06 01:30:03.599067
+2025-11-21 06:14:27.915628
 Epoch 119/200:
-Train loss: 1.5952, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6284, Train Gating Acc: 0.0000
-Test loss: 1.1303, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7507, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.44 seconds
+Train loss: 1.5952, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6256, Train Gating Acc: 0.0000
+Test loss: 1.1432, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7452, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 134.01 seconds
 
-2025-11-06 01:30:44.376205
+2025-11-21 06:16:37.239933
 Epoch 120/200:
-Train loss: 1.5980, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6244, Train Gating Acc: 0.0000
-Epoch time: 40.78 seconds
+Train loss: 1.5833, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6294, Train Gating Acc: 0.0000
+Epoch time: 129.32 seconds
 
-2025-11-06 01:31:27.614741
+2025-11-21 06:18:52.599597
 Epoch 121/200:
-Train loss: 1.5700, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6352, Train Gating Acc: 0.0000
-Test loss: 1.1240, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7526, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 42.81 seconds
+Train loss: 1.5779, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6315, Train Gating Acc: 0.0000
+Test loss: 1.1204, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7588, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000088 seconds
+Epoch time: 134.46 seconds
+New best accuracy: 0.7588
 
-2025-11-06 01:32:07.593446
+2025-11-21 06:21:01.760386
 Epoch 122/200:
-Train loss: 1.6055, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6186, Train Gating Acc: 0.0000
-Epoch time: 39.98 seconds
+Train loss: 1.6118, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6163, Train Gating Acc: 0.0000
+Epoch time: 129.15 seconds
 
-2025-11-06 01:32:48.536261
+2025-11-21 06:23:16.202086
 Epoch 123/200:
-Train loss: 1.5954, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6244, Train Gating Acc: 0.0000
-Test loss: 1.1179, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7597, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 40.94 seconds
-New best accuracy: 0.7597
+Train loss: 1.5912, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6247, Train Gating Acc: 0.0000
+Test loss: 1.1278, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7549, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000094 seconds
+Epoch time: 134.44 seconds
 
-2025-11-06 01:33:28.914494
+2025-11-21 06:25:25.290116
 Epoch 124/200:
-Train loss: 1.6042, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6182, Train Gating Acc: 0.0000
-Epoch time: 40.37 seconds
+Train loss: 1.5898, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6231, Train Gating Acc: 0.0000
+Epoch time: 129.09 seconds
 
-2025-11-06 01:34:09.587696
+2025-11-21 06:27:39.287649
 Epoch 125/200:
-Train loss: 1.6105, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6231, Train Gating Acc: 0.0000
-Test loss: 1.1259, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7569, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000026 seconds
-Epoch time: 40.67 seconds
+Train loss: 1.5722, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6333, Train Gating Acc: 0.0000
+Test loss: 1.1253, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7583, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000088 seconds
+Epoch time: 134.00 seconds
 
-2025-11-06 01:34:50.551386
+2025-11-21 06:29:49.859389
 Epoch 126/200:
-Train loss: 1.5709, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6348, Train Gating Acc: 0.0000
-Epoch time: 40.51 seconds
+Train loss: 1.5856, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6295, Train Gating Acc: 0.0000
+Epoch time: 129.66 seconds
 
-2025-11-06 01:35:30.997294
+2025-11-21 06:32:02.948809
 Epoch 127/200:
-Train loss: 1.5921, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6274, Train Gating Acc: 0.0000
-Test loss: 1.1225, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7570, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.45 seconds
+Train loss: 1.6065, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6161, Train Gating Acc: 0.0000
+Test loss: 1.1335, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7615, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000089 seconds
+Epoch time: 133.09 seconds
+New best accuracy: 0.7615
 
-2025-11-06 01:36:11.535974
+2025-11-21 06:34:13.604966
 Epoch 128/200:
-Train loss: 1.5739, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6351, Train Gating Acc: 0.0000
-Epoch time: 40.54 seconds
+Train loss: 1.5993, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6227, Train Gating Acc: 0.0000
+Epoch time: 130.64 seconds
 
-2025-11-06 01:36:52.698128
+2025-11-21 06:36:26.833979
 Epoch 129/200:
-Train loss: 1.6108, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6229, Train Gating Acc: 0.0000
-Test loss: 1.1384, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7549, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.16 seconds
+Train loss: 1.5742, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6349, Train Gating Acc: 0.0000
+Test loss: 1.1149, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7635, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000099 seconds
+Epoch time: 133.23 seconds
+New best accuracy: 0.7635
 
-2025-11-06 01:37:34.426137
+2025-11-21 06:38:38.440906
 Epoch 130/200:
-Train loss: 1.5913, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6296, Train Gating Acc: 0.0000
-Epoch time: 41.73 seconds
+Train loss: 1.5940, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6249, Train Gating Acc: 0.0000
+Epoch time: 131.59 seconds
 
-2025-11-06 01:38:16.673741
+2025-11-21 06:40:52.306632
 Epoch 131/200:
-Train loss: 1.5713, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6337, Train Gating Acc: 0.0000
-Test loss: 1.1114, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7591, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.62 seconds
+Train loss: 1.6207, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6164, Train Gating Acc: 0.0000
+Test loss: 1.1163, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7577, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000094 seconds
+Epoch time: 132.95 seconds
 
-2025-11-06 01:38:58.296940
+2025-11-21 06:43:00.982227
 Epoch 132/200:
-Train loss: 1.5955, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6272, Train Gating Acc: 0.0000
-Epoch time: 41.62 seconds
+Train loss: 1.5842, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6286, Train Gating Acc: 0.0000
+Epoch time: 128.68 seconds
 
-2025-11-06 01:39:40.263393
+2025-11-21 06:45:14.912172
 Epoch 133/200:
-Train loss: 1.5830, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6289, Train Gating Acc: 0.0000
-Test loss: 1.1165, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7545, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.97 seconds
+Train loss: 1.5915, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6261, Train Gating Acc: 0.0000
+Test loss: 1.1122, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7610, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000103 seconds
+Epoch time: 133.93 seconds
 
-2025-11-06 01:40:21.241870
+2025-11-21 06:47:24.147508
 Epoch 134/200:
-Train loss: 1.5957, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6257, Train Gating Acc: 0.0000
-Epoch time: 40.98 seconds
+Train loss: 1.5913, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6257, Train Gating Acc: 0.0000
+Epoch time: 129.23 seconds
 
-2025-11-06 01:41:03.756147
+2025-11-21 06:49:37.173834
 Epoch 135/200:
-Train loss: 1.6008, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6260, Train Gating Acc: 0.0000
-Test loss: 1.1048, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7646, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 42.51 seconds
-New best accuracy: 0.7646
+Train loss: 1.5863, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6313, Train Gating Acc: 0.0000
+Test loss: 1.1140, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7596, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 133.03 seconds
 
-2025-11-06 01:41:44.442118
+2025-11-21 06:51:46.364142
 Epoch 136/200:
-Train loss: 1.5765, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6349, Train Gating Acc: 0.0000
-Epoch time: 40.22 seconds
+Train loss: 1.5813, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6310, Train Gating Acc: 0.0000
+Epoch time: 128.26 seconds
 
-2025-11-06 01:42:25.257667
+2025-11-21 06:54:00.261862
 Epoch 137/200:
-Train loss: 1.5826, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6308, Train Gating Acc: 0.0000
-Test loss: 1.1109, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7581, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 40.82 seconds
+Train loss: 1.5681, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6393, Train Gating Acc: 0.0000
+Test loss: 1.1212, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7565, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 133.90 seconds
 
-2025-11-06 01:43:05.808033
+2025-11-21 06:56:09.302577
 Epoch 138/200:
-Train loss: 1.5662, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6370, Train Gating Acc: 0.0000
-Epoch time: 40.55 seconds
+Train loss: 1.5870, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6273, Train Gating Acc: 0.0000
+Epoch time: 129.04 seconds
 
-2025-11-06 01:43:48.032262
+2025-11-21 06:58:23.480593
 Epoch 139/200:
-Train loss: 1.5936, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6277, Train Gating Acc: 0.0000
-Test loss: 1.1111, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7629, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 42.22 seconds
+Train loss: 1.6144, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6195, Train Gating Acc: 0.0000
+Test loss: 1.1347, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7617, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000086 seconds
+Epoch time: 134.18 seconds
 
-2025-11-06 01:44:28.068568
+2025-11-21 07:00:39.022487
 Epoch 140/200:
-Train loss: 1.5853, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6271, Train Gating Acc: 0.0000
-Epoch time: 40.04 seconds
+Train loss: 1.5838, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6317, Train Gating Acc: 0.0000
+Epoch time: 135.54 seconds
 
-2025-11-06 01:45:08.694861
+2025-11-21 07:02:54.288613
 Epoch 141/200:
-Train loss: 1.5714, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6364, Train Gating Acc: 0.0000
-Test loss: 1.1035, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7644, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.20 seconds
+Train loss: 1.5783, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6363, Train Gating Acc: 0.0000
+Test loss: 1.0944, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7668, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000079 seconds
+Epoch time: 134.35 seconds
+New best accuracy: 0.7668
 
-2025-11-06 01:45:49.257578
+2025-11-21 07:05:04.545547
 Epoch 142/200:
-Train loss: 1.5817, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6315, Train Gating Acc: 0.0000
-Epoch time: 40.56 seconds
+Train loss: 1.5866, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6327, Train Gating Acc: 0.0000
+Epoch time: 130.24 seconds
 
-2025-11-06 01:46:29.755040
+2025-11-21 07:07:18.262580
 Epoch 143/200:
-Train loss: 1.5820, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6348, Train Gating Acc: 0.0000
-Test loss: 1.1028, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7706, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.50 seconds
-New best accuracy: 0.7706
+Train loss: 1.5838, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6326, Train Gating Acc: 0.0000
+Test loss: 1.1096, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7640, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 133.72 seconds
 
-2025-11-06 01:47:10.337400
+2025-11-21 07:09:29.576895
 Epoch 144/200:
-Train loss: 1.5758, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6384, Train Gating Acc: 0.0000
-Epoch time: 40.58 seconds
+Train loss: 1.5723, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6395, Train Gating Acc: 0.0000
+Epoch time: 131.31 seconds
 
-2025-11-06 01:47:51.681118
+2025-11-21 07:11:42.372597
 Epoch 145/200:
-Train loss: 1.5670, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6416, Train Gating Acc: 0.0000
-Test loss: 1.1028, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7708, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.34 seconds
-New best accuracy: 0.7708
+Train loss: 1.5908, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6269, Train Gating Acc: 0.0000
+Test loss: 1.1078, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7699, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000080 seconds
+Epoch time: 132.80 seconds
+New best accuracy: 0.7699
 
-2025-11-06 01:48:32.871104
+2025-11-21 07:13:52.652188
 Epoch 146/200:
-Train loss: 1.5707, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6374, Train Gating Acc: 0.0000
-Epoch time: 40.75 seconds
+Train loss: 1.5567, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6401, Train Gating Acc: 0.0000
+Epoch time: 129.29 seconds
 
-2025-11-06 01:49:14.370210
+2025-11-21 07:16:06.081786
 Epoch 147/200:
-Train loss: 1.5853, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6351, Train Gating Acc: 0.0000
-Test loss: 1.1018, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7650, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000025 seconds
-Epoch time: 41.50 seconds
+Train loss: 1.5694, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6403, Train Gating Acc: 0.0000
+Test loss: 1.0989, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7664, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000095 seconds
+Epoch time: 133.43 seconds
 
-2025-11-06 01:49:55.995967
+2025-11-21 07:18:13.630969
 Epoch 148/200:
-Train loss: 1.5921, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6315, Train Gating Acc: 0.0000
-Epoch time: 41.63 seconds
+Train loss: 1.5668, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6395, Train Gating Acc: 0.0000
+Epoch time: 127.55 seconds
 
-2025-11-06 01:50:38.018326
+2025-11-21 07:20:24.938262
 Epoch 149/200:
-Train loss: 1.5763, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6363, Train Gating Acc: 0.0000
-Test loss: 1.1095, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7594, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 42.02 seconds
+Train loss: 1.5584, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6448, Train Gating Acc: 0.0000
+Test loss: 1.1080, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7619, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 131.31 seconds
 
-2025-11-06 01:51:18.114653
+2025-11-21 07:22:33.946215
 Epoch 150/200:
-Train loss: 1.5643, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6390, Train Gating Acc: 0.0000
-Epoch time: 40.10 seconds
+Train loss: 1.5862, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6297, Train Gating Acc: 0.0000
+Epoch time: 129.01 seconds
 
-2025-11-06 01:52:00.295953
+2025-11-21 07:24:47.626519
 Epoch 151/200:
-Train loss: 1.5687, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6408, Train Gating Acc: 0.0000
-Test loss: 1.1093, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7696, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.75 seconds
+Train loss: 1.5779, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6323, Train Gating Acc: 0.0000
+Test loss: 1.0991, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7651, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000086 seconds
+Epoch time: 132.53 seconds
 
-2025-11-06 01:52:41.658431
+2025-11-21 07:26:56.290730
 Epoch 152/200:
-Train loss: 1.5789, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6393, Train Gating Acc: 0.0000
-Epoch time: 41.36 seconds
+Train loss: 1.5632, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6395, Train Gating Acc: 0.0000
+Epoch time: 128.66 seconds
 
-2025-11-06 01:53:23.102182
+2025-11-21 07:29:10.794076
 Epoch 153/200:
-Train loss: 1.5763, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6315, Train Gating Acc: 0.0000
-Test loss: 1.1103, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7616, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.44 seconds
+Train loss: 1.5847, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6350, Train Gating Acc: 0.0000
+Test loss: 1.1017, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7664, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000091 seconds
+Epoch time: 134.50 seconds
 
-2025-11-06 01:54:03.883163
+2025-11-21 07:31:19.386596
 Epoch 154/200:
-Train loss: 1.5496, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6473, Train Gating Acc: 0.0000
-Epoch time: 40.78 seconds
+Train loss: 1.5888, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6308, Train Gating Acc: 0.0000
+Epoch time: 128.59 seconds
 
-2025-11-06 01:54:45.105651
+2025-11-21 07:33:34.581556
 Epoch 155/200:
-Train loss: 1.5843, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6328, Train Gating Acc: 0.0000
-Test loss: 1.0999, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7705, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000027 seconds
-Epoch time: 41.22 seconds
+Train loss: 1.5818, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6351, Train Gating Acc: 0.0000
+Test loss: 1.1189, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7630, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000092 seconds
+Epoch time: 135.19 seconds
 
-2025-11-06 01:55:26.528493
+2025-11-21 07:35:45.103917
 Epoch 156/200:
-Train loss: 1.5786, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6382, Train Gating Acc: 0.0000
-Epoch time: 40.97 seconds
+Train loss: 1.5646, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6378, Train Gating Acc: 0.0000
+Epoch time: 129.49 seconds
 
-2025-11-06 01:56:07.123224
+2025-11-21 07:37:58.635951
 Epoch 157/200:
-Train loss: 1.5593, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6443, Train Gating Acc: 0.0000
-Test loss: 1.1041, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7679, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 40.59 seconds
+Train loss: 1.5892, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6265, Train Gating Acc: 0.0000
+Test loss: 1.1097, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7671, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000085 seconds
+Epoch time: 133.53 seconds
 
-2025-11-06 01:56:47.139997
+2025-11-21 07:40:08.485576
 Epoch 158/200:
-Train loss: 1.5714, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6416, Train Gating Acc: 0.0000
-Epoch time: 40.02 seconds
+Train loss: 1.5806, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6337, Train Gating Acc: 0.0000
+Epoch time: 129.85 seconds
 
-2025-11-06 01:57:28.261027
+2025-11-21 07:42:23.431372
 Epoch 159/200:
-Train loss: 1.5992, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6283, Train Gating Acc: 0.0000
-Test loss: 1.0981, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7688, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.12 seconds
+Train loss: 1.5574, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6430, Train Gating Acc: 0.0000
+Test loss: 1.1089, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7653, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000102 seconds
+Epoch time: 134.95 seconds
 
-2025-11-06 01:58:08.825494
+2025-11-21 07:44:33.402058
 Epoch 160/200:
-Train loss: 1.5521, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6449, Train Gating Acc: 0.0000
-Epoch time: 40.56 seconds
+Train loss: 1.5751, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6382, Train Gating Acc: 0.0000
+Epoch time: 129.97 seconds
 
-2025-11-06 01:58:49.780848
+2025-11-21 07:46:48.805138
 Epoch 161/200:
-Train loss: 1.5630, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6444, Train Gating Acc: 0.0000
-Test loss: 1.0953, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7700, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000024 seconds
-Epoch time: 40.30 seconds
+Train loss: 1.5884, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6313, Train Gating Acc: 0.0000
+Test loss: 1.0958, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7723, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000095 seconds
+Epoch time: 134.20 seconds
+New best accuracy: 0.7723
 
-2025-11-06 01:59:31.493740
+2025-11-21 07:48:57.761810
 Epoch 162/200:
-Train loss: 1.5634, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6474, Train Gating Acc: 0.0000
-Epoch time: 41.71 seconds
+Train loss: 1.5739, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6383, Train Gating Acc: 0.0000
+Epoch time: 128.94 seconds
 
-2025-11-06 02:00:12.919147
+2025-11-21 07:51:11.704327
 Epoch 163/200:
-Train loss: 1.5965, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6312, Train Gating Acc: 0.0000
-Test loss: 1.1171, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7692, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.43 seconds
+Train loss: 1.5812, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6342, Train Gating Acc: 0.0000
+Test loss: 1.1009, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7666, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000086 seconds
+Epoch time: 133.94 seconds
 
-2025-11-06 02:00:54.133322
+2025-11-21 07:53:21.918136
 Epoch 164/200:
-Train loss: 1.5707, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6422, Train Gating Acc: 0.0000
-Epoch time: 41.21 seconds
+Train loss: 1.5845, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6357, Train Gating Acc: 0.0000
+Epoch time: 130.21 seconds
 
-2025-11-06 02:01:35.958644
+2025-11-21 07:55:36.345900
 Epoch 165/200:
-Train loss: 1.5665, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6433, Train Gating Acc: 0.0000
-Test loss: 1.0957, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7706, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.83 seconds
+Train loss: 1.5835, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6363, Train Gating Acc: 0.0000
+Test loss: 1.0986, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7697, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000100 seconds
+Epoch time: 134.43 seconds
 
-2025-11-06 02:02:18.218316
+2025-11-21 07:57:46.339308
 Epoch 166/200:
-Train loss: 1.5607, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6425, Train Gating Acc: 0.0000
-Epoch time: 41.83 seconds
+Train loss: 1.5763, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6351, Train Gating Acc: 0.0000
+Epoch time: 129.10 seconds
 
-2025-11-06 02:03:01.254387
+2025-11-21 08:00:03.327004
 Epoch 167/200:
-Train loss: 1.5681, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6440, Train Gating Acc: 0.0000
-Test loss: 1.1019, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7686, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000024 seconds
-Epoch time: 43.04 seconds
+Train loss: 1.5761, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6391, Train Gating Acc: 0.0000
+Test loss: 1.1028, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7671, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000076 seconds
+Epoch time: 136.99 seconds
 
-2025-11-06 02:03:42.718090
+2025-11-21 08:02:17.701510
 Epoch 168/200:
-Train loss: 1.5842, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6365, Train Gating Acc: 0.0000
-Epoch time: 41.46 seconds
+Train loss: 1.5709, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6342, Train Gating Acc: 0.0000
+Epoch time: 134.37 seconds
 
-2025-11-06 02:04:24.176217
+2025-11-21 08:04:31.742957
 Epoch 169/200:
-Train loss: 1.5934, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6297, Train Gating Acc: 0.0000
-Test loss: 1.0917, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7710, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.46 seconds
-New best accuracy: 0.7710
+Train loss: 1.5925, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6318, Train Gating Acc: 0.0000
+Test loss: 1.1055, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7677, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000082 seconds
+Epoch time: 134.04 seconds
 
-2025-11-06 02:05:03.944550
+2025-11-21 08:06:41.980871
 Epoch 170/200:
-Train loss: 1.5795, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6382, Train Gating Acc: 0.0000
-Epoch time: 39.76 seconds
+Train loss: 1.5552, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6452, Train Gating Acc: 0.0000
+Epoch time: 130.24 seconds
 
-2025-11-06 02:05:44.982390
+2025-11-21 08:08:56.875482
 Epoch 171/200:
-Train loss: 1.5955, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6315, Train Gating Acc: 0.0000
-Test loss: 1.0954, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7746, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.61 seconds
-New best accuracy: 0.7746
+Train loss: 1.5873, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6337, Train Gating Acc: 0.0000
+Test loss: 1.1040, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7713, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 134.04 seconds
 
-2025-11-06 02:06:24.675926
+2025-11-21 08:11:15.921367
 Epoch 172/200:
-Train loss: 1.5723, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6366, Train Gating Acc: 0.0000
-Epoch time: 39.69 seconds
+Train loss: 1.5657, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6423, Train Gating Acc: 0.0000
+Epoch time: 139.05 seconds
 
-2025-11-06 02:07:05.985214
+2025-11-21 08:13:30.891445
 Epoch 173/200:
-Train loss: 1.5845, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6346, Train Gating Acc: 0.0000
-Test loss: 1.1041, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7703, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.31 seconds
+Train loss: 1.5828, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6319, Train Gating Acc: 0.0000
+Test loss: 1.1005, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7706, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 134.97 seconds
 
-2025-11-06 02:07:46.662210
+2025-11-21 08:15:41.149750
 Epoch 174/200:
-Train loss: 1.5572, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6447, Train Gating Acc: 0.0000
-Epoch time: 40.68 seconds
+Train loss: 1.5720, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6400, Train Gating Acc: 0.0000
+Epoch time: 130.26 seconds
 
-2025-11-06 02:08:27.647068
+2025-11-21 08:17:55.418138
 Epoch 175/200:
-Train loss: 1.5887, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6380, Train Gating Acc: 0.0000
-Test loss: 1.1025, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7643, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 40.98 seconds
+Train loss: 1.5550, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6473, Train Gating Acc: 0.0000
+Test loss: 1.0943, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7753, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 134.27 seconds
+New best accuracy: 0.7753
 
-2025-11-06 02:09:08.619281
+2025-11-21 08:20:06.198895
 Epoch 176/200:
-Train loss: 1.5649, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6414, Train Gating Acc: 0.0000
-Epoch time: 40.53 seconds
+Train loss: 1.5493, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6476, Train Gating Acc: 0.0000
+Epoch time: 129.98 seconds
 
-2025-11-06 02:09:50.729066
+2025-11-21 08:22:19.659570
 Epoch 177/200:
-Train loss: 1.5663, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6404, Train Gating Acc: 0.0000
-Test loss: 1.0924, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7706, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000019 seconds
-Epoch time: 42.11 seconds
+Train loss: 1.5629, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6440, Train Gating Acc: 0.0000
+Test loss: 1.0993, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7711, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 133.46 seconds
 
-2025-11-06 02:10:32.134456
+2025-11-21 08:24:29.107444
 Epoch 178/200:
-Train loss: 1.5865, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6317, Train Gating Acc: 0.0000
-Epoch time: 41.41 seconds
+Train loss: 1.5767, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6358, Train Gating Acc: 0.0000
+Epoch time: 129.45 seconds
 
-2025-11-06 02:11:13.691951
+2025-11-21 08:26:42.855922
 Epoch 179/200:
-Train loss: 1.5803, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6347, Train Gating Acc: 0.0000
-Test loss: 1.0923, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7746, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.56 seconds
+Train loss: 1.5730, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6380, Train Gating Acc: 0.0000
+Test loss: 1.0891, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7743, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 133.75 seconds
 
-2025-11-06 02:11:55.151856
+2025-11-21 08:28:53.422837
 Epoch 180/200:
-Train loss: 1.5609, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6403, Train Gating Acc: 0.0000
-Epoch time: 41.46 seconds
+Train loss: 1.5920, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6318, Train Gating Acc: 0.0000
+Epoch time: 130.57 seconds
 
-2025-11-06 02:12:37.166381
+2025-11-21 08:31:05.643070
 Epoch 181/200:
-Train loss: 1.5681, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6410, Train Gating Acc: 0.0000
-Test loss: 1.0861, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7742, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.59 seconds
+Train loss: 1.5729, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6372, Train Gating Acc: 0.0000
+Test loss: 1.0829, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7747, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000074 seconds
+Epoch time: 131.39 seconds
 
-2025-11-06 02:13:18.503172
+2025-11-21 08:33:14.842183
 Epoch 182/200:
-Train loss: 1.5711, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6363, Train Gating Acc: 0.0000
-Epoch time: 41.34 seconds
+Train loss: 1.5574, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6455, Train Gating Acc: 0.0000
+Epoch time: 129.20 seconds
 
-2025-11-06 02:14:00.712581
+2025-11-21 08:35:29.737136
 Epoch 183/200:
-Train loss: 1.5561, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6421, Train Gating Acc: 0.0000
-Test loss: 1.0881, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7742, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 42.21 seconds
+Train loss: 1.5749, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6372, Train Gating Acc: 0.0000
+Test loss: 1.0908, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7729, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000090 seconds
+Epoch time: 134.89 seconds
 
-2025-11-06 02:14:42.112918
+2025-11-21 08:37:39.813759
 Epoch 184/200:
-Train loss: 1.5741, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6414, Train Gating Acc: 0.0000
-Epoch time: 41.40 seconds
+Train loss: 1.5672, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6389, Train Gating Acc: 0.0000
+Epoch time: 130.08 seconds
 
-2025-11-06 02:15:23.303187
+2025-11-21 08:39:54.496380
 Epoch 185/200:
-Train loss: 1.5743, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6413, Train Gating Acc: 0.0000
-Test loss: 1.0904, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7729, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.19 seconds
+Train loss: 1.5757, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6419, Train Gating Acc: 0.0000
+Test loss: 1.0891, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7726, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000095 seconds
+Epoch time: 134.68 seconds
 
-2025-11-06 02:16:04.030857
+2025-11-21 08:42:04.620348
 Epoch 186/200:
-Train loss: 1.5530, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6480, Train Gating Acc: 0.0000
-Epoch time: 40.29 seconds
+Train loss: 1.5693, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6420, Train Gating Acc: 0.0000
+Epoch time: 129.17 seconds
 
-2025-11-06 02:16:45.353378
+2025-11-21 08:44:18.172145
 Epoch 187/200:
-Train loss: 1.5605, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6475, Train Gating Acc: 0.0000
-Test loss: 1.0878, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7733, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 41.32 seconds
+Train loss: 1.5745, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6363, Train Gating Acc: 0.0000
+Test loss: 1.0951, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7728, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000091 seconds
+Epoch time: 133.55 seconds
 
-2025-11-06 02:17:25.539351
+2025-11-21 08:46:29.322276
 Epoch 188/200:
-Train loss: 1.5641, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6454, Train Gating Acc: 0.0000
-Epoch time: 40.19 seconds
+Train loss: 1.5712, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6379, Train Gating Acc: 0.0000
+Epoch time: 131.15 seconds
 
-2025-11-06 02:18:06.430041
+2025-11-21 08:48:42.463732
 Epoch 189/200:
-Train loss: 1.5802, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6357, Train Gating Acc: 0.0000
-Test loss: 1.0874, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7741, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000022 seconds
-Epoch time: 40.89 seconds
+Train loss: 1.5534, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6469, Train Gating Acc: 0.0000
+Test loss: 1.0880, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7743, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000079 seconds
+Epoch time: 133.14 seconds
 
-2025-11-06 02:18:46.510116
+2025-11-21 08:50:51.490290
 Epoch 190/200:
-Train loss: 1.6008, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6310, Train Gating Acc: 0.0000
-Epoch time: 40.08 seconds
+Train loss: 1.5876, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6379, Train Gating Acc: 0.0000
+Epoch time: 129.03 seconds
 
-2025-11-06 02:19:27.933562
+2025-11-21 08:53:06.075827
 Epoch 191/200:
-Train loss: 1.5717, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6396, Train Gating Acc: 0.0000
-Test loss: 1.0881, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7755, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 41.00 seconds
-New best accuracy: 0.7755
+Train loss: 1.5830, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6398, Train Gating Acc: 0.0000
+Test loss: 1.0866, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7765, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000099 seconds
+Epoch time: 133.33 seconds
+New best accuracy: 0.7765
 
-2025-11-06 02:20:06.958859
+2025-11-21 08:55:16.822213
 Epoch 192/200:
-Train loss: 1.5466, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6545, Train Gating Acc: 0.0000
-Epoch time: 39.02 seconds
+Train loss: 1.5743, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6369, Train Gating Acc: 0.0000
+Epoch time: 130.73 seconds
 
-2025-11-06 02:20:48.049485
+2025-11-21 08:57:29.864213
 Epoch 193/200:
-Train loss: 1.5845, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6369, Train Gating Acc: 0.0000
-Test loss: 1.0929, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7721, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000023 seconds
-Epoch time: 41.09 seconds
+Train loss: 1.5682, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6417, Train Gating Acc: 0.0000
+Test loss: 1.0887, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7753, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000087 seconds
+Epoch time: 133.04 seconds
 
-2025-11-06 02:21:28.618601
+2025-11-21 08:59:40.587358
 Epoch 194/200:
-Train loss: 1.5682, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6429, Train Gating Acc: 0.0000
-Epoch time: 40.57 seconds
+Train loss: 1.5613, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6402, Train Gating Acc: 0.0000
+Epoch time: 130.72 seconds
 
-2025-11-06 02:22:10.117822
+2025-11-21 09:02:03.045848
 Epoch 195/200:
-Train loss: 1.5540, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6506, Train Gating Acc: 0.0000
-Test loss: 1.0878, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7741, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.50 seconds
+Train loss: 1.5710, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6388, Train Gating Acc: 0.0000
+Test loss: 1.0858, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7750, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000084 seconds
+Epoch time: 142.46 seconds
 
-2025-11-06 02:22:52.113904
+2025-11-21 09:04:14.349363
 Epoch 196/200:
-Train loss: 1.5579, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6464, Train Gating Acc: 0.0000
-Epoch time: 41.36 seconds
+Train loss: 1.5617, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6416, Train Gating Acc: 0.0000
+Epoch time: 130.39 seconds
 
-2025-11-06 02:23:34.815778
+2025-11-21 09:06:28.804281
 Epoch 197/200:
-Train loss: 1.5709, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6413, Train Gating Acc: 0.0000
-Test loss: 1.0852, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7746, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000021 seconds
-Epoch time: 42.70 seconds
+Train loss: 1.5568, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6460, Train Gating Acc: 0.0000
+Test loss: 1.0867, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7753, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000083 seconds
+Epoch time: 134.45 seconds
 
-2025-11-06 02:24:16.162328
+2025-11-21 09:08:39.040345
 Epoch 198/200:
-Train loss: 1.5715, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6375, Train Gating Acc: 0.0000
-Epoch time: 41.35 seconds
+Train loss: 1.5953, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6293, Train Gating Acc: 0.0000
+Epoch time: 130.24 seconds
 
-2025-11-06 02:24:58.152732
+2025-11-21 09:10:53.008133
 Epoch 199/200:
-Train loss: 1.5607, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6467, Train Gating Acc: 0.0000
-Test loss: 1.0900, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7730, Test Gating Acc: 0.0000
-Avg Inference Time per image: 0.000020 seconds
-Epoch time: 41.99 seconds
+Train loss: 1.5772, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6350, Train Gating Acc: 0.0000
+Test loss: 1.0875, Test Balance Loss: 0.0000, Test Gating Loss: 0.0000, Test Acc: 0.7746, Test Gating Acc: 0.0000
+Avg Inference Time per image: 0.000086 seconds
+Epoch time: 133.97 seconds
 
-2025-11-06 02:25:39.584309
+2025-11-21 09:13:03.070674
 Epoch 200/200:
-Train loss: 1.5385, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6542, Train Gating Acc: 0.0000
-Epoch time: 41.43 seconds
+Train loss: 1.5771, Train Balance Loss: 0.0000, Train Gating Loss: 0.0000, Train Acc: 0.6379, Train Gating Acc: 0.0000
+Epoch time: 130.06 seconds
 
-Training completed. Best Accuracy: 0.7755
-Total training time: 8223.89 seconds
-Average time per epoch: 41.12 seconds
-Average inference time per image across test epochs: 0.000024 seconds
+Training completed. Best Accuracy: 0.7765
+Total training time: 25974.19 seconds
+Average time per epoch: 129.87 seconds
+Average inference time per image across test epochs: 0.000087 seconds
 
 Exporting model to ONNX...
-ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/cifar10_ultra_verifiable_cnn.onnx
+ONNX model saved to: D:\Mixture-of-Experts_Research\artifacts\cifar10_ultra_verifiable_cnn.onnx
 
 Exporting to NNV-compatible ONNX format...
-Error during NNV ONNX export: [Errno 2] No such file or directory: 'python'
-Clean Accuracy: 0.7750, Adversarial Accuracy: 0.1696
+NNV ONNX export failed: C:\Users\admin\AppData\Local\Programs\Python\Python312\python.exe: can't open file 'D:\\Mixture-of-Experts_Research\\src\\Vision_Transformer_Pytorch\\..\\Formal_Neural_Network_Verification\\export_to_onnx.py': [Errno 2] No such file or directory
 
-All artifacts moved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/training_20251106_022626
-Training configuration saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/training_20251106_022626/training_config.json
+Clean Accuracy: 0.7758, Adversarial Accuracy: 0.1767
