@@ -4,7 +4,7 @@ Run alpha-beta-CROWN Verification on MetaMoE Router
 This script runs formal verification to prove that the router maintains
 correct expert selection under adversarial perturbations.
 
-NOTE: This is a legacy script. Use verify_all_router_samples.py at the repository root instead.
+NOTE: This is a legacy script. Use run_router_formal_verification.py at the repository root instead.
 """
 
 import subprocess

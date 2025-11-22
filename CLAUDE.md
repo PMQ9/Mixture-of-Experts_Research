@@ -654,10 +654,10 @@ else:  # CIFAR10
 
 **Challenge:** Manual workflow (export ONNX, generate VNNLIB, run verification) is error-prone
 
-**Solution:** Created `verify_all_router_samples.py` for one-command verification
+**Solution:** Created `run_router_formal_verification.py` for one-command verification
 ```bash
 # Complete workflow: .pth → ONNX → VNNLIB → Verification → Report
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
     --num_mnist 100 --num_cifar 100
 ```
@@ -692,22 +692,22 @@ python verify_all_router_samples.py \
 
 ```bash
 # Default: 10 MNIST + 10 CIFAR10 samples (~2 minutes)
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth
 
 # Medium verification: 100+100 samples (~30 minutes, good for papers)
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
     --num_mnist 100 --num_cifar 100
 
 # Thorough verification: 200+200 samples (~1 hour)
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/meta_moe_ultra_verifiable_cnn_best_og.pth \
     --num_mnist 200 --num_cifar 200 \
     --timeout 120
 
 # Or use existing ONNX file
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --onnx_path artifacts/abcrown_models/my_router_only.onnx \
     --num_mnist 50 --num_cifar 50
 ```
@@ -878,7 +878,7 @@ Solutions:
 ### Key Files
 
 **Router verification (main scripts):**
-- `verify_all_router_samples.py` - **[RECOMMENDED]** Complete end-to-end router verification (.pth → ONNX → VNNLIB → verification → report)
+- `run_router_formal_verification.py` - **[RECOMMENDED]** Complete end-to-end router verification (.pth → ONNX → VNNLIB → verification → report)
 - `src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py` - Generate VNNLIB specifications with configurable sample counts (1-10,000 per dataset)
 - `src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py` - Export router-only ONNX from MetaMoE
 - `src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py` - Generate VNNLIB specs for router verification

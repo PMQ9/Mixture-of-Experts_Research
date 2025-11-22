@@ -389,9 +389,9 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_
 python src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py --num_mnist 100 --num_cifar 100
 ```
 
-#### 4. Run Verification (Use verify_all_router_samples.py instead)
+#### 4. Run Verification (Use run_router_formal_verification.py instead)
 
-The old `run_router_formal_verification.py` has been replaced by the more comprehensive `verify_all_router_samples.py`.
+Use the comprehensive `run_router_formal_verification.py` script for end-to-end verification.
 
 ### Key Challenges Overcome
 

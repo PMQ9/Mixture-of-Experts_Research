@@ -224,7 +224,7 @@ def run_router_verification(config, epsilon, dry_run=False, verbose=False):
 
     cmd = [
         sys.executable,
-        str(PROJECT_ROOT / 'verify_all_router_samples.py'),
+        str(PROJECT_ROOT / 'run_router_formal_verification.py'),
         '--model_path', str(model_path),
         '--num_mnist', str(num_mnist),
         '--num_cifar', str(num_cifar),

@@ -9,24 +9,24 @@ This script provides a complete end-to-end verification workflow:
 
 Usage:
     # Default: 10 MNIST + 10 CIFAR10 samples
-    python verify_all_router_samples.py
+    python run_router_formal_verification.py
 
     # Verify a PyTorch model (auto-exports to ONNX)
-    python verify_all_router_samples.py \
+    python run_router_formal_verification.py \
         --model_path artifacts/training_20251020_123456/meta_moe_ultra_verifiable_cnn_best_og.pth
 
     # Verify specific ONNX file
-    python verify_all_router_samples.py \
+    python run_router_formal_verification.py \
         --onnx_path artifacts/abcrown_models/my_router_only.onnx
 
     # Custom sample counts
-    python verify_all_router_samples.py --num_mnist 20 --num_cifar 20
+    python run_router_formal_verification.py --num_mnist 20 --num_cifar 20
 
     # Custom epsilon (4/255)
-    python verify_all_router_samples.py --epsilon 0.01569
+    python run_router_formal_verification.py --epsilon 0.01569
 
     # Full custom verification
-    python verify_all_router_samples.py \
+    python run_router_formal_verification.py \
         --model_path artifacts/my_model.pth \
         --num_mnist 50 --num_cifar 50 \
         --epsilon 0.01569 --timeout 120

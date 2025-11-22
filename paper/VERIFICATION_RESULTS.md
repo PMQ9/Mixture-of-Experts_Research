@@ -149,7 +149,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
 #### Epsilon = 2/255 (0.00784)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -160,7 +160,7 @@ python verify_all_router_samples.py ^
 #### Epsilon = 4/255 (0.01569)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -171,7 +171,7 @@ python verify_all_router_samples.py ^
 #### Epsilon = 8/255 (0.03137)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_NAT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -184,7 +184,7 @@ python verify_all_router_samples.py ^
 #### Epsilon = 2/255 (0.00784)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -195,7 +195,7 @@ python verify_all_router_samples.py ^
 #### Epsilon = 4/255 (0.01569)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -206,7 +206,7 @@ python verify_all_router_samples.py ^
 #### Epsilon = 8/255 (0.03137)
 
 ```bash
-python verify_all_router_samples.py ^
+python run_router_formal_verification.py ^
     --model_path "D:\Mixture-of-Experts_Research\paper\artifacts\MoE_CNN_AT\meta_moe_ultra_verifiable_cnn_best_og.pth" ^
     --num_mnist 50 ^
     --num_cifar 50 ^
@@ -320,7 +320,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abc
 Run router verification:
 ```bash
 cd D:\Mixture-of-Experts_Research
-python verify_all_router_samples.py --help
+python run_router_formal_verification.py --help
 ```
 
 ---

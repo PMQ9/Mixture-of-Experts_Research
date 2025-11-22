@@ -437,10 +437,10 @@ cifar_stride = max(1, cifar_total // num_cifar)
 **Usage:**
 ```bash
 # Quick test: 10+10 samples (~2 minutes)
-python verify_all_router_samples.py --num_mnist 10 --num_cifar 10
+python run_router_formal_verification.py --num_mnist 10 --num_cifar 10
 
 # Paper-ready: 200+200 samples (~1 hour)
-python verify_all_router_samples.py --num_mnist 200 --num_cifar 200
+python run_router_formal_verification.py --num_mnist 200 --num_cifar 200
 ```
 
 **Correctness Verification:**
@@ -511,11 +511,11 @@ for c in range(C):          # Channels: 0, 1, 2
 
 **Solution:** One-command verification script.
 
-**Implementation** (`verify_all_router_samples.py`):
+**Implementation** (`run_router_formal_verification.py`):
 ```python
 # Complete workflow in one command:
 # .pth → ONNX → VNNLIB → Verification → Report
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/meta_moe_RT_eps0.03137_best.pth \
     --num_mnist 100 --num_cifar 100 \
     --epsilon 0.03137
@@ -535,7 +535,7 @@ python verify_all_router_samples.py \
 
 **Correctness Verification:**
 
-✓ **Automatic ONNX export** (`verify_all_router_samples.py:119-148`):
+✓ **Automatic ONNX export** (`run_router_formal_verification.py:119-148`):
 ```python
 if args.model_path:
     # Run export script
@@ -621,7 +621,7 @@ All adaptations preserve the semantics of router verification:
 | No BatchNorm | `small_expert.py` | 642-675 | ✓ |
 | Flat indexing | `prepare_router_verification.py` | 66-92 | ✓ |
 | Automatic cleanup | `prepare_router_verification.py` | 23-43 | ✓ |
-| End-to-end workflow | `verify_all_router_samples.py` | 94-425 | ✓ |
+| End-to-end workflow | `run_router_formal_verification.py` | 94-425 | ✓ |
 
 ### Threat Model Alignment
 
@@ -676,7 +676,7 @@ python train.py --meta_moe \
 **Step 2: Verify Router**
 ```bash
 # Verify with matching epsilon
-python verify_all_router_samples.py \
+python run_router_formal_verification.py \
     --model_path artifacts/training_*/meta_moe_ultra_verifiable_cnn_RT_eps0.03137_best.pth \
     --num_mnist 200 --num_cifar 200 \
     --epsilon 0.03137 \
@@ -879,7 +879,7 @@ python train.py --meta_moe --model_arch ultra_verifiable_cnn \
     --gating_backbone ultra_verifiable_cnn --adv_gating_train --epochs 50
 
 # Verify router
-python verify_all_router_samples.py --num_mnist 20 --num_cifar 20 \
+python run_router_formal_verification.py --num_mnist 20 --num_cifar 20 \
     --epsilon 0.00784 --timeout 300
 ```
 
