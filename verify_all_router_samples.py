@@ -44,6 +44,7 @@ project_root = Path(__file__).parent.resolve()
 
 # Add project paths
 sys.path.insert(0, str(project_root / 'src/Vision_Transformer_Pytorch'))
+sys.path.insert(0, str(project_root / 'src/Formal_Neural_Network_Verification/alpha-beta-crown'))
 sys.path.insert(0, str(project_root))
 
 # Import the VNNLIB generation function

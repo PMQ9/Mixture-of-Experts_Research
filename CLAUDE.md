@@ -595,7 +595,7 @@ def forward(self, x):
 
 **Challenge:** Need to test robustness on multiple samples from both datasets (MNIST and CIFAR10)
 
-**Solution:** Created `prepare_router_verification.py` with dynamic stride sampling
+**Solution:** Created `src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py` with dynamic stride sampling
 - Supports 1 to 10,000 samples per dataset
 - Dynamic stride: `stride = dataset_size / num_samples`
 - Automatic cleanup of old VNNLIB files before generating new ones
@@ -604,7 +604,7 @@ def forward(self, x):
 **Usage:**
 ```bash
 # Generate 100 MNIST + 100 CIFAR10 specifications
-python prepare_router_verification.py --num_mnist 100 --num_cifar 100
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py --num_mnist 100 --num_cifar 100
 ```
 
 **Impact:** Flexible testing from quick tests (10 samples) to thorough verification (10,000 samples)
@@ -879,7 +879,7 @@ Solutions:
 
 **Router verification (main scripts):**
 - `verify_all_router_samples.py` - **[RECOMMENDED]** Complete end-to-end router verification (.pth → ONNX → VNNLIB → verification → report)
-- `prepare_router_verification.py` - Generate VNNLIB specifications with configurable sample counts (1-10,000 per dataset)
+- `src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py` - Generate VNNLIB specifications with configurable sample counts (1-10,000 per dataset)
 - `src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_abcrown.py` - Export router-only ONNX from MetaMoE
 - `src/Formal_Neural_Network_Verification/alpha-beta-crown/generate_router_vnnlib.py` - Generate VNNLIB specs for router verification
 

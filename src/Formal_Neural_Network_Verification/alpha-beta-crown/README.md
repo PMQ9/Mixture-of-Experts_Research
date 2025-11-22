@@ -386,7 +386,7 @@ python src/Formal_Neural_Network_Verification/alpha-beta-crown/export_router_to_
 
 ```bash
 # Generates both MNIST and CIFAR10 specs with cleanup
-python prepare_router_verification.py --num_mnist 100 --num_cifar 100
+python src/Formal_Neural_Network_Verification/alpha-beta-crown/prepare_router_verification.py --num_mnist 100 --num_cifar 100
 ```
 
 #### 4. Run Verification (Use verify_all_router_samples.py instead)

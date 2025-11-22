@@ -20,8 +20,8 @@ import os
 import time
 from pathlib import Path
 
-# Repository root
-REPO_ROOT = Path(__file__).parent
+# Repository root (navigate from paper/scripts/ back to root)
+REPO_ROOT = Path(__file__).parent.parent.parent
 PAPER_ARTIFACTS_DIR = REPO_ROOT / "paper" / "artifacts"
 SUMMARY_FILE = REPO_ROOT / "test_summary_moe.txt"
 
