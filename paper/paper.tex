@@ -586,11 +586,11 @@ We compared MetaMoE compositional training against monolithic single-model train
 \toprule
 \textbf{Configuration} & \textbf{Training Time} & \textbf{Clean Accuracy} & \textbf{Configuration Details} \\
 \midrule
-OneModel & - & - & GTSRB + CIFAR-10 combined \\
+OneModel & 91.5 mins & 93.15\% & GTSRB + CIFAR-10 combined \\
 (2 datasets) & & & \\
-MetaMoE & - & - & GTSRB: - \\
-(2 Experts) & & & CIFAR-10: - \\
- & & & Gating training: - \\
+MetaMoE & 99.5 mins & 92.8\% & GTSRB: 33.5 mins \\
+(2 Experts) & & & CIFAR-10: 54 mins \\
+ & & & Gating training: 15 mins \\
 \bottomrule
 \end{tabular}
 \caption{Training Time and Accuracy Comparison (2 Datasets)}
@@ -602,11 +602,11 @@ MetaMoE & - & - & GTSRB: - \\
 \toprule
 \textbf{Configuration} & \textbf{Training Time} & \textbf{Clean Accuracy} & \textbf{Configuration Details} \\
 \midrule
-OneModel & - & - & Initial CIFAR-10+MNIST: - \\
-(3 datasets) & & & Retrain to add MNIST: - \\
-MetaMoE & - & - & Initial 2-expert MoE: - \\
-(3 Experts) & & & Add MNIST expert: - \\
- & & & Fine tune router: - \\
+OneModel & 242.5 mins & 94.97\% & Initial CIFAR-10+MNIST: 91.5 mins \\
+(3 datasets) & & & Retrain to add MNIST: 151 mins \\
+MetaMoE & 202 mins & 93.61\% & Initial 2-expert MoE: 99.5 mins \\
+(3 Experts) & & & Add MNIST expert: 72.5 mins \\
+ & & & Fine tune router: 30 mins \\
 \bottomrule
 \end{tabular}
 \caption{Training Time and Accuracy Comparison (3 Datasets with incremental addition)}
@@ -638,10 +638,10 @@ We measured inference latency as a function of activated experts (meta\_top\_k) 
 \textbf{Total Experts} & \multicolumn{5}{c}{\textbf{meta\_top\_k}} \\
  & 1 & 2 & 3 & 4 & 5 \\
 \midrule
-2 & - & - & - & - & - \\
-3 & - & - & - & - & - \\
-4 & - & - & - & - & - \\
-5 & - & - & - & - & - \\
+2 & 0.071 & 0.079 & - & - & - \\
+3 & 0.074 & 0.092 & 0.094 & - & - \\
+4 & 0.077 & 0.106 & 0.117 & 0.128 & - \\
+5 & 0.078 & 0.118 & 0.132 & 0.146 & 0.156 \\
 \bottomrule
 \end{tabular}
 \caption{Inference Latency (seconds) vs Number of Experts vs meta\_top\_k}
