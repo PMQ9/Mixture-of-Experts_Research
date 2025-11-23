@@ -6,6 +6,7 @@ Records: % verified/falsified/timeout/unknown, average verification time
 """
 
 import subprocess
+import sys
 import os
 import time
 import re
@@ -32,22 +33,22 @@ TIMEOUT = 300
 MODELS = {
     "MNIST_NRT": {
         "dataset": "MNIST",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_NRT.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_NRT.pth",
         "label": "MNIST NRT",
     },
     "MNIST_AT": {
         "dataset": "MNIST",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_1_CNN_AT" / "mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth",
         "label": "MNIST AT",
     },
     "CIFAR10_NRT": {
         "dataset": "CIFAR10",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "mnist_ultra_verifiable_cnn_best_NRT.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_NAT" / "cifar10_ultra_verifiable_cnn_best_NRT.pth",
         "label": "CIFAR10 NRT",
     },
     "CIFAR10_AT": {
         "dataset": "CIFAR10",
-        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth",
+        "model_path": PAPER_ARTIFACTS_DIR / "E_0_CNN_AT" / "cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth",
         "label": "CIFAR10 AT",
     },
 }
@@ -55,7 +56,7 @@ MODELS = {
 def run_verification(model_path, dataset, epsilon, num_images=NUM_IMAGES, timeout=TIMEOUT):
     """Run a single verification session"""
     cmd = [
-        "python",
+        sys.executable,
         "src/Formal_Neural_Network_Verification/alpha-beta-crown/verify_expert_abcrown.py",
         "--model_path", str(model_path),
         "--dataset", dataset,
