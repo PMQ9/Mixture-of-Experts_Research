@@ -8,6 +8,7 @@ Usage:
 
 import argparse
 import subprocess
+import sys
 import os
 import json
 import re
@@ -70,7 +71,7 @@ def run_training(dataset, model_arch, epochs, device, adv_training=False, run_nu
     print(f"{'='*80}\n")
 
     cmd = [
-        'python', str(TRAIN_SCRIPT),
+        sys.executable, str(TRAIN_SCRIPT),
         '--dataset', dataset,
         '--model_arch', model_arch,
         '--epochs', str(epochs),
@@ -102,7 +103,7 @@ def run_adversarial_test(dataset, model_arch, device, attack_mode='PGD', adv_tra
     model_pattern = f"{dataset.lower()}_{model_arch}*_{model_suffix}.pth"
 
     cmd = [
-        'python', str(TRAIN_SCRIPT),
+        sys.executable, str(TRAIN_SCRIPT),
         '--dataset', dataset,
         '--model_arch', model_arch,
         '--art_attack',
@@ -308,7 +309,7 @@ def run_analysis(results_dir):
 
     try:
         result = subprocess.run(
-            ['python', str(analyze_script), str(results_dir)],
+            [sys.executable, str(analyze_script), str(results_dir)],
             check=True
         )
         return True

@@ -16,6 +16,7 @@ Total: 40 runs
 """
 
 import subprocess
+import sys
 import os
 import time
 from pathlib import Path
@@ -82,7 +83,7 @@ def extract_results_from_log(log_path):
 def run_training(cifar10_model_path, mnist_model_path, adv_gating=False):
     """Run a single MoE training session"""
     cmd = [
-        "python", "train.py",
+        sys.executable, "train.py",
         "--meta_moe",
         "--model_arch", MODEL_ARCH,
         "--gating_backbone", GATING_BACKBONE,
