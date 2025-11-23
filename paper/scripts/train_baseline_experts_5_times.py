@@ -163,12 +163,17 @@ def extract_metrics(log_text):
         r'test_acc[:\s]+([0-9.]+)',
         r'Final Test Accuracy[:\s]+([0-9.]+)',
         r'Best Test Acc[:\s]+([0-9.]+)',
+        r'Test acc[:\s]+([0-9.]+)%',  # Handle percentage format
     ]
 
     for pattern in test_acc_patterns:
         match = re.search(pattern, log_text, re.IGNORECASE)
         if match:
-            metrics['test_accuracy'] = float(match.group(1))
+            acc_value = float(match.group(1))
+            # If value is > 1, assume it's a percentage and convert
+            if acc_value > 1:
+                acc_value = acc_value / 100.0
+            metrics['test_accuracy'] = acc_value
             break
 
     # Look for robust accuracy patterns
@@ -183,8 +188,24 @@ def extract_metrics(log_text):
     for pattern in robust_acc_patterns:
         match = re.search(pattern, log_text, re.IGNORECASE)
         if match:
-            metrics['robust_accuracy'] = float(match.group(1))
+            acc_value = float(match.group(1))
+            # If value is > 1, assume it's a percentage and convert
+            if acc_value > 1:
+                acc_value = acc_value / 100.0
+            metrics['robust_accuracy'] = acc_value
             break
+
+    # If robust accuracy not found, try to extract from ART attack success rate
+    # Success rate of attack: X% means robust accuracy is (100 - X)%
+    if metrics['robust_accuracy'] is None:
+        art_pattern = r'Success rate of attack[:\s]+([0-9.]+)%'
+        # Find all matches and use the last one (most recent)
+        matches = list(re.finditer(art_pattern, log_text, re.IGNORECASE))
+        if matches:
+            last_match = matches[-1]
+            attack_success_rate = float(last_match.group(1))
+            robust_accuracy = 100.0 - attack_success_rate
+            metrics['robust_accuracy'] = robust_accuracy / 100.0  # Convert to 0-1 range
 
     return metrics
 
@@ -256,13 +277,30 @@ def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_
     if metrics['test_accuracy'] is None or metrics['robust_accuracy'] is None:
         artifacts_log = project_root / "artifacts" / "training_log.txt"
         if artifacts_log.exists():
-            with open(artifacts_log, 'r') as f:
+            with open(artifacts_log, 'r', encoding='utf-8', errors='replace') as f:
                 artifacts_log_text = f.read()
             extracted = extract_metrics(artifacts_log_text)
             if metrics['test_accuracy'] is None:
                 metrics['test_accuracy'] = extracted['test_accuracy']
             if metrics['robust_accuracy'] is None:
                 metrics['robust_accuracy'] = extracted['robust_accuracy']
+
+    # If still not found, check most recent timestamped training folder
+    if metrics['test_accuracy'] is None or metrics['robust_accuracy'] is None:
+        artifacts_dir = project_root / "artifacts"
+        training_dirs = sorted(artifacts_dir.glob("training_*"), reverse=True)
+        for training_dir in training_dirs[:3]:  # Check 3 most recent
+            timestamped_log = training_dir / "training_log.txt"
+            if timestamped_log.exists():
+                with open(timestamped_log, 'r', encoding='utf-8', errors='replace') as f:
+                    timestamped_log_text = f.read()
+                extracted = extract_metrics(timestamped_log_text)
+                if metrics['test_accuracy'] is None:
+                    metrics['test_accuracy'] = extracted['test_accuracy']
+                if metrics['robust_accuracy'] is None:
+                    metrics['robust_accuracy'] = extracted['robust_accuracy']
+                if metrics['test_accuracy'] is not None and metrics['robust_accuracy'] is not None:
+                    break  # Found both metrics, stop searching
 
     # Copy artifacts from artifacts/ to output_dir
     artifacts_dir = project_root / "artifacts"
@@ -277,8 +315,10 @@ def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_
         f"{dataset.lower()}_ultra_verifiable_cnn_best.pth",
     ]
 
-    # Copy model file
+    # Copy model file - check both root artifacts/ and timestamped folders
     model_copied = False
+
+    # First try root artifacts directory
     for model_name in possible_models:
         src_model = artifacts_dir / model_name
         if src_model.exists():
@@ -288,16 +328,40 @@ def train_expert_single_run(dataset, expert_id, is_adversarial, output_dir, run_
             model_copied = True
             break
 
+    # If not found, look in timestamped training directories
     if not model_copied:
-        print(f"Warning: Could not find model file in {artifacts_dir}")
+        training_dirs = sorted(artifacts_dir.glob("training_*"), reverse=True)
+        for training_dir in training_dirs[:3]:  # Check 3 most recent
+            for model_name in possible_models:
+                src_model = training_dir / model_name
+                if src_model.exists():
+                    dst_model = output_dir / model_name
+                    shutil.copy2(src_model, dst_model)
+                    print(f"Copied model from timestamped folder: {src_model} -> {dst_model}")
+                    model_copied = True
+                    break
+            if model_copied:
+                break
+
+    if not model_copied:
+        print(f"Warning: Could not find model file in {artifacts_dir} or timestamped folders")
         print(f"Looked for: {possible_models}")
 
-    # Copy other artifacts if they exist
+    # Copy other artifacts if they exist (check root first, then timestamped folders)
     for artifact in ["training_metrics.png", "training_log.txt"]:
         src_artifact = artifacts_dir / artifact
         if src_artifact.exists():
             dst_artifact = output_dir / artifact
             shutil.copy2(src_artifact, dst_artifact)
+        else:
+            # Try timestamped folders
+            training_dirs = sorted(artifacts_dir.glob("training_*"), reverse=True)
+            for training_dir in training_dirs[:3]:  # Check 3 most recent
+                src_artifact = training_dir / artifact
+                if src_artifact.exists():
+                    dst_artifact = output_dir / artifact
+                    shutil.copy2(src_artifact, dst_artifact)
+                    break
 
     # Save metrics summary for this run
     metrics_file = output_dir / "metrics_summary.txt"
@@ -390,19 +454,37 @@ def train_expert_multiple_runs(dataset, expert_id, is_adversarial, base_output_d
 
         f.write("TEST ACCURACY:\n")
         f.write(f"  Individual runs: {all_metrics['test_accuracy']}\n")
-        f.write(f"  Mean: {stats['test_accuracy']['mean']:.4f}\n")
-        f.write(f"  Std:  {stats['test_accuracy']['std']:.4f}\n\n")
+        if stats['test_accuracy']['mean'] is not None:
+            f.write(f"  Mean: {stats['test_accuracy']['mean']:.4f}\n")
+        else:
+            f.write(f"  Mean: N/A (no data)\n")
+        if stats['test_accuracy']['std'] is not None:
+            f.write(f"  Std:  {stats['test_accuracy']['std']:.4f}\n\n")
+        else:
+            f.write(f"  Std:  N/A (no data)\n\n")
 
         f.write("ROBUST ACCURACY (ART Attack):\n")
         f.write(f"  Individual runs: {all_metrics['robust_accuracy']}\n")
-        f.write(f"  Mean: {stats['robust_accuracy']['mean']:.4f}\n")
-        f.write(f"  Std:  {stats['robust_accuracy']['std']:.4f}\n")
+        if stats['robust_accuracy']['mean'] is not None:
+            f.write(f"  Mean: {stats['robust_accuracy']['mean']:.4f}\n")
+        else:
+            f.write(f"  Mean: N/A (no data)\n")
+        if stats['robust_accuracy']['std'] is not None:
+            f.write(f"  Std:  {stats['robust_accuracy']['std']:.4f}\n")
+        else:
+            f.write(f"  Std:  N/A (no data)\n")
 
     print(f"\n{'='*80}")
     print(f"Statistics for {expert_id} ({dataset}) - {training_type}")
     print(f"{'='*80}")
-    print(f"Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}")
-    print(f"Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}")
+    if stats['test_accuracy']['mean'] is not None and stats['test_accuracy']['std'] is not None:
+        print(f"Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}")
+    else:
+        print(f"Test Accuracy:   N/A (no data)")
+    if stats['robust_accuracy']['mean'] is not None and stats['robust_accuracy']['std'] is not None:
+        print(f"Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}")
+    else:
+        print(f"Robust Accuracy: N/A (no data)")
 
     return stats
 
@@ -493,16 +575,28 @@ def main():
 
             # Write to file
             f.write(f"{expert_name}:\n")
-            f.write(f"  Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}\n")
-            f.write(f"  Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}\n")
+            if stats['test_accuracy']['mean'] is not None and stats['test_accuracy']['std'] is not None:
+                f.write(f"  Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}\n")
+            else:
+                f.write(f"  Test Accuracy:   N/A (no data)\n")
+            if stats['robust_accuracy']['mean'] is not None and stats['robust_accuracy']['std'] is not None:
+                f.write(f"  Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}\n")
+            else:
+                f.write(f"  Robust Accuracy: N/A (no data)\n")
             f.write(f"  Individual test accuracies: {stats['test_accuracy']['values']}\n")
             f.write(f"  Individual robust accuracies: {stats['robust_accuracy']['values']}\n")
             f.write("\n")
 
             # Print to console
             print(f"{expert_name}:")
-            print(f"  Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}")
-            print(f"  Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}")
+            if stats['test_accuracy']['mean'] is not None and stats['test_accuracy']['std'] is not None:
+                print(f"  Test Accuracy:   {stats['test_accuracy']['mean']:.4f} ± {stats['test_accuracy']['std']:.4f}")
+            else:
+                print(f"  Test Accuracy:   N/A (no data)")
+            if stats['robust_accuracy']['mean'] is not None and stats['robust_accuracy']['std'] is not None:
+                print(f"  Robust Accuracy: {stats['robust_accuracy']['mean']:.4f} ± {stats['robust_accuracy']['std']:.4f}")
+            else:
+                print(f"  Robust Accuracy: N/A (no data)")
             print()
 
     print(f"Summary saved to: {summary_file}")

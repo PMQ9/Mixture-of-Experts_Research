@@ -41,9 +41,9 @@ This document consolidates all verification and testing results for the Mixture-
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | - |
-| Adversarial Accuracy (PGD, ε=8/255) | - |
-| Robustness Gap | - |
+| Clean Accuracy | 83.75% ± 0.21% |
+| Adversarial Accuracy (PGD, ε=8/255) | 0.01% ± 0.01% |
+| Robustness Gap | 83.74% |
 
 **Interpretation**: Without adversarial training, CIFAR-10 expert is completely vulnerable to PGD attacks. Model collapses entirely under adversarial perturbations.
 
@@ -51,11 +51,11 @@ This document consolidates all verification and testing results for the Mixture-
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | - |
-| Adversarial Accuracy (PGD, ε=8/255) | - |
-| Robustness Gap | - |
+| Clean Accuracy | 77.54% ± 0.26% |
+| Adversarial Accuracy (PGD, ε=8/255) | 17.24% ± 0.27% |
+| Robustness Gap | 60.30% |
 
-**Interpretation**: Adversarial training recovers 16.96% adversarial accuracy at the cost of 5.77% clean accuracy trade-off. Significant vulnerability remains.
+**Interpretation**: Adversarial training recovers 17.23% adversarial accuracy at the cost of 6.21% clean accuracy trade-off. Significant vulnerability remains.
 
 ---
 
@@ -65,21 +65,21 @@ This document consolidates all verification and testing results for the Mixture-
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | - |
-| Adversarial Accuracy (PGD, ε=8/255) | - |
-| Robustness Gap | - |
+| Clean Accuracy | 99.19% ± 0.06% |
+| Adversarial Accuracy (PGD, ε=8/255) | 46.06% ± 7.58% |
+| Robustness Gap | 53.13% |
 
-**Interpretation**: MNIST demonstrates better baseline robustness than CIFAR-10 even without adversarial training (47.03% vs 0.00%). This reflects domain-specific characteristics rather than inherent superiority. Both domains require robust training for effective defense.
+**Interpretation**: MNIST demonstrates better baseline robustness than CIFAR-10 even without adversarial training (46.06% vs 0.01%). This reflects domain-specific characteristics rather than inherent superiority. Both domains require robust training for effective defense.
 
 #### E₁_CNN_AT (Adversarially Trained)
 
 | Metric | Value |
 |--------|-------|
-| Clean Accuracy | - |
-| Adversarial Accuracy (PGD, ε=8/255) | - |
-| Robustness Gap | - |
+| Clean Accuracy | 99.17% ± 0.03% |
+| Adversarial Accuracy (PGD, ε=8/255) | 90.77% ± 5.44% |
+| Robustness Gap | 8.39% |
 
-**Interpretation**: Exceptional performance. Only 0.12% clean accuracy drop while achieving 87.05% adversarial accuracy. MNIST expert is highly robust.
+**Interpretation**: Exceptional performance. Only 0.02% clean accuracy drop while achieving 90.77% adversarial accuracy. MNIST expert is highly robust.
 
 ---
 
@@ -96,11 +96,11 @@ This document consolidates all verification and testing results for the Mixture-
 | **Expert 0 Component** | - |
 | **Expert 1 Component** | - |
 
-**Key Finding**: Router is perfectly robust under adversarial attack (100% gating accuracy), but overall system performance limited by Expert 0 vulnerability.
+**Key Finding**: Router is perfectly robust under adversarial attack (x% gating accuracy), but overall system performance limited by Expert 0 vulnerability.
 
 **Interpretation**:
-- Router correctly routes images to experts with 100% accuracy even under attack
-- System adversarial accuracy (25.81%) dominated by Expert 0 weakness (0.01% adv acc)
+- Router correctly routes images to experts with x% accuracy even under attack
+- System adversarial accuracy (x%) dominated by Expert 0 weakness (x% adv acc)
 - Router alone cannot compensate for expert vulnerabilities
 
 ### MoE_CNN_AT (Adversarially Trained Router)
@@ -114,13 +114,13 @@ This document consolidates all verification and testing results for the Mixture-
 | **Expert 0 Component** | - |
 | **Expert 1 Component** | - |
 
-**Key Finding**: Router maintains perfect robustness (100% adversarial gating accuracy) while experts improve significantly with AT.
+**Key Finding**: Router maintains perfect robustness (x% adversarial gating accuracy) while experts improve significantly with AT.
 
 **Interpretation**:
 - Router exhibits intrinsic robustness regardless of training regime
-- Expert 1 provides strong defense (73.56% adv acc) with AT
-- Expert 0 remains bottleneck (9.98% adv acc) even with AT
-- System adversarial accuracy (41.68%) 61% improvement over NRT baseline
+- Expert 1 provides strong defense (x% adv acc) with AT
+- Expert 0 remains bottleneck (x% adv acc) even with AT
+- System adversarial accuracy (x%) 61% improvement over NRT baseline
 
 ---
 
