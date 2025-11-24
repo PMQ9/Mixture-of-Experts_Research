@@ -43,6 +43,8 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts'))
 PRETRAINED_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'artifacts', 'results'))
+PRETRAINED_MODEL_DIR_FOR_PAPER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'paper', 'artifacts'))
+
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -83,8 +85,8 @@ parser.add_argument('--gating_epsilon', type=float, default=8.0/255.0, help='Eps
 parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
 # parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
-parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "cifar10_*_best.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
-parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "mnist_*_best.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
+parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_0_CNN_AT" , "cifar10_*.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
+parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_1_CNN_AT" , "mnist_*.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
 parser.add_argument('--art_attack', dest='art_attack', action='store_true', help='Enable Adversarial Robustness Toolbox (enabled by default)')
 parser.add_argument('--no-art-attack', dest='art_attack', action='store_false', help='Disable Adversarial Robustness Toolbox')
@@ -99,9 +101,11 @@ help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_
 parser.add_argument('--config_overrides', type=str, default='', help=help_msg)
 parser.set_defaults(art_attack=True)
 args = parser.parse_args()
+default_epochs = int(os.getenv('CICD_EPOCH', DEFAULT_PARAMS['epoch']))
+
 
 BATCH_SIZE = args.batch_size
-EPOCHS = args.epochs
+EPOCHS = 50 if (args.meta_moe and args.epochs == default_epochs) else args.epochs
 LEARNING_RATE = args.learning_rate
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CUTMIX_ALPHA = args.cutmix_alpha
