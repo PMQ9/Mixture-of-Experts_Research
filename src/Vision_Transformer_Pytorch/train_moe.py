@@ -58,7 +58,7 @@ if os.name != 'nt':
     torch.multiprocessing.set_sharing_strategy('file_system')
 
 parser = argparse.ArgumentParser(description='Train a Vision Transformer with MoE')
-parser.add_argument('--dataset', type=str, default='GTSRB', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10', 'MNIST'], help='Dataset to train')
+parser.add_argument('--dataset', type=str, default='CIFAR10', choices=['GTSRB', 'PTSD', 'TSRD', 'BTSD', 'ETSD', 'CIFAR10', 'MNIST'], help='Dataset to train')
 parser.add_argument('--batch_size', type=int, default=DEFAULT_PARAMS['batch_size'], help='Batch size for training')
 parser.add_argument('--epochs', type=int, default=int(os.getenv('CICD_EPOCH', DEFAULT_PARAMS['epoch'])), help='Number of epochs to train')
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_PARAMS['learning_rate'], help='Learning rate for optimizer')

@@ -21,8 +21,10 @@ Research MoE application in safety-critical system at Institute of Software Inte
  **Instruction**
 
 - Start training: 
-    `python .\src\Vision_Transformer_Pytorch\train_moe.py`
-    - to see all options run `python .\src\Vision_Transformer_Pytorch\train_moe.py --help`
+    `python .\train.py --dataset CIFAR10`
+    `python .\train.py --dataset MNIST`
+    `python .\train.py --meta_moe`
+    - to see all options run `python .\train.py --help`
 
 # Architecture
 

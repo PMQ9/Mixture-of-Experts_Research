@@ -67,23 +67,23 @@ FC: 1024 -> num_classes
 
 ### Train individual expert with small_cnn:
 ```bash
-python src/Vision_Transformer_Pytorch/train_moe.py --dataset GTSRB --model_arch small_cnn --epochs 200
+python train.py --dataset GTSRB --model_arch small_cnn --epochs 200
 ```
 
 ### Train individual expert with tiny_cnn:
 ```bash
-python src/Vision_Transformer_Pytorch/train_moe.py --dataset CIFAR10 --model_arch tiny_cnn --epochs 200
+python train.py --dataset CIFAR10 --model_arch tiny_cnn --epochs 200
 ```
 
 ### Train individual expert with micro_cnn (verification-optimized):
 ```bash
-python src/Vision_Transformer_Pytorch/train_moe.py --dataset MNIST --model_arch micro_cnn --epochs 200
+python train.py --dataset MNIST --model_arch micro_cnn --epochs 200
 ```
 
 ### Train MetaMoE with small experts:
 First train individual experts, then:
 ```bash
-python src/Vision_Transformer_Pytorch/train_moe.py --meta_moe \
+python train.py --meta_moe \
     --model_arch small_cnn \
     --gtsrb_model_path artifacts/results/gtsrb_small_cnn_best.pth \
     --cifar10_model_path artifacts/results/cifar10_tiny_cnn_best.pth \
@@ -97,7 +97,7 @@ python src/Vision_Transformer_Pytorch/train_moe.py --meta_moe \
 Models are automatically exported to ONNX when `--export_onnx True` (default):
 
 ```bash
-python src/Vision_Transformer_Pytorch/train_moe.py --dataset GTSRB --model_arch micro_cnn --export_onnx True
+python train.py --dataset GTSRB --model_arch micro_cnn --export_onnx True
 ```
 
 Output: `artifacts/gtsrb_micro_cnn.onnx`
