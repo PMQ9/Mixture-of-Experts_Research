@@ -76,7 +76,7 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
     test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
 
     if meta_moe:
-        fig, axes = plt.subplots(5, 4, figsize=(16, 12))
+        fig, axes = plt.subplots(5, 2, figsize=(12, 15))
 
         # Build title with key metrics
         title = f'MetaMoE - {model_arch}'
@@ -126,17 +126,17 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
         # Per-Meta-Class Accuracy
-        axes[2, 0].plot(test_epochs[:len(test_gtsrb_accs)], test_gtsrb_accs, label='GTSRB Test Accuracy')
+        axes[2, 0].plot(test_epochs[:len(test_cifar10_accs)], test_cifar10_accs, label='CIFAR10 Test Accuracy')
         axes[2, 0].set_xlabel('Epoch')
         axes[2, 0].set_ylabel('Accuracy')
-        axes[2, 0].set_title('GTSRB Test Accuracy')
+        axes[2, 0].set_title('CIFAR10 Test Accuracy (Expert 0)')
         axes[2, 0].legend()
         axes[2, 0].grid(True)
 
-        axes[2, 1].plot(test_epochs[:len(test_cifar10_accs)], test_cifar10_accs, label='CIFAR10 Test Accuracy')
+        axes[2, 1].plot(test_epochs[:len(test_mnist_accs)], test_mnist_accs, label='MNIST Test Accuracy')
         axes[2, 1].set_xlabel('Epoch')
         axes[2, 1].set_ylabel('Accuracy')
-        axes[2, 1].set_title('CIFAR10 Test Accuracy')
+        axes[2, 1].set_title('MNIST Test Accuracy (Expert 1)')
         axes[2, 1].legend()
         axes[2, 1].grid(True)
 
