@@ -1,6 +1,6 @@
-[submodule "modules/gnnv_moe"]
-	path = modules/gnnv_moe
-	url = https://github.com/PMQ9/gnnv_moe.git
+# [submodule "modules/gnnv_moe"]
+# 	path = modules/gnnv_moe
+# 	url = https://github.com/PMQ9/gnnv_moe.git
 [submodule "modules/nnv_moe"]
 	path = modules/nnv_moe
 	url = https://github.com/PMQ9/nnv_moe.git
