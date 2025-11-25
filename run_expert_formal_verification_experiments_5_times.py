@@ -201,13 +201,13 @@ def main():
         model_path = model_config["model_path"]
         label = model_config["label"]
 
-        config_label = f"{label} (ε={epsilon_label})"
+        config_label = f"{label} (eps={epsilon_label})"
         config_key = f"{model_key}_eps{epsilon_label.replace('/', '_')}"
 
         # Check if model exists
         if not model_path.exists():
             error_msg = f"Model not found: {model_path}"
-            print(f"\n✗ {config_label}: {error_msg}")
+            print(f"\n[FAIL] {config_label}: {error_msg}")
             failed_runs.append(f"{config_label}: {error_msg}")
             with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"{config_label}\n")
@@ -230,7 +230,7 @@ def main():
             output, error = run_verification(model_path, dataset, epsilon, NUM_IMAGES, TIMEOUT)
 
             if error:
-                print(f"✗ {run_label} FAILED: {error}")
+                print(f"[FAIL] {run_label} FAILED: {error}")
                 failed_runs.append(f"{run_label}: {error}")
                 with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
                     f.write(f"{run_label}\n")
@@ -240,7 +240,7 @@ def main():
                 stats = parse_verification_output(output)
                 run_results.append(stats)
 
-                print(f"✓ {run_label} completed")
+                print(f"[PASS] {run_label} completed")
                 print(f"  Verified Acc: {stats['verified_acc']:.1f}%")
                 print(f"  Verified: {stats['verified']}, Falsified: {stats['falsified']}, "
                       f"Timeout: {stats['timeout']}, Unknown: {stats['unknown']}")
