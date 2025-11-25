@@ -7,9 +7,9 @@ This script runs the verification pipeline twice:
 2. RT (Robust Training) model: 5 runs
 
 Results are collected separately and formatted as LaTeX tables for the paper.
-Total: 10 runs (5 per model)
+Total: 20 runs (5 per model)
 
-Usage (default: 10 MNIST + 10 CIFAR10, 5 runs per model):
+Usage (default: 20 MNIST + 20 CIFAR10, 5 runs per model):
     python run_router_formal_verification_experiments_5_times.py
 
 With custom sample counts:
@@ -95,10 +95,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='Run verification on both NRT and RT MetaMoE routers'
     )
-    parser.add_argument('--num_mnist', type=int, default=10,
-                        help='Number of MNIST samples (default: 10)')
-    parser.add_argument('--num_cifar', type=int, default=10,
-                        help='Number of CIFAR10 samples (default: 10)')
+    parser.add_argument('--num_mnist', type=int, default=20,
+                        help='Number of MNIST samples (default: 20)')
+    parser.add_argument('--num_cifar', type=int, default=20,
+                        help='Number of CIFAR10 samples (default: 20)')
     parser.add_argument('--num_runs', type=int, default=5,
                         help='Number of runs per model (default: 5)')
 
