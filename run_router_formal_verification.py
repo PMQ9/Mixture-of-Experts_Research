@@ -96,10 +96,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='Run alpha-beta-CROWN verification on MetaMoE router'
     )
-    parser.add_argument('--num_mnist', type=int, default=10,
-                        help='Number of MNIST samples to verify (default: 10)')
-    parser.add_argument('--num_cifar', type=int, default=10,
-                        help='Number of CIFAR10 samples to verify (default: 10)')
+    parser.add_argument('--num_mnist', type=int, default=20,
+                        help='Number of MNIST samples to verify (default: 20)')
+    parser.add_argument('--num_cifar', type=int, default=20,
+                        help='Number of CIFAR10 samples to verify (default: 20)')
     parser.add_argument('--epsilon', type=float, default=8.0/255.0,
                         help='L-infinity perturbation bound (default: 8/255 to match empirical testing)')
     parser.add_argument('--timeout', type=int, default=60,
