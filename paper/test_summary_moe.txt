@@ -1,0 +1,488 @@
+MoE Training Experiments Summary
+Started at: 2025-11-23 18:30:03
+================================================================================
+
+================================================================================
+Run 1: MoE AT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4087.02 seconds
+Average time per epoch: 81.74 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8803, Adversarial Accuracy: 0.4088
+
+================================================================================
+Run 2: MoE AT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4155.33 seconds
+Average time per epoch: 83.11 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8788, Adversarial Accuracy: 0.4214
+
+================================================================================
+Run 3: MoE AT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4172.54 seconds
+Average time per epoch: 83.45 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8782, Adversarial Accuracy: 0.4244
+
+================================================================================
+Run 4: MoE AT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4118.14 seconds
+Average time per epoch: 82.36 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8792, Adversarial Accuracy: 0.4139
+
+================================================================================
+Run 5: MoE AT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4120.82 seconds
+Average time per epoch: 82.42 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8793, Adversarial Accuracy: 0.4128
+
+================================================================================
+Run 1: MoE AT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4119.53 seconds
+Average time per epoch: 82.39 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9129, Adversarial Accuracy: 0.2899
+
+================================================================================
+Run 2: MoE AT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4184.65 seconds
+Average time per epoch: 83.69 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9130, Adversarial Accuracy: 0.2987
+
+================================================================================
+Run 3: MoE AT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4136.58 seconds
+Average time per epoch: 82.73 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9128, Adversarial Accuracy: 0.2841
+
+================================================================================
+Run 4: MoE AT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4227.59 seconds
+Average time per epoch: 84.55 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9120, Adversarial Accuracy: 0.2883
+
+================================================================================
+Run 5: MoE AT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4154.16 seconds
+Average time per epoch: 83.08 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9131, Adversarial Accuracy: 0.2954
+
+================================================================================
+Run 1: MoE AT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4076.84 seconds
+Average time per epoch: 81.54 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8808, Adversarial Accuracy: 0.3393
+
+================================================================================
+Run 2: MoE AT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4118.46 seconds
+Average time per epoch: 82.37 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8814, Adversarial Accuracy: 0.3271
+
+================================================================================
+Run 3: MoE AT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4095.95 seconds
+Average time per epoch: 81.92 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8819, Adversarial Accuracy: 0.3462
+
+================================================================================
+Run 4: MoE AT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4105.71 seconds
+Average time per epoch: 82.11 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8807, Adversarial Accuracy: 0.3295
+
+================================================================================
+Run 5: MoE AT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4078.24 seconds
+Average time per epoch: 81.56 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8814, Adversarial Accuracy: 0.3402
+
+================================================================================
+Run 1: MoE AT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4146.82 seconds
+Average time per epoch: 82.94 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9120, Adversarial Accuracy: 0.3814
+
+================================================================================
+Run 2: MoE AT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4105.19 seconds
+Average time per epoch: 82.10 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9117, Adversarial Accuracy: 0.3704
+
+================================================================================
+Run 3: MoE AT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4125.22 seconds
+Average time per epoch: 82.50 seconds
+Average inference time per image across test epochs: 0.000033 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9125, Adversarial Accuracy: 0.3653
+
+================================================================================
+Run 4: MoE AT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4086.65 seconds
+Average time per epoch: 81.73 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9127, Adversarial Accuracy: 0.3882
+
+================================================================================
+Run 5: MoE AT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 4172.21 seconds
+Average time per epoch: 83.44 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9121, Adversarial Accuracy: 0.3723
+
+================================================================================
+Run 1: MoE NAT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 967.49 seconds
+Average time per epoch: 19.35 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8799, Adversarial Accuracy: 0.4223
+
+================================================================================
+Run 2: MoE NAT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 970.65 seconds
+Average time per epoch: 19.41 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8803, Adversarial Accuracy: 0.4229
+
+================================================================================
+Run 3: MoE NAT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 983.53 seconds
+Average time per epoch: 19.67 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8808, Adversarial Accuracy: 0.4183
+
+================================================================================
+Run 4: MoE NAT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 0.9999
+Total training time: 960.34 seconds
+Average time per epoch: 19.21 seconds
+Average inference time per image across test epochs: 0.000036 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8806, Adversarial Accuracy: 0.4262
+
+================================================================================
+Run 5: MoE NAT Router with CIFAR10-AT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 953.55 seconds
+Average time per epoch: 19.07 seconds
+Average inference time per image across test epochs: 0.000036 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8809, Adversarial Accuracy: 0.4224
+
+================================================================================
+Run 1: MoE NAT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 937.77 seconds
+Average time per epoch: 18.76 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9139, Adversarial Accuracy: 0.2841
+
+================================================================================
+Run 2: MoE NAT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 971.67 seconds
+Average time per epoch: 19.43 seconds
+Average inference time per image across test epochs: 0.000036 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9135, Adversarial Accuracy: 0.2844
+
+================================================================================
+Run 3: MoE NAT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 959.75 seconds
+Average time per epoch: 19.20 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9142, Adversarial Accuracy: 0.2914
+
+================================================================================
+Run 4: MoE NAT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 975.64 seconds
+Average time per epoch: 19.51 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9139, Adversarial Accuracy: 0.2764
+
+================================================================================
+Run 5: MoE NAT Router with CIFAR10-NAT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 964.24 seconds
+Average time per epoch: 19.28 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9130, Adversarial Accuracy: 0.2851
+
+================================================================================
+Run 1: MoE NAT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 961.24 seconds
+Average time per epoch: 19.22 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8807, Adversarial Accuracy: 0.3158
+
+================================================================================
+Run 2: MoE NAT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 974.53 seconds
+Average time per epoch: 19.49 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8806, Adversarial Accuracy: 0.3417
+
+================================================================================
+Run 3: MoE NAT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 957.58 seconds
+Average time per epoch: 19.15 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8812, Adversarial Accuracy: 0.3358
+
+================================================================================
+Run 4: MoE NAT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 940.25 seconds
+Average time per epoch: 18.80 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8802, Adversarial Accuracy: 0.3387
+
+================================================================================
+Run 5: MoE NAT Router with CIFAR10-AT + MNIST-NAT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 975.86 seconds
+Average time per epoch: 19.52 seconds
+Average inference time per image across test epochs: 0.000036 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8820, Adversarial Accuracy: 0.3416
+
+================================================================================
+Run 1: MoE NAT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 978.63 seconds
+Average time per epoch: 19.57 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9130, Adversarial Accuracy: 0.3841
+
+================================================================================
+Run 2: MoE NAT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 974.52 seconds
+Average time per epoch: 19.49 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9129, Adversarial Accuracy: 0.3760
+
+================================================================================
+Run 3: MoE NAT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 976.06 seconds
+Average time per epoch: 19.52 seconds
+Average inference time per image across test epochs: 0.000036 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9131, Adversarial Accuracy: 0.3703
+
+================================================================================
+Run 4: MoE NAT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 949.65 seconds
+Average time per epoch: 18.99 seconds
+Average inference time per image across test epochs: 0.000034 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9124, Adversarial Accuracy: 0.3790
+
+================================================================================
+Run 5: MoE NAT Router with CIFAR10-NAT + MNIST-AT
+================================================================================
+Training completed. Best Accuracy: 1.0000
+Total training time: 952.49 seconds
+Average time per epoch: 19.05 seconds
+Average inference time per image across test epochs: 0.000035 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: /home/pmq/project/Mixture-of-Experts_Research/artifacts/metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.9138, Adversarial Accuracy: 0.3784
+
+================================================================================
+Experiments completed at: 2025-11-25 00:37:57
+Successful runs: 40/40
+================================================================================

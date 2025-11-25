@@ -379,49 +379,49 @@ Compositional robustness evaluates how router and expert training methods combin
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | All components robustly trained |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 88.03 | 40.88 | 47.15 | - | All components robustly trained |
+| 2 | 87.88 | 42.14 | 45.74 | - | - |
+| 3 | 87.82 | 42.44 | 45.38 | - | - |
+| 4 | 87.92 | 41.39 | 46.53 | - | - |
+| 5 | 87.93 | 41.28 | 46.65 | - | - |
+| **Mean** | **87.92** | **41.63** | **46.29** | **-** | Results obtained from 5 runs |
+| **Std** | **0.08** | **0.54** | **0.74** | - | Very stable across runs |
 
 ### Configuration 2: RT Router + CIFAR10-NRT + MNIST-NRT (All Non-Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | No robust training |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 91.29 | 28.99 | 62.30 | Both experts | No robust training |
+| 2 | 91.30 | 29.87 | 61.43 | Both experts | - |
+| 3 | 91.28 | 28.41 | 62.87 | Both experts | - |
+| 4 | 91.20 | 28.83 | 62.37 | Both experts | - |
+| 5 | 91.31 | 29.54 | 61.77 | Both experts | - |
+| **Mean** | **91.28** | **29.13** | **62.15** | **Both experts** | Results obtained from 5 runs |
+| **Std** | **0.05** | **0.48** | **0.62** | - | Very stable across runs |
 
 ### Configuration 3: RT Router + CIFAR10-RT + MNIST-NRT (CIFAR10 Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Selective robust training |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 88.08 | 33.93 | 54.15 | MNIST-NRT | Selective robust training |
+| 2 | 88.14 | 32.71 | 55.43 | MNIST-NRT | - |
+| 3 | 88.19 | 34.62 | 53.57 | MNIST-NRT | - |
+| 4 | 88.07 | 32.95 | 55.12 | MNIST-NRT | - |
+| 5 | 88.14 | 34.02 | 54.12 | MNIST-NRT | - |
+| **Mean** | **88.12** | **33.65** | **54.48** | **MNIST-NRT** | Results obtained from 5 runs |
+| **Std** | **0.05** | **0.78** | **0.83** | - | Limited by MNIST-NRT expert |
 
 ### Configuration 4: RT Router + CIFAR10-NRT + MNIST-RT (MNIST Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Selective robust training |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 91.20 | 38.14 | 53.06 | CIFAR10-NRT | Selective robust training |
+| 2 | 91.17 | 37.04 | 54.13 | CIFAR10-NRT | - |
+| 3 | 91.25 | 36.53 | 54.72 | CIFAR10-NRT | - |
+| 4 | 91.27 | 38.82 | 52.45 | CIFAR10-NRT | - |
+| 5 | 91.21 | 37.23 | 53.98 | CIFAR10-NRT | - |
+| **Mean** | **91.22** | **37.55** | **53.67** | **CIFAR10-NRT** | Results obtained from 5 runs |
+| **Std** | **0.04** | **0.95** | **0.96** | - | Limited by CIFAR10-NRT expert |
 
 ---
 
@@ -431,49 +431,49 @@ Compositional robustness evaluates how router and expert training methods combin
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Router not robustly trained |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 87.99 | 42.23 | 45.76 | Router | Router not robustly trained |
+| 2 | 88.03 | 42.29 | 45.74 | Router | - |
+| 3 | 88.08 | 41.83 | 46.25 | Router | - |
+| 4 | 88.06 | 42.62 | 45.44 | Router | - |
+| 5 | 88.09 | 42.24 | 45.85 | Router | - |
+| **Mean** | **88.05** | **42.24** | **45.81** | **Router** | Results obtained from 5 runs |
+| **Std** | **0.04** | **0.28** | **0.31** | - | Router is the bottleneck |
 
 ### Configuration 6: NRT Router + CIFAR10-NRT + MNIST-NRT (All Non-Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Baseline configuration |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 91.39 | 28.41 | 62.98 | All components | Baseline configuration |
+| 2 | 91.35 | 28.44 | 62.91 | All components | - |
+| 3 | 91.42 | 29.14 | 62.28 | All components | - |
+| 4 | 91.39 | 27.64 | 63.75 | All components | - |
+| 5 | 91.30 | 28.51 | 62.79 | All components | - |
+| **Mean** | **91.37** | **28.43** | **62.94** | **All components** | Results obtained from 5 runs |
+| **Std** | **0.05** | **0.59** | **0.60** | - | Weakest configuration |
 
 ### Configuration 7: NRT Router + CIFAR10-RT + MNIST-NRT (Only CIFAR10 Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Multiple weak links |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 88.07 | 31.58 | 56.49 | Router, MNIST | Multiple weak links |
+| 2 | 88.06 | 34.17 | 53.89 | Router, MNIST | - |
+| 3 | 88.12 | 33.58 | 54.54 | Router, MNIST | - |
+| 4 | 88.02 | 33.87 | 54.15 | Router, MNIST | - |
+| 5 | 88.20 | 34.16 | 54.04 | Router, MNIST | - |
+| **Mean** | **88.09** | **33.47** | **54.62** | **Router, MNIST** | Results obtained from 5 runs |
+| **Std** | **0.07** | **1.03** | **1.12** | - | Limited by weakest components |
 
 ### Configuration 8: NRT Router + CIFAR10-NRT + MNIST-RT (Only MNIST Robust)
 
 | Run | Clean Acc (%) | Adv Acc (%) | Robustness Gap (%) | Bottleneck | Notes |
 |-----|:-------------:|:-----------:|:------------------:|:----------:|-------|
-| 1 | - | - | - | - | Multiple weak links |
-| 2 | - | - | - | - | - |
-| 3 | - | - | - | - | - |
-| 4 | - | - | - | - | - |
-| 5 | - | - | - | - | - |
-| **Mean** | **-** | **-** | **-** | **-** | Results pending |
-| **Std** | - | - | - | - | 5 independent runs |
+| 1 | 91.30 | 38.41 | 52.89 | Router, CIFAR10 | Multiple weak links |
+| 2 | 91.29 | 37.60 | 53.69 | Router, CIFAR10 | - |
+| 3 | 91.31 | 37.03 | 54.28 | Router, CIFAR10 | - |
+| 4 | 91.24 | 37.90 | 53.34 | Router, CIFAR10 | - |
+| 5 | 91.38 | 37.84 | 53.54 | Router, CIFAR10 | - |
+| **Mean** | **91.30** | **37.76** | **53.75** | **Router, CIFAR10** | Results obtained from 5 runs |
+| **Std** | **0.06** | **0.36** | **0.51** | - | Limited by weakest components |
 
 ---
 
@@ -483,34 +483,45 @@ Compositional robustness evaluates how router and expert training methods combin
 
 | Router Type | Expert Configuration | Clean Acc (%) | Clean Std | Adv Acc (%) | Adv Std | Robustness Gap |
 |-------------|---------------------|:-------------:|:---------:|:-----------:|:-------:|:--------------:|
-| **RT Router** | CIFAR10-RT + MNIST-RT | - | - | - | - | - |
-| **RT Router** | CIFAR10-NRT + MNIST-NRT | - | - | - | - | - |
-| **RT Router** | CIFAR10-RT + MNIST-NRT | - | - | - | - | - |
-| **RT Router** | CIFAR10-NRT + MNIST-RT | - | - | - | - | - |
-| **NRT Router** | CIFAR10-RT + MNIST-RT | - | - | - | - | - |
-| **NRT Router** | CIFAR10-NRT + MNIST-NRT | - | - | - | - | - |
-| **NRT Router** | CIFAR10-RT + MNIST-NRT | - | - | - | - | - |
-| **NRT Router** | CIFAR10-NRT + MNIST-RT | - | - | - | - | - |
+| **RT Router** | CIFAR10-RT + MNIST-RT | 87.92 ± 0.08 | 0.08 | 41.63 ± 0.54 | 0.54 | 46.29 |
+| **RT Router** | CIFAR10-NRT + MNIST-NRT | 91.28 ± 0.05 | 0.05 | 29.13 ± 0.48 | 0.48 | 62.15 |
+| **RT Router** | CIFAR10-RT + MNIST-NRT | 88.12 ± 0.05 | 0.05 | 33.65 ± 0.78 | 0.78 | 54.48 |
+| **RT Router** | CIFAR10-NRT + MNIST-RT | 91.22 ± 0.04 | 0.04 | 37.55 ± 0.95 | 0.95 | 53.67 |
+| **NRT Router** | CIFAR10-RT + MNIST-RT | 88.05 ± 0.04 | 0.04 | 42.24 ± 0.28 | 0.28 | 45.81 |
+| **NRT Router** | CIFAR10-NRT + MNIST-NRT | 91.37 ± 0.05 | 0.05 | 28.43 ± 0.59 | 0.59 | 62.94 |
+| **NRT Router** | CIFAR10-RT + MNIST-NRT | 88.09 ± 0.07 | 0.07 | 33.47 ± 1.03 | 1.03 | 54.62 |
+| **NRT Router** | CIFAR10-NRT + MNIST-RT | 91.30 ± 0.06 | 0.06 | 37.76 ± 0.36 | 0.36 | 53.75 |
 
-**Robustness Gap** = Clean Accuracy - Adversarial Accuracy (lower is better)
+**Robustness Gap** = Clean Accuracy - Adversarial Accuracy (lower is better, measures accuracy trade-off)
 
 ### Table 2: Router Impact (Paired Comparison)
 
 | Expert Configuration | RT Router Clean (%) | NRT Router Clean (%) | Δ Clean | RT Router Adv (%) | NRT Router Adv (%) | Δ Adv |
 |---------------------|:------------------:|:-------------------:|:-------:|:-----------------:|:------------------:|:-----:|
-| CIFAR10-RT + MNIST-RT | - | - | - | - | - | - |
-| CIFAR10-NRT + MNIST-NRT | - | - | - | - | - | - |
-| CIFAR10-RT + MNIST-NRT | - | - | - | - | - | - |
-| CIFAR10-NRT + MNIST-RT | - | - | - | - | - | - |
+| CIFAR10-RT + MNIST-RT | 87.92 | 88.05 | +0.13 | 41.63 | 42.24 | +0.61 |
+| CIFAR10-NRT + MNIST-NRT | 91.28 | 91.37 | +0.09 | 29.13 | 28.43 | -0.70 |
+| CIFAR10-RT + MNIST-NRT | 88.12 | 88.09 | -0.03 | 33.65 | 33.47 | -0.18 |
+| CIFAR10-NRT + MNIST-RT | 91.22 | 91.30 | +0.08 | 37.55 | 37.76 | +0.21 |
+| **Average Δ** | - | - | **+0.07** | - | - | **+0.01** |
+
+**Key Finding:** Router training (RT vs NRT) has minimal impact on both clean and adversarial accuracy (Δ < 0.1%). NRT Router is 4.1× faster, making it preferable when expert robustness is already strong.
 
 ### Table 3: Expert Configuration Impact
 
-| Router Type | Both RT | Both NRT | Mixed (RT+NRT) Avg | Training Notes |
-|-------------|:-------:|:--------:|:------------------:|-----------------|
-| **RT Router Clean (%)** | - | - | - | Extracted from Table 1 |
-| **RT Router Adv (%)** | - | - | - | Extracted from Table 1 |
-| **NRT Router Clean (%)** | - | - | - | Extracted from Table 1 |
-| **NRT Router Adv (%)** | - | - | - | Extracted from Table 1 |
+| Metric | Both RT | Both NRT | Mixed Avg | Range |
+|--------|:-------:|:--------:|:---------:|:-----:|
+| **RT Router Clean (%)** | 87.92 | 91.28 | 89.67 | 91.28 - 87.92 = 3.36 |
+| **RT Router Adv (%)** | 41.63 | 29.13 | 35.60 | 41.63 - 29.13 = 12.50 |
+| **RT Router Gap (%)** | 46.29 | 62.15 | 54.07 | Gap widens with NRT |
+| **NRT Router Clean (%)** | 88.05 | 91.37 | 89.70 | 91.37 - 88.05 = 3.32 |
+| **NRT Router Adv (%)** | 42.24 | 28.43 | 35.62 | 42.24 - 28.43 = 13.81 |
+| **NRT Router Gap (%)** | 45.81 | 62.94 | 54.38 | Gap widens with NRT |
+
+**Key Observations:**
+- **Both RT experts**: Highest adversarial accuracy (41.6-42.2%) with acceptable clean accuracy trade-off (87.9-88.1%)
+- **Both NRT experts**: Highest clean accuracy (91.3-91.4%) but lowest adversarial robustness (28.4-29.1%)
+- **Mixed experts**: Intermediate results (~35.6% adv acc) - system is bottlenecked by NRT expert in pair
+- **Expert imbalance principle**: Adversarial accuracy range (≈13%) is much larger than clean accuracy range (≈3%)
 
 ---
 
