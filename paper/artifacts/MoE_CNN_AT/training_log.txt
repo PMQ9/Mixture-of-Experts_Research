@@ -1,0 +1,625 @@
+Training started at 2025-11-24 21:00:05.365945
+
+Logging to: D:\Mixture-of-Experts_Research\artifacts\training_log.txt
+Loaded D:\Mixture-of-Experts_Research\paper\artifacts\E_0_CNN_AT\cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth as full model. Type: <class 'small_expert.UltraVerifiableCNN'>
+Loaded D:\Mixture-of-Experts_Research\paper\artifacts\E_1_CNN_AT\mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth as full model. Type: <class 'small_expert.UltraVerifiableCNN'>
+CIFAR10 model output shape: torch.Size([1, 10])
+MNIST model output shape: torch.Size([1, 10])
+2025-11-24 21:09:11.412378
+Epoch 1/50:
+Train loss: 1.5870, Train Balance Loss: 0.0000, Train Gating Loss: 0.0773, Train Acc: 0.7994, Train Gating Acc: 0.9724
+Train Avg Router Time per image: 0.000043 seconds
+Train Avg Experts Time per image: 0.000237 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000285 seconds
+Test loss: 1.2890, Test Balance Loss: 0.0000, Test Gating Loss: 0.0049, Test Acc: 0.8791, Test Gating Acc: 0.9981
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7683, Test MNIST Acc: 0.9900
+Test Avg Router Time per image: 0.000042 seconds
+Test Avg Experts Time per image: 0.000084 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000130 seconds
+Epoch time: 545.27 seconds
+New best gating accuracy: 0.9981
+
+2025-11-24 21:12:38.504979
+Epoch 2/50:
+Train loss: 1.5325, Train Balance Loss: 0.0000, Train Gating Loss: 0.0131, Train Acc: 0.8192, Train Gating Acc: 0.9960
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000081 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000106 seconds
+Epoch time: 207.01 seconds
+
+2025-11-24 21:16:10.760723
+Epoch 3/50:
+Train loss: 1.5308, Train Balance Loss: 0.0000, Train Gating Loss: 0.0106, Train Acc: 0.8176, Train Gating Acc: 0.9969
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000085 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000111 seconds
+Test loss: 1.2895, Test Balance Loss: 0.0000, Test Gating Loss: 0.0025, Test Acc: 0.8798, Test Gating Acc: 0.9991
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7697, Test MNIST Acc: 0.9898
+Test Avg Router Time per image: 0.000038 seconds
+Test Avg Experts Time per image: 0.000080 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000123 seconds
+Epoch time: 212.26 seconds
+New best gating accuracy: 0.9991
+
+2025-11-24 21:19:34.494063
+Epoch 4/50:
+Train loss: 1.5295, Train Balance Loss: 0.0000, Train Gating Loss: 0.0086, Train Acc: 0.8180, Train Gating Acc: 0.9977
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000082 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000107 seconds
+Epoch time: 203.71 seconds
+
+2025-11-24 21:23:13.236676
+Epoch 5/50:
+Train loss: 1.5320, Train Balance Loss: 0.0000, Train Gating Loss: 0.0060, Train Acc: 0.8187, Train Gating Acc: 0.9982
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000087 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000114 seconds
+Test loss: 1.2933, Test Balance Loss: 0.0000, Test Gating Loss: 0.0022, Test Acc: 0.8791, Test Gating Acc: 0.9993
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7678, Test MNIST Acc: 0.9904
+Test Avg Router Time per image: 0.000038 seconds
+Test Avg Experts Time per image: 0.000078 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000120 seconds
+Epoch time: 218.74 seconds
+New best gating accuracy: 0.9993
+
+2025-11-24 21:26:42.068484
+Epoch 6/50:
+Train loss: 1.5283, Train Balance Loss: 0.0000, Train Gating Loss: 0.0061, Train Acc: 0.8200, Train Gating Acc: 0.9982
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Epoch time: 206.52 seconds
+
+2025-11-24 21:30:13.082613
+Epoch 7/50:
+Train loss: 1.5313, Train Balance Loss: 0.0000, Train Gating Loss: 0.0055, Train Acc: 0.8192, Train Gating Acc: 0.9984
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000085 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000110 seconds
+Test loss: 1.2809, Test Balance Loss: 0.0000, Test Gating Loss: 0.0023, Test Acc: 0.8797, Test Gating Acc: 0.9991
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7693, Test MNIST Acc: 0.9900
+Test Avg Router Time per image: 0.000036 seconds
+Test Avg Experts Time per image: 0.000076 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000117 seconds
+Epoch time: 211.01 seconds
+
+2025-11-24 21:33:37.324540
+Epoch 8/50:
+Train loss: 1.5283, Train Balance Loss: 0.0000, Train Gating Loss: 0.0045, Train Acc: 0.8194, Train Gating Acc: 0.9988
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Epoch time: 204.24 seconds
+
+2025-11-24 21:37:10.568265
+Epoch 9/50:
+Train loss: 1.5271, Train Balance Loss: 0.0000, Train Gating Loss: 0.0034, Train Acc: 0.8207, Train Gating Acc: 0.9989
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Test loss: 1.2863, Test Balance Loss: 0.0000, Test Gating Loss: 0.0008, Test Acc: 0.8811, Test Gating Acc: 0.9996
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7716, Test MNIST Acc: 0.9907
+Test Avg Router Time per image: 0.000037 seconds
+Test Avg Experts Time per image: 0.000076 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000118 seconds
+Epoch time: 213.24 seconds
+New best gating accuracy: 0.9996
+
+2025-11-24 21:40:33.269433
+Epoch 10/50:
+Train loss: 1.5277, Train Balance Loss: 0.0000, Train Gating Loss: 0.0035, Train Acc: 0.8199, Train Gating Acc: 0.9992
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000082 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000107 seconds
+Epoch time: 202.68 seconds
+
+2025-11-24 21:44:07.443575
+Epoch 11/50:
+Train loss: 1.5290, Train Balance Loss: 0.0000, Train Gating Loss: 0.0038, Train Acc: 0.8198, Train Gating Acc: 0.9989
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Test loss: 1.2819, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8807, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7708, Test MNIST Acc: 0.9906
+Test Avg Router Time per image: 0.000038 seconds
+Test Avg Experts Time per image: 0.000083 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000125 seconds
+Epoch time: 212.39 seconds
+New best gating accuracy: 0.9999
+
+2025-11-24 21:47:31.545145
+Epoch 12/50:
+Train loss: 1.5259, Train Balance Loss: 0.0000, Train Gating Loss: 0.0028, Train Acc: 0.8212, Train Gating Acc: 0.9992
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000108 seconds
+Epoch time: 204.08 seconds
+
+2025-11-24 21:51:05.698766
+Epoch 13/50:
+Train loss: 1.5253, Train Balance Loss: 0.0000, Train Gating Loss: 0.0029, Train Acc: 0.8215, Train Gating Acc: 0.9993
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000084 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000110 seconds
+Test loss: 1.2732, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8791, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7676, Test MNIST Acc: 0.9906
+Test Avg Router Time per image: 0.000041 seconds
+Test Avg Experts Time per image: 0.000080 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000126 seconds
+Epoch time: 214.15 seconds
+New best gating accuracy: 0.9999
+
+2025-11-24 21:54:32.873884
+Epoch 14/50:
+Train loss: 1.5271, Train Balance Loss: 0.0000, Train Gating Loss: 0.0025, Train Acc: 0.8193, Train Gating Acc: 0.9993
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Epoch time: 207.15 seconds
+
+2025-11-24 21:58:04.448857
+Epoch 15/50:
+Train loss: 1.5295, Train Balance Loss: 0.0000, Train Gating Loss: 0.0022, Train Acc: 0.8186, Train Gating Acc: 0.9995
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000084 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000110 seconds
+Test loss: 1.2771, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8805, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7707, Test MNIST Acc: 0.9903
+Test Avg Router Time per image: 0.000040 seconds
+Test Avg Experts Time per image: 0.000080 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000125 seconds
+Epoch time: 211.57 seconds
+
+2025-11-24 22:01:29.951607
+Epoch 16/50:
+Train loss: 1.5290, Train Balance Loss: 0.0000, Train Gating Loss: 0.0018, Train Acc: 0.8200, Train Gating Acc: 0.9995
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000082 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000108 seconds
+Epoch time: 203.81 seconds
+
+2025-11-24 22:05:00.488832
+Epoch 17/50:
+Train loss: 1.5290, Train Balance Loss: 0.0000, Train Gating Loss: 0.0045, Train Acc: 0.8197, Train Gating Acc: 0.9989
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000082 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000108 seconds
+Test loss: 1.2753, Test Balance Loss: 0.0000, Test Gating Loss: 0.0010, Test Acc: 0.8798, Test Gating Acc: 0.9997
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7691, Test MNIST Acc: 0.9904
+Test Avg Router Time per image: 0.000037 seconds
+Test Avg Experts Time per image: 0.000077 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000119 seconds
+Epoch time: 210.53 seconds
+
+2025-11-24 22:08:25.744812
+Epoch 18/50:
+Train loss: 1.5266, Train Balance Loss: 0.0000, Train Gating Loss: 0.0023, Train Acc: 0.8201, Train Gating Acc: 0.9993
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000083 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000108 seconds
+Epoch time: 205.25 seconds
+
+2025-11-24 22:11:56.130630
+Epoch 19/50:
+Train loss: 1.5282, Train Balance Loss: 0.0000, Train Gating Loss: 0.0016, Train Acc: 0.8200, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000084 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000109 seconds
+Test loss: 1.2834, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8801, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7699, Test MNIST Acc: 0.9904
+Test Avg Router Time per image: 0.000037 seconds
+Test Avg Experts Time per image: 0.000073 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000114 seconds
+Epoch time: 210.39 seconds
+
+2025-11-24 22:15:22.453784
+Epoch 20/50:
+Train loss: 1.5285, Train Balance Loss: 0.0000, Train Gating Loss: 0.0028, Train Acc: 0.8194, Train Gating Acc: 0.9993
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000085 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000110 seconds
+Epoch time: 206.32 seconds
+
+2025-11-24 22:18:53.942085
+Epoch 21/50:
+Train loss: 1.5255, Train Balance Loss: 0.0000, Train Gating Loss: 0.0022, Train Acc: 0.8204, Train Gating Acc: 0.9994
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000084 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000110 seconds
+Test loss: 1.2854, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8783, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7665, Test MNIST Acc: 0.9902
+Test Avg Router Time per image: 0.000040 seconds
+Test Avg Experts Time per image: 0.000078 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000123 seconds
+Epoch time: 209.62 seconds
+
+2025-11-24 22:22:27.556902
+Epoch 22/50:
+Train loss: 1.5295, Train Balance Loss: 0.0000, Train Gating Loss: 0.0016, Train Acc: 0.8168, Train Gating Acc: 0.9995
+Train Avg Router Time per image: 0.000024 seconds
+Train Avg Experts Time per image: 0.000090 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000117 seconds
+Epoch time: 213.61 seconds
+
+2025-11-24 22:25:57.340241
+Epoch 23/50:
+Train loss: 1.5304, Train Balance Loss: 0.0000, Train Gating Loss: 0.0012, Train Acc: 0.8192, Train Gating Acc: 0.9997
+Train Avg Router Time per image: 0.000023 seconds
+Train Avg Experts Time per image: 0.000082 seconds
+Train Avg Post-Experts Time per image: 0.000000 seconds
+Train Avg Total Inference Time per image: 0.000108 seconds
+Test loss: 1.2895, Test Balance Loss: 0.0000, Test Gating Loss: 0.0002, Test Acc: 0.8806, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7710, Test MNIST Acc: 0.9902
+Test Avg Router Time per image: 0.000036 seconds
+Test Avg Experts Time per image: 0.000073 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000113 seconds
+Epoch time: 209.78 seconds
+
+2025-11-24 22:30:25.836075
+Epoch 24/50:
+Train loss: 1.5288, Train Balance Loss: 0.0000, Train Gating Loss: 0.0015, Train Acc: 0.8199, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000033 seconds
+Train Avg Experts Time per image: 0.000122 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000158 seconds
+Epoch time: 268.50 seconds
+
+2025-11-24 22:36:39.390376
+Epoch 25/50:
+Train loss: 1.5297, Train Balance Loss: 0.0000, Train Gating Loss: 0.0023, Train Acc: 0.8207, Train Gating Acc: 0.9994
+Train Avg Router Time per image: 0.000046 seconds
+Train Avg Experts Time per image: 0.000168 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000218 seconds
+Test loss: 1.2957, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8806, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7709, Test MNIST Acc: 0.9903
+Test Avg Router Time per image: 0.000094 seconds
+Test Avg Experts Time per image: 0.000195 seconds
+Test Avg Post-Experts Time per image: 0.000002 seconds
+Test Avg Total Inference Time per image: 0.000301 seconds
+Epoch time: 373.55 seconds
+
+2025-11-24 22:41:57.725740
+Epoch 26/50:
+Train loss: 1.5261, Train Balance Loss: 0.0000, Train Gating Loss: 0.0016, Train Acc: 0.8205, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000037 seconds
+Train Avg Experts Time per image: 0.000141 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000183 seconds
+Epoch time: 314.30 seconds
+
+2025-11-24 22:45:55.354961
+Epoch 27/50:
+Train loss: 1.5253, Train Balance Loss: 0.0000, Train Gating Loss: 0.0011, Train Acc: 0.8213, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000027 seconds
+Train Avg Experts Time per image: 0.000093 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000123 seconds
+Test loss: 1.2760, Test Balance Loss: 0.0000, Test Gating Loss: 0.0005, Test Acc: 0.8812, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7723, Test MNIST Acc: 0.9901
+Test Avg Router Time per image: 0.000042 seconds
+Test Avg Experts Time per image: 0.000083 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000129 seconds
+Epoch time: 237.63 seconds
+
+2025-11-24 22:49:45.550433
+Epoch 28/50:
+Train loss: 1.5268, Train Balance Loss: 0.0000, Train Gating Loss: 0.0018, Train Acc: 0.8198, Train Gating Acc: 0.9995
+Train Avg Router Time per image: 0.000026 seconds
+Train Avg Experts Time per image: 0.000092 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000120 seconds
+Epoch time: 230.20 seconds
+
+2025-11-24 22:53:53.274148
+Epoch 29/50:
+Train loss: 1.5268, Train Balance Loss: 0.0000, Train Gating Loss: 0.0014, Train Acc: 0.8211, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000027 seconds
+Train Avg Experts Time per image: 0.000098 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000128 seconds
+Test loss: 1.2922, Test Balance Loss: 0.0000, Test Gating Loss: 0.0038, Test Acc: 0.8797, Test Gating Acc: 0.9989
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7694, Test MNIST Acc: 0.9900
+Test Avg Router Time per image: 0.000044 seconds
+Test Avg Experts Time per image: 0.000099 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000148 seconds
+Epoch time: 247.72 seconds
+
+2025-11-24 22:58:28.287686
+Epoch 30/50:
+Train loss: 1.5271, Train Balance Loss: 0.0000, Train Gating Loss: 0.0023, Train Acc: 0.8205, Train Gating Acc: 0.9994
+Train Avg Router Time per image: 0.000035 seconds
+Train Avg Experts Time per image: 0.000121 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000159 seconds
+Epoch time: 275.01 seconds
+
+2025-11-24 23:03:03.175600
+Epoch 31/50:
+Train loss: 1.5254, Train Balance Loss: 0.0000, Train Gating Loss: 0.0014, Train Acc: 0.8208, Train Gating Acc: 0.9996
+Train Avg Router Time per image: 0.000031 seconds
+Train Avg Experts Time per image: 0.000110 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000144 seconds
+Test loss: 1.2805, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8806, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7706, Test MNIST Acc: 0.9906
+Test Avg Router Time per image: 0.000068 seconds
+Test Avg Experts Time per image: 0.000140 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000214 seconds
+Epoch time: 272.92 seconds
+
+2025-11-24 23:07:21.279924
+Epoch 32/50:
+Train loss: 1.5320, Train Balance Loss: 0.0000, Train Gating Loss: 0.0013, Train Acc: 0.8195, Train Gating Acc: 0.9997
+Train Avg Router Time per image: 0.000030 seconds
+Train Avg Experts Time per image: 0.000109 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000142 seconds
+Epoch time: 258.10 seconds
+
+2025-11-24 23:11:25.241221
+Epoch 33/50:
+Train loss: 1.5264, Train Balance Loss: 0.0000, Train Gating Loss: 0.0009, Train Acc: 0.8214, Train Gating Acc: 0.9997
+Train Avg Router Time per image: 0.000027 seconds
+Train Avg Experts Time per image: 0.000097 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000127 seconds
+Test loss: 1.2777, Test Balance Loss: 0.0000, Test Gating Loss: 0.0002, Test Acc: 0.8815, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7729, Test MNIST Acc: 0.9902
+Test Avg Router Time per image: 0.000042 seconds
+Test Avg Experts Time per image: 0.000080 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000127 seconds
+Epoch time: 243.96 seconds
+
+2025-11-24 23:15:28.938190
+Epoch 34/50:
+Train loss: 1.5292, Train Balance Loss: 0.0000, Train Gating Loss: 0.0010, Train Acc: 0.8209, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000028 seconds
+Train Avg Experts Time per image: 0.000100 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000130 seconds
+Epoch time: 243.70 seconds
+
+2025-11-24 23:19:28.565569
+Epoch 35/50:
+Train loss: 1.5244, Train Balance Loss: 0.0000, Train Gating Loss: 0.0007, Train Acc: 0.8213, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000027 seconds
+Train Avg Experts Time per image: 0.000093 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000122 seconds
+Test loss: 1.2896, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8801, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7694, Test MNIST Acc: 0.9908
+Test Avg Router Time per image: 0.000060 seconds
+Test Avg Experts Time per image: 0.000104 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000171 seconds
+Epoch time: 239.63 seconds
+
+2025-11-24 23:25:22.208469
+Epoch 36/50:
+Train loss: 1.5258, Train Balance Loss: 0.0000, Train Gating Loss: 0.0011, Train Acc: 0.8190, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000042 seconds
+Train Avg Experts Time per image: 0.000160 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000207 seconds
+Epoch time: 349.86 seconds
+
+2025-11-24 23:32:15.116419
+Epoch 37/50:
+Train loss: 1.5297, Train Balance Loss: 0.0000, Train Gating Loss: 0.0008, Train Acc: 0.8200, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000050 seconds
+Train Avg Experts Time per image: 0.000185 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000239 seconds
+Test loss: 1.3019, Test Balance Loss: 0.0000, Test Gating Loss: 0.0006, Test Acc: 0.8796, Test Gating Acc: 0.9998
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7694, Test MNIST Acc: 0.9898
+Test Avg Router Time per image: 0.000072 seconds
+Test Avg Experts Time per image: 0.000131 seconds
+Test Avg Post-Experts Time per image: 0.000002 seconds
+Test Avg Total Inference Time per image: 0.000211 seconds
+Epoch time: 412.91 seconds
+
+2025-11-24 23:36:59.054257
+Epoch 38/50:
+Train loss: 1.5279, Train Balance Loss: 0.0000, Train Gating Loss: 0.0011, Train Acc: 0.8200, Train Gating Acc: 0.9997
+Train Avg Router Time per image: 0.000034 seconds
+Train Avg Experts Time per image: 0.000121 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000158 seconds
+Epoch time: 283.94 seconds
+
+2025-11-24 23:41:44.831441
+Epoch 39/50:
+Train loss: 1.5240, Train Balance Loss: 0.0000, Train Gating Loss: 0.0010, Train Acc: 0.8211, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000033 seconds
+Train Avg Experts Time per image: 0.000118 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000154 seconds
+Test loss: 1.2892, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8800, Test Gating Acc: 0.9999
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7702, Test MNIST Acc: 0.9899
+Test Avg Router Time per image: 0.000071 seconds
+Test Avg Experts Time per image: 0.000114 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000192 seconds
+Epoch time: 285.78 seconds
+
+2025-11-24 23:46:18.872784
+Epoch 40/50:
+Train loss: 1.5253, Train Balance Loss: 0.0000, Train Gating Loss: 0.0007, Train Acc: 0.8214, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000033 seconds
+Train Avg Experts Time per image: 0.000115 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000152 seconds
+Epoch time: 274.04 seconds
+
+2025-11-24 23:51:12.059447
+Epoch 41/50:
+Train loss: 1.5282, Train Balance Loss: 0.0000, Train Gating Loss: 0.0008, Train Acc: 0.8193, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000033 seconds
+Train Avg Experts Time per image: 0.000122 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000160 seconds
+Test loss: 1.2758, Test Balance Loss: 0.0000, Test Gating Loss: 0.0002, Test Acc: 0.8790, Test Gating Acc: 1.0000
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7677, Test MNIST Acc: 0.9904
+Test Avg Router Time per image: 0.000047 seconds
+Test Avg Experts Time per image: 0.000108 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000161 seconds
+Epoch time: 291.38 seconds
+New best gating accuracy: 1.0000
+
+2025-11-24 23:55:14.556706
+Epoch 42/50:
+Train loss: 1.5259, Train Balance Loss: 0.0000, Train Gating Loss: 0.0007, Train Acc: 0.8212, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000028 seconds
+Train Avg Experts Time per image: 0.000101 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000131 seconds
+Epoch time: 242.47 seconds
+
+2025-11-24 23:59:25.254283
+Epoch 43/50:
+Train loss: 1.5268, Train Balance Loss: 0.0000, Train Gating Loss: 0.0006, Train Acc: 0.8211, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000028 seconds
+Train Avg Experts Time per image: 0.000100 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000131 seconds
+Test loss: 1.2925, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8811, Test Gating Acc: 1.0000
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7713, Test MNIST Acc: 0.9909
+Test Avg Router Time per image: 0.000043 seconds
+Test Avg Experts Time per image: 0.000083 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000131 seconds
+Epoch time: 250.70 seconds
+
+2025-11-25 00:03:34.597648
+Epoch 44/50:
+Train loss: 1.5282, Train Balance Loss: 0.0000, Train Gating Loss: 0.0004, Train Acc: 0.8206, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000029 seconds
+Train Avg Experts Time per image: 0.000104 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000136 seconds
+Epoch time: 249.34 seconds
+
+2025-11-25 00:07:52.010238
+Epoch 45/50:
+Train loss: 1.5253, Train Balance Loss: 0.0000, Train Gating Loss: 0.0005, Train Acc: 0.8196, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000029 seconds
+Train Avg Experts Time per image: 0.000106 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000138 seconds
+Test loss: 1.2860, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8808, Test Gating Acc: 1.0000
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7713, Test MNIST Acc: 0.9902
+Test Avg Router Time per image: 0.000046 seconds
+Test Avg Experts Time per image: 0.000096 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000147 seconds
+Epoch time: 257.41 seconds
+
+2025-11-25 00:12:11.613754
+Epoch 46/50:
+Train loss: 1.5275, Train Balance Loss: 0.0000, Train Gating Loss: 0.0007, Train Acc: 0.8200, Train Gating Acc: 0.9998
+Train Avg Router Time per image: 0.000031 seconds
+Train Avg Experts Time per image: 0.000110 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000144 seconds
+Epoch time: 256.87 seconds
+
+2025-11-25 00:16:38.805024
+Epoch 47/50:
+Train loss: 1.5265, Train Balance Loss: 0.0000, Train Gating Loss: 0.0005, Train Acc: 0.8223, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000030 seconds
+Train Avg Experts Time per image: 0.000109 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000143 seconds
+Test loss: 1.2910, Test Balance Loss: 0.0000, Test Gating Loss: 0.0003, Test Acc: 0.8802, Test Gating Acc: 1.0000
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7705, Test MNIST Acc: 0.9899
+Test Avg Router Time per image: 0.000042 seconds
+Test Avg Experts Time per image: 0.000088 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000137 seconds
+Epoch time: 267.19 seconds
+
+2025-11-25 00:21:05.178185
+Epoch 48/50:
+Train loss: 1.5266, Train Balance Loss: 0.0000, Train Gating Loss: 0.0004, Train Acc: 0.8196, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000033 seconds
+Train Avg Experts Time per image: 0.000116 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000151 seconds
+Epoch time: 266.37 seconds
+
+2025-11-25 00:25:27.425552
+Epoch 49/50:
+Train loss: 1.5267, Train Balance Loss: 0.0000, Train Gating Loss: 0.0005, Train Acc: 0.8209, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000030 seconds
+Train Avg Experts Time per image: 0.000107 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000140 seconds
+Test loss: 1.2934, Test Balance Loss: 0.0000, Test Gating Loss: 0.0004, Test Acc: 0.8813, Test Gating Acc: 1.0000
+Test GTSRB Acc: 0.0000, Test CIFAR10 Acc: 0.7720, Test MNIST Acc: 0.9907
+Test Avg Router Time per image: 0.000044 seconds
+Test Avg Experts Time per image: 0.000080 seconds
+Test Avg Post-Experts Time per image: 0.000001 seconds
+Test Avg Total Inference Time per image: 0.000128 seconds
+Epoch time: 262.25 seconds
+
+2025-11-25 00:30:10.186178
+Epoch 50/50:
+Train loss: 1.5281, Train Balance Loss: 0.0000, Train Gating Loss: 0.0003, Train Acc: 0.8203, Train Gating Acc: 0.9999
+Train Avg Router Time per image: 0.000035 seconds
+Train Avg Experts Time per image: 0.000123 seconds
+Train Avg Post-Experts Time per image: 0.000001 seconds
+Train Avg Total Inference Time per image: 0.000162 seconds
+Epoch time: 282.76 seconds
+
+Training completed. Best Accuracy: 1.0000
+Total training time: 12581.86 seconds
+Average time per epoch: 251.64 seconds
+Average inference time per image across test epochs: 0.000146 seconds
+
+Exporting model to ONNX...
+ONNX model saved to: D:\Mixture-of-Experts_Research\artifacts\metamoe_ultra_verifiable_cnn.onnx
+Clean Accuracy: 0.8790, Adversarial Accuracy: 0.4159
+Clean Gating Accuracy: 1.0000, Adversarial Gating Accuracy: 1.0000
+Expert 0: Clean Acc: 0.7683, Adv Acc: 0.0952
+Expert 1: Clean Acc: 0.9900, Adv Acc: 0.7405
