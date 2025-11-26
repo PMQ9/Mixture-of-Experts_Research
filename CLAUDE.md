@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT: Terminology** - Use "NRT" (Non-Robust Training) instead of "NAT" (Non-Adversarially Trained) in all documentation. NRT is the correct term for standard supervised learning without adversarial defenses.
 
+**IMPORTANT: File Management** - Never create new markdown (.md) files unless explicitly requested by the user. Only edit existing files. Never use emojis in any code or documentation.
+
 ## Project Overview
 
 This is a Mixture-of-Experts (MoE) research project for safety-critical systems at Vanderbilt University's Institute of Software Integrated Systems. The project trains separate expert models on different datasets (GTSRB, CIFAR-10, MNIST, etc.), freezes them, and trains a meta-router to dynamically select which expert to activate based on input. This approach is designed to be scalable and resource-efficient.
@@ -205,23 +207,27 @@ Pre-trained expert models are stored in `paper/artifacts/`:
 
 ```
 paper/artifacts/
-├── E_0_CNN_AT/          # CIFAR-10 Adversarially Trained expert
-│   └── cifar10_ultra_verifiable_cnn_best_robust.pth
+├── E_0_CNN_AT/          # CIFAR-10 Adversarially Trained expert (ε=0.03137)
+│   └── cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth
 ├── E_0_CNN_NAT/         # CIFAR-10 Non-Adversarially Trained expert
-│   └── cifar10_ultra_verifiable_cnn_best_og.pth
-├── E_1_CNN_AT/          # MNIST Adversarially Trained expert
-│   └── mnist_ultra_verifiable_cnn_best_robust.pth
+│   └── cifar10_ultra_verifiable_cnn_best_NRT.pth
+├── E_1_CNN_AT/          # MNIST Adversarially Trained expert (ε=0.03137)
+│   └── mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth
 ├── E_1_CNN_NAT/         # MNIST Non-Adversarially Trained expert
-│   └── mnist_ultra_verifiable_cnn_best_og.pth
-├── MoE_CNN_AT/          # MoE Router trained with Adversarial Gating (outputs go here)
-└── MoE_CNN_NAT/         # MoE Router trained with Non-Adversarial Gating (outputs go here)
+│   └── mnist_ultra_verifiable_cnn_best_NRT.pth
+├── MoE_CNN_AT/          # MoE Router trained with Adversarial Gating
+│   └── meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137.pth
+└── MoE_CNN_NAT/         # MoE Router trained with Non-Adversarial Gating
+    └── meta_moe_ultra_verifiable_cnn_best_NRT.pth
 ```
 
 **Expert naming convention:**
 - `E_0_*`: CIFAR-10 expert
 - `E_1_*`: MNIST expert
-- `*_AT`: Adversarially Trained (robust) → `*_best_robust.pth`
-- `*_NAT`: Non-Adversarially Trained (standard) → `*_best_og.pth`
+- `*_AT`: Adversarially Trained (robust) → `*_best_RT_eps0.031.pth` (ε=8/255=0.03137)
+- `*_NAT`: Non-Adversarially Trained (standard) → `*_best_NRT.pth`
+
+**IMPORTANT:** The AT models in paper/artifacts are trained at ε=0.03137 (8/255) only. No models exist for ε=0.00784 (2/255) or ε=0.01569 (4/255).
 
 **Default architecture:** `ultra_verifiable_cnn` (96K parameters)
 
@@ -232,8 +238,8 @@ Train router with AT gating and AT experts:
 python train.py --meta_moe \
     --model_arch ultra_verifiable_cnn \
     --gating_backbone ultra_verifiable_cnn \
-    --cifar10_model_path paper/artifacts/E_0_CNN_AT/cifar10_ultra_verifiable_cnn_best_robust.pth \
-    --mnist_model_path paper/artifacts/E_1_CNN_AT/mnist_ultra_verifiable_cnn_best_robust.pth \
+    --cifar10_model_path paper/artifacts/E_0_CNN_AT/cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth \
+    --mnist_model_path paper/artifacts/E_1_CNN_AT/mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth \
     --adv_gating_train \
     --art_attack \
     --epochs 200
@@ -244,8 +250,8 @@ Train router with NAT gating and mixed experts (CIFAR10-AT + MNIST-NAT):
 python train.py --meta_moe \
     --model_arch ultra_verifiable_cnn \
     --gating_backbone ultra_verifiable_cnn \
-    --cifar10_model_path paper/artifacts/E_0_CNN_AT/cifar10_ultra_verifiable_cnn_best_robust.pth \
-    --mnist_model_path paper/artifacts/E_1_CNN_NAT/mnist_ultra_verifiable_cnn_best_og.pth \
+    --cifar10_model_path paper/artifacts/E_0_CNN_AT/cifar10_ultra_verifiable_cnn_best_RT_eps0.031.pth \
+    --mnist_model_path paper/artifacts/E_1_CNN_NAT/mnist_ultra_verifiable_cnn_best_NRT.pth \
     --art_attack \
     --epochs 200
 ```

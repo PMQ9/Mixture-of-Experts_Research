@@ -280,7 +280,7 @@ This document consolidates all verification and testing results for the Mixture-
 
 **Performance Summary:**
 - **Total samples per configuration:** 120 (40 per epsilon value, 20 MNIST + 20 CIFAR-10)
-- **Verification timeout per sample:** 300 seconds
+- **Verification timeout per sample:** 120 seconds (down from 300)
 - **Note:** In alpha-beta-CROWN, unknown and timeout are semantically equivalent and both indicate "could not determine" (includes GPU Out-of-Memory or OOM, computational timeouts, and other resource constraints). Unlike falsified (which indicates the property was violated), unknown indicates inconclusive results.
 
 **Key Findings:**
@@ -318,19 +318,19 @@ This document consolidates all verification and testing results for the Mixture-
 
 **E_0_CNN_NRT (Non-Robust Training)**
 
-| Epsilon | Verified | Falsified | Timeout/Unknown | Avg Time (s) | Notes |
-|---------|----------|-----------|-----------------|--------------|-------|
-| 2/255 (0.00784) | - | - | - | - | - |
-| 4/255 (0.01569) | - | - | - | - | - |
-| 8/255 (0.03137) | - | - | - | - | - |
+| Epsilon | Verified | Falsified | Timeout/Unknown | Success Rate |Notes |
+|---------|----------|-----------|-----------------|--------------|------|
+| 2/255 (0.00784) | - | - | - | - |All timeout|
+| 4/255 (0.01569) | - | - | - | - |All timeout|
+| 8/255 (0.03137) | - | - | - | - |All timeout|
 
 **E_0_CNN_AT (Robust Training)**
 
-| Epsilon | Verified | Falsified | Timeout/Unknown | Avg Time (s) | Notes |
-|---------|----------|-----------|------------------|--------------|-------|
-| 2/255 (0.00784) | - | - | - | - | - |
-| 4/255 (0.01569) | - | - | - | - | - |
-| 8/255 (0.03137) | - | - | - | - | - |
+| Epsilon | Verified | Falsified | Timeout/Unknown | Success Rate | Notes |
+|---------|----------|-----------|-----------------|--------------|-------|
+| 2/255 (0.00784) | 18.0 ± 0.0 | 0.0 ± 0.0 | 2.0 ± 0.0 | 90.0 ± 0.0 | - |
+| 4/255 (0.01569) | 10.8 ± 0.4 | 0.0 ± 0.0 | 9.2 ± 0.4 | 54.0 ± 0.0 | - |
+| 8/255 (0.03137) | - | - | - | - |All timeout|
 
 ---
 
@@ -338,19 +338,19 @@ This document consolidates all verification and testing results for the Mixture-
 
 **E_1_CNN_NRT (Non-Robust Training)**
 
-| Epsilon | Verified | Falsified | Timeout/Unknown | Avg Time (s) | Notes |
-|---------|----------|-----------|-----------------|--------------|-------|
-| 2/255 (0.00784) | - | - | - | - | - |
-| 4/255 (0.01569) | - | - | - | - | - |
-| 8/255 (0.03137) | - | - | - | - | - |
+| Epsilon | Verified | Falsified | Timeout/Unknown | Success Rate (%) | Notes |
+|---------|----------|-----------|-----------------|------------------|-------|
+| 2/255 (0.00784) | 15.0 ± 0.0 | 0.0 ± 0.0 | 5.0 ± 0.0 | 75.0 ± 0.0 | - |
+| 4/255 (0.01569) | - | - | - | - | All timeout |
+| 8/255 (0.03137) | - | - | - | - | All timeout |
 
 **E_1_CNN_AT (Robust Training)**
 
-| Epsilon | Verified | Falsified | Timeout/Unknown | Avg Time (s) | Notes |
-|---------|----------|-----------|------------------|--------------|-------|
-| 2/255 (0.00784) | - | - | - | - | - |
-| 4/255 (0.01569) | - | - | - | - | - |
-| 8/255 (0.03137) | - | - | - | - | - |
+| Epsilon | Verified | Falsified | Timeout/Unknown | Success Rate (%) | Notes |
+|---------|----------|-----------|-----------------|------------------|-------|
+| 2/255 (0.00784) | 20.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 100.0 ± 0.0 | - |
+| 4/255 (0.01569) | 19.8 ± 0.4 | 0.0 ± 0.0 | 0.2 ± 0.4 | 99 ± 2 | - |
+| 8/255 (0.03137) | 19.0 ± 0.0 | 0.0 ± 0.0 | 1.0 ± 0.0 | 95.0 ± 0.0 | - |
 
 ---
 
