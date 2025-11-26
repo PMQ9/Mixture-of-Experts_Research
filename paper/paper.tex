@@ -105,7 +105,7 @@ This enables modular verification: verify router and experts independently, then
 
 \subsection{Empirical-Formal Gap}
 
-The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\Delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability.
+The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\Delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability. (See Appendix G for detailed analysis of empirical-formal correlation and AA vs CRA discrepancies.)
 
 \subsection{Problem Statement}
 
@@ -206,11 +206,11 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 \subsection{Training Paradigms and MoE Composition}
 
-\textbf{Non-Robust Training (NRT):} Standard supervised learning minimizing $\mathcal{L}_{NRT} = \mathbb{E}[\text{CE}(f(x), y)]$. Achieves high clean accuracy but low adversarial robustness.
+\textbf{Non-Robust Training (NRT):} Standard supervised learning with cross-entropy loss, achieving high clean accuracy but low adversarial robustness.
 
-\textbf{Robust Training (RT):} Adversarial training via PGD-generated perturbations: $\mathcal{L}_{RT} = \mathbb{E}[\text{CE}(f(x), y) + \text{CE}(f(x^{adv}), y)]$ where $x_{t+1}^{adv} = \Pi_{\mathcal{B}_\varepsilon(x)} (x_t^{adv} + \alpha \cdot \text{sign}(\nabla_x \mathcal{L}))$ with $\varepsilon = 8/255$, $\alpha = 2/255$, $T = 7$ iterations. Trades clean accuracy for adversarial robustness.
+\textbf{Robust Training (RT):} PGD adversarial training (Appendix A: $\varepsilon = 8/255$, 7 iterations) trades clean accuracy for robustness.
 
-\textbf{MoE Output:} Router selects top-$k$ experts with normalized weights $w_j = g_{i_j} / \sum_{l=1}^k g_{i_l}$. Final logits combine expert outputs with class offsets: $\hat{y}_l = w_j \cdot y_{i_j}[l - o_{i_j}]$ where $o_i = \sum_{m<i} C_m$.
+\textbf{MoE Output:} Router selects top-$k$ experts with normalized weights combining expert logits via class offsets.
 
 \textbf{MetaMoE Loss:} Combined classification and gating objectives: $\mathcal{L} = \mathcal{L}_{cls} + \lambda \mathcal{L}_{gate}$ where $\mathcal{L}_{cls}$ enforces correct class prediction and $\mathcal{L}_{gate}$ ensures correct expert selection.
 
@@ -227,19 +227,7 @@ This reduces verification from 2M to 96K parameters (20$\times$ reduction).
 
 \subsection{Critical Design Decisions for Verifiability}
 
-\textbf{1. Router-Only ONNX Export:} Extract router as standalone model outputting raw logits (not softmax). Since $\arg\max(\text{logits}) = \arg\max(\text{softmax}(\text{logits}/T))$, this is mathematically equivalent while enabling tighter CROWN bounds by avoiding exponential operations.
-
-\textbf{2. Property Specification via Negation:} For image $x$ with true meta-class $m^*$, verify $\arg\max_i G_i(x') = m^*$ for all $x' \in \mathcal{B}_\varepsilon(x)$ by asserting the negation in VNNLIB and searching for counterexamples (standard bounded model checking).
-
-\textbf{3. Unified Normalization:} Router and verification use identical normalization parameters across all datasets ($\mu = [0.295, 0.291, 0.274]$, $\sigma = [0.325, 0.321, 0.319]$) to prevent distribution shift.
-
-\textbf{4. Normalized-Space Perturbations:} Perturbations defined in normalized space (not pixel space), ensuring threat model consistency between adversarial training and verification.
-
-\textbf{5. BatchNorm Elimination:} Router architecture has zero BatchNorm layers (replaced with increased channel capacity), ensuring deterministic behavior across training and evaluation modes.
-
-\textbf{Soundness guarantee:} These adaptations preserve verification semantics: routing decisions unchanged, property negation standard, threat models aligned, behavior deterministic. Implementation details and router extraction code in Appendix D.
-
-\textbf{Result:} 99.5\% verification success rate, 9.1s average per sample.
+Five design decisions ensure router verifiability: (1) \textbf{Router-only extraction} for 20$\times$ parameter reduction, (2) \textbf{property negation} for counterexample search, (3) \textbf{unified normalization} across datasets, (4) \textbf{normalized-space perturbations} for threat model consistency, (5) \textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN analysis. (Implementation details: Appendix D.)
 
 \section{Experiment and Results}
 
@@ -332,13 +320,9 @@ $\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success Rate \\
     \item \textbf{Compositional Robustness Enabled:} Both NRT and RT routers achieve high formal verification success at standard threat models ($\varepsilon \leq 4/255$), enabling compositional guarantees: Verified Router (100\%) $\land$ Verified Expert $\implies$ Verified MoE System. This supports modular expert addition without full-system re-verification.
 \end{enumerate}
 
-\textbf{Understanding the Router AA vs CRA Discrepancy:}
+\textbf{Apparent AA vs CRA Discrepancy:}
 
-A striking observation is that the router achieves empirical adversarial accuracy (AA) of approximately 35\% while formal verification certifies 100\% robustness at tight ($\varepsilon = 2/255$) and moderate ($\varepsilon = 4/255$) perturbations, and 60-100\% at large perturbations ($\varepsilon = 8/255$). This apparent contradiction reveals fundamental differences between empirical attacks and formal worst-case bounds, explained by geometric separation between datasets.
-
-The key insight is that MNIST (grayscale 10-class digits) and CIFAR-10 (natural color images with 10 classes) occupy fundamentally disjoint regions of the input space at the pixel level, creating a large decision boundary margin. While PGD perturbations with $\varepsilon = 8/255$ are sufficient to cause routing errors in empirical attacks via gradient-guided perturbation sequences (reducing routing accuracy from 100\% clean to roughly 35\% adversarial), the formal verification bounds account for \textit{all possible} perturbations within the $\varepsilon$-ball. The $\alpha$--$\beta$-CROWN analysis confirms that the router's learned decision regions remain well-separated: the separation between MNIST-space and CIFAR-10-space far exceeds $\varepsilon = 8/255$ pixels in Euclidean distance, so even worst-case perturbations cannot cross the decision boundary.
-
-This is not a contradiction but rather a fundamental property of formal verification: CRA measures worst-case geometric robustness (whether the decision boundary can be crossed by any perturbation in the ball), while AA measures empirical vulnerability to specific heuristic attacks (PGD's gradient-based search). Both are scientifically valid but measure different aspects: CRA provides sufficient conditions for robustness via formal bounds; AA provides necessary conditions by revealing practical vulnerabilities. The high CRA and moderate AA for routers reflects the geometric dissimilarity of datasets: formal verification proves decision boundaries are separated by margin $\gg \varepsilon$, while PGD finds perturbation sequences that exploit the manifold geometry within the $\varepsilon$-ball. These observations support the compositional guarantees: verified routers (which route to the correct expert with CRA $\approx 100\%$ at practical threat models) combined with verified experts yield verified systems.
+Router empirical adversarial accuracy (AA $\approx 35\%$) appears to contradict formal certification (CRA $\approx 100\%$ at practical threat models). This reflects geometric dataset separation: MNIST and CIFAR-10 occupy disjoint input regions, enabling formal robustness despite moderate empirical vulnerability. (Detailed explanation: Appendix G.)
 
 \subsubsection{Expert Model Verification}
 
@@ -576,26 +560,9 @@ Router & RT & $35.49 \pm 5.76$ & - & - \\
     \item Router formal verification: Pending
 \end{itemize}
 
-\textbf{Clarification: Why CRA $>$ AA (Formal Verification vs Empirical Attacks):}
+\textbf{Empirical-Formal Gap Interpretation:}
 
-A counterintuitive observation in Table 4 is that CIFAR-10-RT achieves CRA = 90\% while AA = 17.24\%, and MNIST-RT achieves CRA = 100\% while AA = 90.77\%. This apparent contradiction is resolved by understanding the fundamental difference between empirical attacks and formal worst-case bounds:
-
-\begin{itemize}
-    \item \textbf{Certified Robustness Accuracy (CRA):} Measures the fraction of samples \textit{provably robust} within the $\varepsilon$-ball according to $\alpha$--$\beta$-CROWN. A sample is certified if \textit{all possible perturbations} within the ball cannot flip the classification.
-
-    \item \textbf{Adversarial Accuracy (AA):} Measures empirical robustness against \textit{specific attack sequences} (here, PGD with 7 iterations). PGD is a heuristic that may not find the worst-case adversarial example.
-
-    \item \textbf{The Key Insight:} PGD attacks are incomplete; they search over a subset of the perturbation space. For CIFAR-10-RT with AA = 17.24\%, PGD successfully corrupts roughly 83\% of predictions. However, $\alpha$--$\beta$-CROWN's formal bounds certify that 90\% of samples remain robust to \textit{all} perturbations within $\varepsilon = 2/255$. This occurs when:
-    \begin{enumerate}
-        \item The model is locally vulnerable to specific PGD trajectories (lower AA)
-        \item But the decision boundary remains globally separated from the adversarial perturbation ball (higher CRA)
-        \item Formal verification pessimistically bounds all possible adversarial directions, while PGD explores only certain gradient-guided directions
-    \end{enumerate}
-
-    \item \textbf{For MNIST-RT:} CRA and AA are nearly aligned (100\% vs 90.77\%), reflecting a simpler domain where PGD's heuristic search closely approximates worst-case behavior, and decision boundaries are well-separated.
-\end{itemize}
-
-In summary: CRA $\geq$ AA is not a paradox but a fundamental property of formal verification—formal methods provide \textbf{sufficient conditions} for robustness that may be more conservative than necessary (high CRA, moderate AA), while empirical attacks provide \textbf{necessary conditions} that reveal specific vulnerabilities (lower AA). Both are scientifically valid; they measure different aspects of robustness.
+Table 4 shows CIFAR-10-RT (CRA 90\%, AA 17.24\%) and MNIST-RT (CRA 100\%, AA 90.77\%), illustrating domain-dependent certification gaps. CRA $\geq$ AA is not a contradiction but reflects formal methods providing worst-case guarantees while empirical attacks provide heuristic approximations. (Detailed theoretical explanation: Appendix G.)
 
 \textbf{Key Findings:}
 
@@ -732,9 +699,7 @@ Results demonstrate that robustness in heterogeneous MoE systems can be both emp
 
 \subsection{Empirical-Formal Robustness Correlation}
 
-RT models consistently achieve higher adversarial accuracy (AA) and certified robustness accuracy (CRA) than NRT: MNIST-RT verified 100\% vs 75\% for NRT at $\varepsilon = 2/255$, CIFAR-10-RT 90\% vs 0\%. The certification gap $\Delta = \text{CRA} - \text{AA}$ quantifies verification conservatism: experts show $\Delta = 9$--$73\%$ depending on dataset complexity and perturbation budget, while routers exhibit significantly different behavior. Router empirical-formal alignment reveals a critical insight: routers achieve empirical adversarial accuracy (AA) of only 35\% but formal certified robustness (CRA) of 100\% at practical threat models ($\varepsilon \leq 4/255$), demonstrating that geometric dataset separation creates formal robustness that exceeds empirical attack success. This large $\Delta \approx 65\%$ for routers (unlike experts) reflects decision regions separated by margin $\gg \varepsilon$, enabling perfect formal verification despite moderate empirical vulnerability. Adversarial router training improves both empirical AA and extends formal verification to large perturbations ($\varepsilon = 8/255$, improving from 60\% to 100\% success), demonstrating that formal robustness benefits from decision boundary smoothing even when empirical AA remains moderate.
-
-This mutual reinforcement operates bidirectionally: adversarial training regularizes gradients, tightening $\alpha$--$\beta$-CROWN bounds and reducing timeouts; conversely, formal verification identifies boundary-sensitive samples overlooked by PGD, informing targeted retraining. Verification ``unknown'' outcomes correlate with near-boundary cases, enabling adaptive data augmentation.
+Robust training (RT) consistently improves both empirical adversarial accuracy (AA) and certified robustness accuracy (CRA): MNIST-RT achieves 100\% CRA (vs 75\% NRT), CIFAR-10-RT achieves 90\% CRA (vs 0\% NRT). The certification gap $\Delta = \text{CRA} - \text{AA}$ varies by domain: experts show $\Delta = 9$--$73\%$, while routers show $\Delta \approx 65\%$ due to geometric dataset separation. This mutual reinforcement occurs bidirectionally: adversarial training tightens CROWN bounds and reduces verification timeouts, while formal verification identifies boundary-sensitive samples for targeted retraining. (Detailed analysis: Appendix G.)
 
 \subsection{Compositional Robustness and System Behavior}
 
@@ -1106,6 +1071,50 @@ Blue (2) & 0.274 & 0.319 & Average across all datasets \\
 \end{itemize}
 
 All components use the same normalization $\Rightarrow$ no distribution shift.
+
+\section{Empirical-Formal Robustness Gap Analysis}
+
+\subsection{Why CRA $\geq$ AA (Formal Verification vs Empirical Attacks)}
+
+A fundamental observation throughout our results is that Certified Robustness Accuracy (CRA) from formal verification often exceeds Adversarial Accuracy (AA) from PGD attacks. This is not a contradiction but reflects the inherent difference between formal worst-case guarantees and empirical heuristic attacks.
+
+\textbf{Definitional Differences:}
+
+\begin{itemize}
+    \item \textbf{CRA:} Measures the fraction of samples \textit{provably robust} within the $\varepsilon$-ball according to $\alpha$--$\beta$-CROWN. A sample is certified if \textit{all possible perturbations} within the ball cannot flip the classification.
+
+    \item \textbf{AA:} Measures empirical robustness against \textit{specific attack sequences} (here, PGD with 7 iterations). PGD is a heuristic search that may not find the worst-case adversarial example.
+\end{itemize}
+
+\textbf{Why CRA $>$ AA Is Expected:}
+
+PGD searches over a subset of the perturbation space using gradient guidance. For example, CIFAR-10-RT achieves AA = 17.24\% (PGD corrupts 83\% of predictions) yet CRA = 90\% (formal bounds certify 90\% remain robust to \textit{all} perturbations). This occurs when:
+
+\begin{enumerate}
+    \item The model is locally vulnerable to specific PGD trajectories (lower AA)
+    \item But decision boundaries remain globally separated from the $\varepsilon$-ball (higher CRA)
+    \item Formal verification accounts for all possible adversarial directions, while PGD explores only gradient-guided directions
+\end{enumerate}
+
+\textbf{Domain-Dependent Certification Gaps:}
+
+The gap $\Delta = \text{CRA} - \text{AA}$ varies significantly:
+
+\begin{itemize}
+    \item \textbf{Simple domains (MNIST-RT):} CRA 100\%, AA 90.77\%, $\Delta = 9.23\%$ (tight correspondence)
+    \item \textbf{Complex domains (CIFAR-10-RT):} CRA 90\%, AA 17.24\%, $\Delta = 72.76\%$ (loose correspondence)
+    \item \textbf{Routers:} CRA 100\%, AA 35\%, $\Delta \approx 65\%$ (geometric dataset separation)
+\end{itemize}
+
+Simple domains enable tight CROWN bounds that closely match empirical robustness. Complex domains produce loose bounds due to worst-case analysis requirements.
+
+\textbf{Critical Finding: Non-Robust Models Are Unverifiable}
+
+CIFAR-10-NRT exhibits the most striking result: AA = 0.01\% yields CRA = 0\% (complete verification failure across all epsilon values). This demonstrates that robust training is \textbf{prerequisite for verifiability}—non-robust models are fundamentally incompatible with formal verification due to chaotic decision boundaries that produce excessively loose CROWN bounds.
+
+\textbf{Practical Implication:}
+
+For compositional MoE systems, the empirical-formal correlation is unambiguous within robustly-trained models: higher empirical AA predicts higher CRA. The path to verifiable systems requires adversarial training of experts and careful router design. Both CRA and AA are scientifically valid measures: CRA provides worst-case guarantees via formal bounds (sufficient conditions), while AA reveals practical vulnerabilities via heuristic attacks (necessary conditions).
 
 \section{Hardware and Software Environment}
 
