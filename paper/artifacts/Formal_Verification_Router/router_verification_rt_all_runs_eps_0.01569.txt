@@ -1,0 +1,318 @@
+Combined Results - RT (5 runs)
+================================================================================
+
+
+--- RUN 1 ---
+MetaMoE Router Formal Verification Results
+================================================================================
+
+Model: meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137_router_only.onnx
+Epsilon (L-inf): 0.015686 (4.0/255)
+Total samples: 40
+  MNIST: 20
+  CIFAR10: 20
+
+Verified:   40 (100.0%)
+Falsified:  0 (0.0%)
+Timeout:    0 (0.0%)
+Unknown:    0 (0.0%)
+
+Total time: 183.28 seconds
+Average time: 4.58 seconds per sample
+
+
+VERIFIED:
+  mnist_0
+  mnist_1
+  mnist_10
+  mnist_11
+  mnist_12
+  mnist_13
+  mnist_14
+  mnist_15
+  mnist_16
+  mnist_17
+  mnist_18
+  mnist_19
+  mnist_2
+  mnist_3
+  mnist_4
+  mnist_5
+  mnist_6
+  mnist_7
+  mnist_8
+  mnist_9
+  cifar10_0
+  cifar10_1
+  cifar10_10
+  cifar10_11
+  cifar10_12
+  cifar10_13
+  cifar10_14
+  cifar10_15
+  cifar10_16
+  cifar10_17
+  cifar10_18
+  cifar10_19
+  cifar10_2
+  cifar10_3
+  cifar10_4
+  cifar10_5
+  cifar10_6
+  cifar10_7
+  cifar10_8
+  cifar10_9
+
+================================================================================
+
+--- RUN 2 ---
+MetaMoE Router Formal Verification Results
+================================================================================
+
+Model: meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137_router_only.onnx
+Epsilon (L-inf): 0.015686 (4.0/255)
+Total samples: 40
+  MNIST: 20
+  CIFAR10: 20
+
+Verified:   40 (100.0%)
+Falsified:  0 (0.0%)
+Timeout:    0 (0.0%)
+Unknown:    0 (0.0%)
+
+Total time: 182.22 seconds
+Average time: 4.56 seconds per sample
+
+
+VERIFIED:
+  mnist_0
+  mnist_1
+  mnist_10
+  mnist_11
+  mnist_12
+  mnist_13
+  mnist_14
+  mnist_15
+  mnist_16
+  mnist_17
+  mnist_18
+  mnist_19
+  mnist_2
+  mnist_3
+  mnist_4
+  mnist_5
+  mnist_6
+  mnist_7
+  mnist_8
+  mnist_9
+  cifar10_0
+  cifar10_1
+  cifar10_10
+  cifar10_11
+  cifar10_12
+  cifar10_13
+  cifar10_14
+  cifar10_15
+  cifar10_16
+  cifar10_17
+  cifar10_18
+  cifar10_19
+  cifar10_2
+  cifar10_3
+  cifar10_4
+  cifar10_5
+  cifar10_6
+  cifar10_7
+  cifar10_8
+  cifar10_9
+
+================================================================================
+
+--- RUN 3 ---
+MetaMoE Router Formal Verification Results
+================================================================================
+
+Model: meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137_router_only.onnx
+Epsilon (L-inf): 0.015686 (4.0/255)
+Total samples: 40
+  MNIST: 20
+  CIFAR10: 20
+
+Verified:   40 (100.0%)
+Falsified:  0 (0.0%)
+Timeout:    0 (0.0%)
+Unknown:    0 (0.0%)
+
+Total time: 183.07 seconds
+Average time: 4.58 seconds per sample
+
+
+VERIFIED:
+  mnist_0
+  mnist_1
+  mnist_10
+  mnist_11
+  mnist_12
+  mnist_13
+  mnist_14
+  mnist_15
+  mnist_16
+  mnist_17
+  mnist_18
+  mnist_19
+  mnist_2
+  mnist_3
+  mnist_4
+  mnist_5
+  mnist_6
+  mnist_7
+  mnist_8
+  mnist_9
+  cifar10_0
+  cifar10_1
+  cifar10_10
+  cifar10_11
+  cifar10_12
+  cifar10_13
+  cifar10_14
+  cifar10_15
+  cifar10_16
+  cifar10_17
+  cifar10_18
+  cifar10_19
+  cifar10_2
+  cifar10_3
+  cifar10_4
+  cifar10_5
+  cifar10_6
+  cifar10_7
+  cifar10_8
+  cifar10_9
+
+================================================================================
+
+--- RUN 4 ---
+MetaMoE Router Formal Verification Results
+================================================================================
+
+Model: meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137_router_only.onnx
+Epsilon (L-inf): 0.015686 (4.0/255)
+Total samples: 40
+  MNIST: 20
+  CIFAR10: 20
+
+Verified:   40 (100.0%)
+Falsified:  0 (0.0%)
+Timeout:    0 (0.0%)
+Unknown:    0 (0.0%)
+
+Total time: 183.62 seconds
+Average time: 4.59 seconds per sample
+
+
+VERIFIED:
+  mnist_0
+  mnist_1
+  mnist_10
+  mnist_11
+  mnist_12
+  mnist_13
+  mnist_14
+  mnist_15
+  mnist_16
+  mnist_17
+  mnist_18
+  mnist_19
+  mnist_2
+  mnist_3
+  mnist_4
+  mnist_5
+  mnist_6
+  mnist_7
+  mnist_8
+  mnist_9
+  cifar10_0
+  cifar10_1
+  cifar10_10
+  cifar10_11
+  cifar10_12
+  cifar10_13
+  cifar10_14
+  cifar10_15
+  cifar10_16
+  cifar10_17
+  cifar10_18
+  cifar10_19
+  cifar10_2
+  cifar10_3
+  cifar10_4
+  cifar10_5
+  cifar10_6
+  cifar10_7
+  cifar10_8
+  cifar10_9
+
+================================================================================
+
+--- RUN 5 ---
+MetaMoE Router Formal Verification Results
+================================================================================
+
+Model: meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137_router_only.onnx
+Epsilon (L-inf): 0.015686 (4.0/255)
+Total samples: 40
+  MNIST: 20
+  CIFAR10: 20
+
+Verified:   40 (100.0%)
+Falsified:  0 (0.0%)
+Timeout:    0 (0.0%)
+Unknown:    0 (0.0%)
+
+Total time: 182.94 seconds
+Average time: 4.57 seconds per sample
+
+
+VERIFIED:
+  mnist_0
+  mnist_1
+  mnist_10
+  mnist_11
+  mnist_12
+  mnist_13
+  mnist_14
+  mnist_15
+  mnist_16
+  mnist_17
+  mnist_18
+  mnist_19
+  mnist_2
+  mnist_3
+  mnist_4
+  mnist_5
+  mnist_6
+  mnist_7
+  mnist_8
+  mnist_9
+  cifar10_0
+  cifar10_1
+  cifar10_10
+  cifar10_11
+  cifar10_12
+  cifar10_13
+  cifar10_14
+  cifar10_15
+  cifar10_16
+  cifar10_17
+  cifar10_18
+  cifar10_19
+  cifar10_2
+  cifar10_3
+  cifar10_4
+  cifar10_5
+  cifar10_6
+  cifar10_7
+  cifar10_8
+  cifar10_9
+
+================================================================================
