@@ -13,6 +13,8 @@
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{bbm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 
 % Configure listings for Python
@@ -1276,6 +1278,212 @@ For completeness, the full gating metrics definitions:
 \end{equation}
 
 Where $m^* \in \{0, 1, \ldots, N-1\}$ is the true meta-class (expert index) for input $x$.
+
+\section{MetaMoE Routing Algorithm Implementation}
+
+This section provides complete algorithmic details of the routing mechanism for reproducibility and implementation guidance.
+
+\subsection{Router Architecture (MetaGatingNet)}
+
+The router is a feature extraction network followed by a classification head:
+
+\begin{lstlisting}[language=Python, caption={MetaGatingNet Architecture}]
+class MetaGatingNet(nn.Module):
+    def __init__(self, num_experts=2, backbone='ultra_verifiable_cnn'):
+        super().__init__()
+        # Feature extraction backbone (CNN or timm model)
+        self.model = create_backbone(backbone)  # e.g., UltraVerifiableCNN_Features
+        feature_dim = self.model.num_features   # e.g., 896 for VerifiableCNN
+
+        # Expert selection head: outputs raw logits
+        self.fc = nn.Linear(feature_dim, num_experts)
+
+    def forward(self, x):
+        # x: [batch_size, 3, 32, 32] normalized images
+        features = self.model(x)      # [batch_size, feature_dim]
+        logits = self.fc(features)    # [batch_size, num_experts]
+        return logits                 # Raw logits (no softmax)
+\end{lstlisting}
+
+\textbf{Key design choice:} Output raw logits (not softmax probabilities) for easier verification with alpha-beta-CROWN.
+
+\subsection{Core Routing Algorithm (MetaMoE.forward)}
+
+The following algorithm implements the dataset-level routing mechanism:
+
+\textbf{Algorithm 1: MetaMoE Forward Pass with Top-k Expert Routing}
+
+\textbf{Input:}
+\begin{itemize}
+    \item Batch of images: $x \in \mathbb{R}^{B \times 3 \times 32 \times 32}$
+    \item Router: $\mathcal{G}(x) \in \mathbb{R}^{B \times N}$ (meta-gating network)
+    \item Experts: $\{E_i\}_{i=1}^N$ (frozen expert models)
+    \item Class offsets: $o_i = \sum_{j < i} C_j$ (cumulative class counts)
+\end{itemize}
+
+\textbf{Output:}
+\begin{itemize}
+    \item MoE output: $\hat{y} \in \mathbb{R}^{B \times C_{total}}$
+    \item Routing logits: $g \in \mathbb{R}^{B \times N}$ (for gating loss)
+\end{itemize}
+
+\textbf{Parameters:}
+\begin{itemize}
+    \item $k$: number of top experts to activate ($\text{meta\_top\_k}$)
+    \item $N$: total number of experts
+    \item $C_{total} = \sum_{i=1}^N C_i$: total output classes
+\end{itemize}
+
+\textbf{Procedure:}
+
+\noindent
+1. \textbf{Initialization:}
+\begin{align}
+    g &\leftarrow \mathcal{G}(x) \quad \text{[Router forward pass: [B, N] logits]} \\
+    \hat{y} &\leftarrow \mathbf{0}^{B \times C_{total}} \quad \text{[Initialize output]}
+\end{align}
+
+\noindent
+2. \textbf{Expert Selection:}
+\begin{align}
+    p, \text{indices} &\leftarrow \text{topk}(g, k, \text{dim}=1) \quad \text{[Select top-k experts]} \\
+    p_{\text{norm}} &\leftarrow p / \text{sum}(p, \text{dim}=1, \text{keepdim}=\text{True}) \quad \text{[Renormalize]}
+\end{align}
+
+\noindent
+3. \textbf{Routing and Expert Execution:}
+
+For each expert $i = 1$ to $N$:
+\begin{itemize}
+    \item Find samples routed to expert $i$: $\text{mask} \leftarrow \text{where}(\text{indices} = i)$
+    \item If $\text{mask}$ is non-empty:
+    \begin{align}
+        x_i &\leftarrow x[\text{mask}] \quad \text{[Extract routed samples]} \\
+        y_i &\leftarrow E_i(x_i) \quad \text{[Expert $i$ forward: [batch, $C_i$]]} \\
+        \text{scale}_i &\leftarrow p_{\text{norm}}[\text{mask}] \quad \text{[Get routing weights]} \\
+        y_i^{\text{scaled}} &\leftarrow y_i \times \text{scale}_i \quad \text{[Weight expert output]} \\
+        \hat{y}[\text{mask}, o_i:o_{i+1}] &\leftarrow y_i^{\text{scaled}} \quad \text{[Place in unified output space]}
+    \end{align}
+\end{itemize}
+
+\noindent
+4. \textbf{Return:} $(\hat{y}, g)$
+
+\subsection{Complete Python Implementation}
+
+\begin{lstlisting}[language=Python, caption={Complete MetaMoE Forward Pass}]
+class MetaMoE(nn.Module):
+    def __init__(self, experts, num_classes_list,
+                 meta_gating_net, meta_top_k=1):
+        super().__init__()
+        self.experts = nn.ModuleList(experts)
+        self.num_experts = len(experts)
+        self.num_classes_list = num_classes_list
+        self.total_classes = sum(num_classes_list)
+        self.meta_gating_net = meta_gating_net
+        self.meta_top_k = min(max(meta_top_k, 1), self.num_experts)
+
+        # Compute class offsets for output space partitioning
+        self.class_offsets = [0] + [sum(num_classes_list[:i+1])
+                                     for i in range(self.num_experts)]
+
+    def forward(self, x):
+        # STEP 1: Get router logits for expert selection
+        gates = self.meta_gating_net(x)  # [batch_size, num_experts]
+        batch_size = x.shape[0]
+
+        # STEP 2: Initialize output tensor
+        final_output = torch.zeros(batch_size, self.total_classes,
+                                   device=x.device, dtype=x.dtype)
+
+        # STEP 3: Select top-k experts per sample
+        top_k_probs, top_k_indices = torch.topk(gates, k=self.meta_top_k, dim=1)
+        # top_k_probs: [batch_size, k]
+        # top_k_indices: [batch_size, k] contains expert indices (0 to N-1)
+
+        # STEP 4: Renormalize probabilities to sum to 1
+        sum_top_k = top_k_probs.sum(dim=1, keepdim=True)
+        normalized_probs = top_k_probs / sum_top_k  # [batch_size, k]
+
+        # STEP 5: For each expert, execute and combine outputs
+        for i in range(self.num_experts):
+            # Find which samples routed to expert i and their positions
+            sample_indices, k_positions = torch.where(top_k_indices == i)
+
+            if len(sample_indices) > 0:
+                # Extract samples routed to this expert
+                scaling_factors = normalized_probs[sample_indices, k_positions]
+                # [len(sample_indices)]
+
+                expert_input = x[sample_indices]  # [routed_batch, 3, 32, 32]
+
+                # STEP 6: Run expert on routed samples
+                expert_output = self.experts[i](expert_input)
+                # [routed_batch, C_i] where C_i is class count for expert i
+
+                if isinstance(expert_output, tuple):
+                    expert_output = expert_output[0]
+
+                # STEP 7: Scale output by routing probability
+                scaled_output = expert_output * scaling_factors.unsqueeze(1)
+                # [routed_batch, C_i]
+
+                # STEP 8: Place in correct position in unified output space
+                start_idx = self.class_offsets[i]
+                end_idx = self.class_offsets[i+1]
+                # class_offsets ensures no overlap:
+                # Expert 0: [0, C_0), Expert 1: [C_0, C_0+C_1), etc.
+
+                final_output[sample_indices, start_idx:end_idx] = scaled_output.to(dtype=x.dtype)
+
+        return final_output, gates
+        # final_output: [batch_size, total_classes] unified predictions
+        # gates: [batch_size, num_experts] for gating loss supervision
+\end{lstlisting}
+
+\subsection{Class Offset Computation}
+
+For $N$ experts with class counts $C_0, C_1, \ldots, C_{N-1}$:
+
+\begin{equation}
+    \text{class\_offsets} = [0, C_0, C_0 + C_1, \ldots, \sum_{i=0}^{N-1} C_i]
+\end{equation}
+
+\textbf{Example with 2 experts:}
+\begin{itemize}
+    \item Expert 0 (CIFAR-10): 10 classes $\rightarrow$ output indices [0, 9]
+    \item Expert 1 (MNIST): 10 classes $\rightarrow$ output indices [10, 19]
+    \item Total output dimension: 20 classes
+\end{itemize}
+
+This partitioning ensures each expert's output is placed in disjoint regions, preventing collisions when combining outputs.
+
+\subsection{Routing Loss (Gating Supervision)}
+
+During training, the router is supervised with:
+
+\begin{equation}
+    \mathcal{L}_{\text{gating}} = \text{CrossEntropyLoss}(\text{gates}, m^*)
+\end{equation}
+
+Where $m^* \in \{0, 1, \ldots, N-1\}$ is the true expert index (meta-class label).
+
+\textbf{Example:} For an MNIST image (expert 1):
+\begin{itemize}
+    \item True label: $m^* = 1$
+    \item Router output: $\text{gates} = [0.2, 0.8]$ (logits for experts 0 and 1)
+    \item Loss: $\mathcal{L} = -\log(\text{softmax}(\text{gates})[1])$ (encourages high confidence for expert 1)
+\end{itemize}
+
+\subsection{Key Implementation Notes}
+
+\begin{itemize}
+    \item \textbf{Sparse Routing:} Only $k$ experts are activated per sample, reducing computation by factor $N/k$
+    \item \textbf{No Softmax:} Raw logits used for routing; softmax applied only for loss computation
+    \item \textbf{Output Combining:} Weighted combination via class offset partitioning enables modular expert composition
+    \item \textbf{Frozen Experts:} After initial training, experts are frozen ($\text{requires\_grad} = \text{False}$); only router is trained
+    \item \textbf{Timing Instrumentation:} For performance analysis, CUDA events can measure router time vs. expert execution time separately
+\end{itemize}
 
 \end{document}
 
