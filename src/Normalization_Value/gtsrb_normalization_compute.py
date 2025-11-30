@@ -7,7 +7,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Calculate the normalization values of the dataset')
 parser.add_argument('--dataset', type=str, default='unified_norm_cifar10_mnist',
-                    choices=['GTSRB', 'CIFAR10', 'MNIST', 'unified_norm_cifar10_mnist'],
+                    choices=['GTSRB', 'PTSD', 'CIFAR10', 'MNIST', 'unified_norm_cifar10_mnist', 'unified_norm_gtsrb_ptsd'],
                     help='Dataset to calculate normalization values for')
 args = parser.parse_args()
 
@@ -95,18 +95,27 @@ if __name__ == '__main__':
 
     # Process datasets based on command line argument
     if args.dataset == 'GTSRB':
-        process_imagefolder_dataset('./../../data/GTSRB/Training', 'GTSRB')
+        process_imagefolder_dataset('data/GTSRB/Training', 'GTSRB')
+    elif args.dataset == 'PTSD':
+        process_imagefolder_dataset('data/PTSD/Training', 'PTSD')
     elif args.dataset == 'CIFAR10':
-        process_cifar10_dataset('./../../data')
+        process_cifar10_dataset('data')
     elif args.dataset == 'MNIST':
-        process_mnist_dataset('./../../data')
+        process_mnist_dataset('data')
     elif args.dataset == 'unified_norm_cifar10_mnist':
         # Process CIFAR-10 and MNIST for unified normalization
         print("=" * 80)
         print("Calculating UNIFIED normalization values for CIFAR-10 and MNIST")
         print("=" * 80)
-        process_cifar10_dataset('./../../data')
-        process_mnist_dataset('./../../data')
+        process_cifar10_dataset('data')
+        process_mnist_dataset('data')
+    elif args.dataset == 'unified_norm_gtsrb_ptsd':
+        # Process GTSRB and PTSD for unified normalization
+        print("=" * 80)
+        print("Calculating UNIFIED normalization values for GTSRB and PTSD")
+        print("=" * 80)
+        process_imagefolder_dataset('data/GTSRB/Training', 'GTSRB')
+        process_imagefolder_dataset('data/PTSD/Training', 'PTSD')
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
 

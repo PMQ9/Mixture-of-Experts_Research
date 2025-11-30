@@ -33,7 +33,7 @@ from augmentation_functions import cutmix
 from visualize_robustness import visualize_robustness
 from model_wrapper import ModelWrapper, LogitsWrapper, create_model, get_num_classes
 from config import (
-    DEFAULT_PARAMS, GTSRB_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
+    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
 )
 from config import apply_config_overrides
 from model_utils import resolve_model_path
@@ -76,6 +76,7 @@ parser.add_argument('--save_state_dict', action='store_true', help='Additionally
 # meta_moe
 parser.add_argument('--meta_moe', action='store_true', help='Train MetaMoE model with pre-trained experts')
 parser.add_argument('--num_meta_experts', type=int, default=2, help='Number of experts to in MetaMoE')
+parser.add_argument('--meta_datasets', type=str, default='', help='Comma-separated list of datasets for MetaMoE (e.g., GTSRB,PTSD or CIFAR10,MNIST). If empty, uses default based on --fine_tune_meta_moe')
 parser.add_argument('--meta_top_k', type=int, default=1, help='Number of top experts to use in MetaMoE')
 parser.add_argument('--fine_tune_meta_moe', action='store_true', help='Enable fine-tuning mode for MetaMoE by adding a new expert')
 parser.add_argument('--gating_backbone', type=str, default='ultra_verifiable_cnn', choices=['convnext_tiny', 'convnextv2_femto', 'resnet18', 'efficientnet_b0', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn'], help='Backbone architecture for the MetaGatingNet router')
@@ -84,7 +85,8 @@ parser.add_argument('--gating_epsilon', type=float, default=8.0/255.0, help='Eps
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-# parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "ptsd_*_best.pth"), help='Path or pattern to pre-trained PTSD model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_0_CNN_AT" , "cifar10_*.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_1_CNN_AT" , "mnist_*.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
@@ -453,15 +455,24 @@ def test_adversarial_robustness(model, test_loader, device, eps=0.1):
 
 def main():
     dataset_params = {
-        # 'GTSRB': {
-        #     'num_classes': 43,
-        #     'train_dir': './data/GTSRB/Training',
-        #     'test_dir': './data/GTSRB/Test',
-        #     'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
-        #     'normalization_mean': (GTSRB_NORM['mean']),
-        #     'normalization_std': (GTSRB_NORM['std']),
-        #     'default_meta_class': 0
-        # },
+        'GTSRB': {
+            'num_classes': 43,
+            'train_dir': './data/GTSRB/Training',
+            'test_dir': './data/GTSRB/Test',
+            'csv_file': './data/GTSRB/Test/testset_with_meta_class.csv',
+            'normalization_mean': (GTSRB_NORM['mean']),
+            'normalization_std': (GTSRB_NORM['std']),
+            'default_meta_class': 2
+        },
+        'PTSD': {
+            'num_classes': 43,
+            'train_dir': './data/PTSD/Training',
+            'test_dir': './data/PTSD/Test',
+            'csv_file': './data/PTSD/Test/testset_with_meta_class.csv',
+            'normalization_mean': (PTSD_NORM['mean']),
+            'normalization_std': (PTSD_NORM['std']),
+            'default_meta_class': 3
+        },
         'CIFAR10': {
             'num_classes': 10,
             'train_dir': './data/CIFAR10/Training',
@@ -483,16 +494,41 @@ def main():
     }
 
     if args.meta_moe:
-        if args.fine_tune_meta_moe:
+        # Determine which datasets to use for MetaMoE
+        if args.meta_datasets:
+            datasets = [ds.strip() for ds in args.meta_datasets.split(',')]
+        elif args.fine_tune_meta_moe:
             datasets = ['GTSRB', 'CIFAR10', 'MNIST']
-            num_meta_experts = 3
         else:
             datasets = ['CIFAR10', 'MNIST']
+
+        num_meta_experts = len(datasets)
+        if args.num_meta_experts != 2:
             num_meta_experts = args.num_meta_experts
         num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
         total_classes = sum(num_classes_list)
-        normalization_mean = (UNIFIED_NORM['mean'])
-        normalization_std = (UNIFIED_NORM['std'])
+
+        # Select normalization based on datasets
+        datasets_set = set(datasets)
+        if datasets_set == {'GTSRB', 'PTSD'}:
+            # Will use unified GTSRB+PTSD normalization when available
+            # For now, compute average or use unified norm
+            normalization_mean = UNIFIED_NORM['mean']
+            normalization_std = UNIFIED_NORM['std']
+            logger.info("Using unified normalization for GTSRB+PTSD")
+        elif datasets_set == {'CIFAR10', 'MNIST'}:
+            normalization_mean = UNIFIED_NORM['mean']
+            normalization_std = UNIFIED_NORM['std']
+            logger.info("Using unified normalization for CIFAR10+MNIST")
+        elif 'GTSRB' in datasets_set and 'PTSD' in datasets_set:
+            # Mix of GTSRB/PTSD with others - use unified
+            normalization_mean = UNIFIED_NORM['mean']
+            normalization_std = UNIFIED_NORM['std']
+            logger.info("Using unified normalization for mixed datasets")
+        else:
+            # Default to unified norm
+            normalization_mean = UNIFIED_NORM['mean']
+            normalization_std = UNIFIED_NORM['std']
         
         transform_train = transforms.Compose([
             transforms.Resize(32), 
@@ -706,40 +742,41 @@ def main():
             )
         # Old code here
         else:
-            # gtsrb_model_path = resolve_model_path(args.gtsrb_model_path)
-            # gtsrb_model = torch.load(gtsrb_model_path, map_location=DEVICE, weights_only=False)
-            # if not isinstance(gtsrb_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-            #     raise RuntimeError(f"{gtsrb_model_path} is not a supported model type")
-            # if isinstance(gtsrb_model, ModelWrapper):
-            #     gtsrb_model = gtsrb_model.model
-            # gtsrb_model = gtsrb_model.to(DEVICE)
-            # print(f"Loaded {gtsrb_model_path} as full model. Type: {type(gtsrb_model)}")
+            # Load expert models dynamically based on datasets list
+            dataset_model_args = {
+                'GTSRB': 'gtsrb_model_path',
+                'PTSD': 'ptsd_model_path',
+                'CIFAR10': 'cifar10_model_path',
+                'MNIST': 'mnist_model_path'
+            }
 
-            cifar10_model_path = resolve_model_path(args.cifar10_model_path)
-            cifar10_model = torch.load(cifar10_model_path, map_location=DEVICE, weights_only=False)
-            if not isinstance(cifar10_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{cifar10_model_path} is not a supported model type")
-            if isinstance(cifar10_model, ModelWrapper):
-                cifar10_model = cifar10_model.model
-            cifar10_model = cifar10_model.to(DEVICE)
-            print(f"Loaded {cifar10_model_path} as full model. Type: {type(cifar10_model)}")
+            loaded_models = {}
+            model_to_dataset = {}
+            for dataset in datasets:
+                model_arg = dataset_model_args.get(dataset)
+                if not model_arg:
+                    raise ValueError(f"No model path argument defined for {dataset}")
 
-            mnist_model_path = resolve_model_path(args.mnist_model_path)
-            mnist_model = torch.load(mnist_model_path, map_location=DEVICE, weights_only=False)
-            if not isinstance(mnist_model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
-                raise RuntimeError(f"{mnist_model_path} is not a supported model type")
-            if isinstance(mnist_model, ModelWrapper):
-                mnist_model = mnist_model.model
-            mnist_model = mnist_model.to(DEVICE)
-            print(f"Loaded {mnist_model_path} as full model. Type: {type(mnist_model)}")
+                model_path = resolve_model_path(getattr(args, model_arg))
+                model = torch.load(model_path, map_location=DEVICE, weights_only=False)
+                if not isinstance(model, (VisionTransformer, models.ResNet, timm.models.ConvNeXt, ModelWrapper)):
+                    raise RuntimeError(f"{model_path} is not a supported model type")
+                if isinstance(model, ModelWrapper):
+                    model = model.model
+                model = model.to(DEVICE)
+                print(f"Loaded {model_path} as {dataset} expert. Type: {type(model)}")
 
+                loaded_models[dataset] = model
+                model_to_dataset[id(model)] = dataset
+
+            # Validate model output shapes
             with torch.no_grad():
                 dummy_input = torch.randn(1, 3, 32, 32, device=DEVICE)
-                for model, expected_classes, name in [
-                    # (gtsrb_model, dataset_params['GTSRB']['num_classes'], "GTSRB"),
-                    (cifar10_model, dataset_params['CIFAR10']['num_classes'], "CIFAR10"),
-                    (mnist_model, dataset_params['MNIST']['num_classes'], "MNIST"),
-                ]:
+                validation_models = [
+                    (loaded_models[ds], dataset_params[ds]['num_classes'], ds)
+                    for ds in datasets
+                ]
+                for model, expected_classes, name in validation_models:
                     output = model(dummy_input)
                     if isinstance(output, tuple):
                         output = output[0]
@@ -747,18 +784,16 @@ def main():
                         raise RuntimeError(f"{name} model output shape {output.shape[1]} does not match expected {expected_classes} classes")
                     print(f"{name} model output shape: {output.shape}")
 
-            # gtsrb_model.eval()
-            cifar10_model.eval()
-            mnist_model.eval()
-            # for param in gtsrb_model.parameters():
-            #     param.requires_grad = False
-            for param in cifar10_model.parameters():
-                param.requires_grad = False
-            for param in mnist_model.parameters():
-                param.requires_grad = False
+            # Set models to eval and freeze parameters
+            experts = []
+            for dataset in datasets:
+                model = loaded_models[dataset]
+                model.eval()
+                for param in model.parameters():
+                    param.requires_grad = False
+                experts.append(model)
 
             meta_gating_net = MetaGatingNet(num_experts=num_meta_experts, backbone=args.gating_backbone).to(DEVICE)
-            experts = [cifar10_model, mnist_model]
             # num_classes_list = [dataset_params[ds]['num_classes'] for ds in datasets]
             model = MetaMoE(
                 experts=experts,
