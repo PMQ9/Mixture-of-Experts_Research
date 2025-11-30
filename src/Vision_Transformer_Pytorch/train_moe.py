@@ -990,7 +990,9 @@ def main():
                 adv_training=args.adv_training,
                 best_train_acc=best_train_acc,
                 best_test_acc=best_acc,
-                dataset_name=args.dataset if not args.meta_moe else ''
+                dataset_name=args.dataset if not args.meta_moe else '',
+                datasets=datasets if args.meta_moe else None,
+                test_ptsd_accs=test_mnist_accs if args.meta_moe and datasets and 'PTSD' in datasets else None
             )
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
