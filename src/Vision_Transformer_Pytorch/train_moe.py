@@ -4,6 +4,7 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms, models
@@ -33,7 +34,7 @@ from augmentation_functions import cutmix
 from visualize_robustness import visualize_robustness
 from model_wrapper import ModelWrapper, LogitsWrapper, create_model, get_num_classes
 from config import (
-    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM
+    DEFAULT_PARAMS, GTSRB_NORM, PTSD_NORM, CIFAR10_NORM, MNIST_NORM, UNIFIED_NORM, UNIFIED_GTSRB_PTSD_NORM
 )
 from config import apply_config_overrides
 from model_utils import resolve_model_path
@@ -85,8 +86,8 @@ parser.add_argument('--gating_epsilon', type=float, default=8.0/255.0, help='Eps
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "gtsrb_*_best.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
-parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR, "ptsd_*_best.pth"), help='Path or pattern to pre-trained PTSD model (supports wildcards)')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_2_CNN_NAT" , "gtsrb_*.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_3_CNN_NAT" , "ptsd_*.pth"), help='Path or pattern to pre-trained PTSD model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_0_CNN_AT" , "cifar10_*.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_1_CNN_AT" , "mnist_*.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
@@ -511,10 +512,9 @@ def main():
         # Select normalization based on datasets
         datasets_set = set(datasets)
         if datasets_set == {'GTSRB', 'PTSD'}:
-            # Will use unified GTSRB+PTSD normalization when available
-            # For now, compute average or use unified norm
-            normalization_mean = UNIFIED_NORM['mean']
-            normalization_std = UNIFIED_NORM['std']
+            # Use unified GTSRB+PTSD normalization
+            normalization_mean = UNIFIED_GTSRB_PTSD_NORM['mean']
+            normalization_std = UNIFIED_GTSRB_PTSD_NORM['std']
             logger.info("Using unified normalization for GTSRB+PTSD")
         elif datasets_set == {'CIFAR10', 'MNIST'}:
             normalization_mean = UNIFIED_NORM['mean']
