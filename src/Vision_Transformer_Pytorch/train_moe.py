@@ -86,8 +86,8 @@ parser.add_argument('--gating_epsilon', type=float, default=8.0/255.0, help='Eps
 # loading pretrained experts
 parser.add_argument('--model_arch', type=str, default='ultra_verifiable_cnn', choices=['vit_moe', 'small_cnn', 'tiny_cnn', 'micro_cnn', 'nnv_cnn', 'ultra_verifiable_cnn', 'resnet50', 'resnet101', 'convnext_tiny', 'efficientnet_b0', 'vit_base',
                                                                                 'convnextv2_tiny', 'convnext_small', 'convnext_large', 'vit_large'], help='Model architecture to use')
-parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_2_CNN_NAT" , "gtsrb_*.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
-parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_3_CNN_NAT" , "ptsd_*.pth"), help='Path or pattern to pre-trained PTSD model (supports wildcards)')
+parser.add_argument('--gtsrb_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_2_CNN_AT" , "gtsrb_*.pth"), help='Path or pattern to pre-trained GTSRB model (supports wildcards)')
+parser.add_argument('--ptsd_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_3_CNN_AT" , "ptsd_*.pth"), help='Path or pattern to pre-trained PTSD model (supports wildcards)')
 parser.add_argument('--cifar10_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_0_CNN_AT" , "cifar10_*.pth"), help='Path or pattern to pre-trained CIFAR10 model (supports wildcards)')
 parser.add_argument('--mnist_model_path', type=str, default=os.path.join(PRETRAINED_MODEL_DIR_FOR_PAPER, "E_1_CNN_AT" , "mnist_*.pth"), help='Path or pattern to pre-trained MNIST model (supports wildcards)')
 # robustness
