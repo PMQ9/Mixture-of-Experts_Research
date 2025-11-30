@@ -369,10 +369,15 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None, d
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
 
-    # Calculate per-dataset accuracies with fallback values of 0 for missing datasets
-    gtsrb_accuracy = per_dataset_correct.get('GTSRB', 0) / per_dataset_total.get('GTSRB', 1) if per_dataset_total.get('GTSRB', 0) > 0 and args.meta_moe else 0
-    cifar10_accuracy = per_dataset_correct.get('CIFAR10', 0) / per_dataset_total.get('CIFAR10', 1) if per_dataset_total.get('CIFAR10', 0) > 0 and args.meta_moe else 0
-    mnist_accuracy = per_dataset_correct.get('MNIST', 0) / per_dataset_total.get('MNIST', 1) if per_dataset_total.get('MNIST', 0) > 0 and args.meta_moe else 0
+    # Calculate per-dataset accuracies dynamically based on actual datasets being trained
+    per_dataset_accuracies = {}
+    if args.meta_moe and datasets:
+        for dataset_name in datasets:
+            per_dataset_accuracies[dataset_name] = per_dataset_correct.get(dataset_name, 0) / per_dataset_total.get(dataset_name, 1) if per_dataset_total.get(dataset_name, 0) > 0 else 0
+    else:
+        # Fallback for non-MetaMoE or when datasets not specified
+        for name in ['GTSRB', 'CIFAR10', 'MNIST', 'PTSD']:
+            per_dataset_accuracies[name] = per_dataset_correct.get(name, 0) / per_dataset_total.get(name, 1) if per_dataset_total.get(name, 0) > 0 else 0
 
     if args.meta_moe:
         avg_router_time = total_router_time / total_images if total_images > 0 else 0
@@ -380,11 +385,11 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None, d
         avg_post_time = total_post_time / total_images if total_images > 0 else 0
         avg_total_time = total_total_time / total_images if total_images > 0 else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, gating_loss={avg_gating_loss:.4f}, accuracy={accuracy:.4f}, gating_accuracy={gating_accuracy:.4f}, avg_total_inference_time={avg_total_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, mnist_accuracy, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, per_dataset_accuracies, avg_router_time, avg_experts_time, avg_post_time, avg_total_time
     else:
         avg_inference_time = sum(inference_times) / len(inference_times) if inference_times else 0
         logger.info(f"Test results: loss={avg_loss:.4f}, balance_loss={avg_balance_loss:.4f}, accuracy={accuracy:.4f}, avg_inference_time={avg_inference_time:.6f} seconds/image")
-        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, gtsrb_accuracy, cifar10_accuracy, mnist_accuracy, avg_inference_time
+        return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy, per_dataset_accuracies, avg_inference_time
 
 def test_adversarial_robustness(model, test_loader, device, eps=0.1):
     model.eval()
@@ -861,9 +866,16 @@ def main():
     test_gating_losses = []
     train_gating_accs = []
     test_gating_accs = []
-    test_gtsrb_accs = []
-    test_cifar10_accs = []
-    test_mnist_accs = []
+
+    # Initialize per-dataset accuracy lists dynamically
+    per_dataset_accs_history = {}
+    if args.meta_moe and datasets:
+        for dataset_name in datasets:
+            per_dataset_accs_history[dataset_name] = []
+    else:
+        # Fallback to keep backwards compatibility with plotting
+        per_dataset_accs_history = {'GTSRB': [], 'CIFAR10': [], 'MNIST': [], 'PTSD': []}
+
     best_acc = 0
     best_train_acc = 0
     total_training_time = 0
@@ -880,17 +892,17 @@ def main():
         else:
             train_loss, train_balance_loss, train_gating_loss, train_acc, train_gating_acc = train_results
         
-        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, test_inference_time = None, None, None, None, None, None, None, None, None
+        test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, per_dataset_accs, test_inference_time = None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             if args.meta_moe:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, datasets=datasets)
             else:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
             if args.meta_moe:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, per_dataset_accs, avg_router_time_test, avg_experts_time_test, avg_post_time_test, avg_total_time_test = test_results
                 test_inference_time = avg_total_time_test
             else:
-                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, test_inference_time = test_results
+                test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, per_dataset_accs, test_inference_time = test_results
             test_inference_times.append(test_inference_time)
     
         scheduler.step()
@@ -913,9 +925,11 @@ def main():
             test_balance_losses.append(test_balance_loss)
             test_gating_losses.append(test_gating_loss)
             test_gating_accs.append(test_gating_acc)
-            test_gtsrb_accs.append(test_gtsrb_acc)
-            test_cifar10_accs.append(test_cifar10_acc)
-            test_mnist_accs.append(test_mnist_acc)
+            # Append per-dataset accuracies to history
+            if args.meta_moe and per_dataset_accs is not None:
+                for dataset_name, accuracy in per_dataset_accs.items():
+                    if dataset_name in per_dataset_accs_history:
+                        per_dataset_accs_history[dataset_name].append(accuracy)
 
         print(f"{datetime.now()}")
         print(f"Epoch {epoch+1}/{EPOCHS}:")
@@ -927,8 +941,10 @@ def main():
             print(f"Train Avg Total Inference Time per image: {avg_total_time:.6f} seconds")
         if test_loss is not None:
             print(f"Test loss: {test_loss:.4f}, Test Balance Loss: {test_balance_loss:.4f}, Test Gating Loss: {test_gating_loss:.4f}, Test Acc: {test_acc:.4f}, Test Gating Acc: {test_gating_acc:.4f}")
-            if args.meta_moe:
-                print(f"Test GTSRB Acc: {test_gtsrb_acc:.4f}, Test CIFAR10 Acc: {test_cifar10_acc:.4f}, Test MNIST Acc: {test_mnist_acc:.4f}")
+            if args.meta_moe and per_dataset_accs:
+                # Print per-dataset accuracies dynamically based on actual datasets
+                acc_strings = [f"Test {dataset} Acc: {per_dataset_accs[dataset]:.4f}" for dataset in datasets if dataset in per_dataset_accs]
+                print(", ".join(acc_strings))
                 print(f"Test Avg Router Time per image: {avg_router_time_test:.6f} seconds")
                 print(f"Test Avg Experts Time per image: {avg_experts_time_test:.6f} seconds")
                 print(f"Test Avg Post-Experts Time per image: {avg_post_time_test:.6f} seconds")
@@ -983,16 +999,18 @@ def main():
                 train_balance_losses, test_balance_losses,
                 train_gating_losses, test_gating_losses,
                 train_gating_accs, test_gating_accs,
-                test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
-                EPOCHS, TEST_START_EPOCH, TEST_FREQUENCY, OUTPUT_DIR,
+                per_dataset_accs_history=per_dataset_accs_history if args.meta_moe else None,
+                epochs=EPOCHS,
+                test_start_epoch=TEST_START_EPOCH,
+                test_frequency=TEST_FREQUENCY,
+                output_dir=OUTPUT_DIR,
                 meta_moe=args.meta_moe,
                 model_arch=args.model_arch,
                 adv_training=args.adv_training,
                 best_train_acc=best_train_acc,
                 best_test_acc=best_acc,
                 dataset_name=args.dataset if not args.meta_moe else '',
-                datasets=datasets if args.meta_moe else None,
-                test_ptsd_accs=test_mnist_accs if args.meta_moe and datasets and 'PTSD' in datasets else None
+                datasets=datasets if args.meta_moe else None
             )
 
     print(f"Training completed. Best Accuracy: {best_acc:.4f}")
