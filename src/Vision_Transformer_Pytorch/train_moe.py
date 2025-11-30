@@ -175,7 +175,7 @@ def pgd_gating_attack(model, data, meta_class, epsilon=8.0/255.0, alpha=0.01, nu
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = 0
-    scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
+    scaler = GradScaler(enabled=torch.cuda.is_available())
     gating_criterion = nn.CrossEntropyLoss()
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
     total_images = 0
@@ -191,7 +191,7 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
         optimizer.zero_grad()
         apply_cutmix = data.size(0) == BATCH_SIZE and np.random.rand() < CUTMIX_PROB
 
-        with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
+        with autocast():
             if args.meta_moe:
                 output, gates, router_time, experts_time, post_time, total_time = model.forward_with_timing(data)
                 cls_loss = criterion(output, target)
@@ -291,7 +291,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
         for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing", ncols=80)):
             data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
             if args.meta_moe:
-                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                with autocast():
                     output, gates, router_time, experts_time, post_time, total_time = model.forward_with_timing(data)
                     loss = criterion(output, target)
                     gating_loss = gating_criterion(gates, meta_class)
@@ -303,7 +303,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                 total_images += data.size(0)
             else:
                 start_time = time.time()
-                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                with autocast():
                     output, balance_losses = model(data)
                     loss = criterion(output, target)
                     balance_loss = sum(balance_losses) / len(balance_losses) if isinstance(balance_losses, list) else balance_losses
