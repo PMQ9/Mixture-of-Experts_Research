@@ -465,5 +465,6 @@ class CombinedDataset(Dataset):
                 local_idx = idx - self.cumulative_lengths[i]
                 image, label, meta_class = self.datasets[i][local_idx]
                 label = label + self.class_offsets[i]
+                meta_class = i  # Use dataset index as meta_class for routing
                 return image, label, meta_class
         raise IndexError("Index out of range")

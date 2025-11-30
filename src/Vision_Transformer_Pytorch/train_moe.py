@@ -280,14 +280,26 @@ def train(model, loader, optimizer, criterion, device, balance_loss_weight=None,
     else:
         return avg_loss, avg_balance_loss, avg_gating_loss, accuracy, gating_accuracy
 
-def test(model, loader, optimizer, criterion, device, default_meta_class=None):
+def test(model, loader, optimizer, criterion, device, default_meta_class=None, datasets=None):
     model.eval()
     total_loss = total_balance_loss = total_gating_loss = correct = gating_correct = total = total_images = 0
-    gtsrb_correct = cifar10_correct = gtsrb_total = cifar10_total = mnist_correct = mnist_total = 0
     gating_criterion = nn.CrossEntropyLoss()
     inference_times = []
     total_router_time = total_experts_time = total_post_time = total_total_time = 0.0
-    
+
+    # Initialize per-dataset accuracies dynamically
+    per_dataset_correct = {}
+    per_dataset_total = {}
+    if datasets:
+        for dataset_name in datasets:
+            per_dataset_correct[dataset_name] = 0
+            per_dataset_total[dataset_name] = 0
+    else:
+        # Fallback for backwards compatibility
+        for name in ['GTSRB', 'CIFAR10', 'MNIST', 'PTSD']:
+            per_dataset_correct[name] = 0
+            per_dataset_total[name] = 0
+
     with torch.no_grad():
         for batch_idx, (data, target, meta_class) in enumerate(tqdm(loader, desc="Testing", ncols=80)):
             data, target, meta_class = data.to(device), target.to(device), meta_class.to(device)
@@ -311,7 +323,7 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
                     gating_loss = 0
                 inference_time = time.time() - start_time
                 inference_times.append(inference_time / data.size(0))
-            
+
             total_loss += loss.item()
             if not args.meta_moe:
                 total_balance_loss += balance_loss.item()
@@ -323,27 +335,45 @@ def test(model, loader, optimizer, criterion, device, default_meta_class=None):
             if args.meta_moe:
                 _, gating_pred = gates.max(1)
                 gating_correct += gating_pred.eq(meta_class).sum().item()
-                #gtsrb_mask = meta_class == 0
-                cifar10_mask = meta_class == 0
-                mnist_mask = meta_class == 1
-                # if gtsrb_mask.any():
-                #     gtsrb_correct += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
-                #     gtsrb_total += gtsrb_mask.sum().item()
-                if cifar10_mask.any():
-                    cifar10_correct += predicted[cifar10_mask].eq(target[cifar10_mask]).sum().item()
-                    cifar10_total += cifar10_mask.sum().item()
-                if mnist_mask.any():
-                    mnist_correct += predicted[mnist_mask].eq(target[mnist_mask]).sum().item()
-                    mnist_total += mnist_mask.sum().item()
-        
+
+                # Calculate per-dataset accuracies dynamically
+                if datasets:
+                    for dataset_idx, dataset_name in enumerate(datasets):
+                        mask = meta_class == dataset_idx
+                        if mask.any():
+                            per_dataset_correct[dataset_name] += predicted[mask].eq(target[mask]).sum().item()
+                            per_dataset_total[dataset_name] += mask.sum().item()
+                else:
+                    # Fallback for backwards compatibility
+                    gtsrb_mask = meta_class == 0
+                    cifar10_mask = meta_class == 0
+                    mnist_mask = meta_class == 1
+                    ptsd_mask = meta_class == 1
+
+                    if gtsrb_mask.any():
+                        per_dataset_correct['GTSRB'] += predicted[gtsrb_mask].eq(target[gtsrb_mask]).sum().item()
+                        per_dataset_total['GTSRB'] += gtsrb_mask.sum().item()
+                    if cifar10_mask.any():
+                        per_dataset_correct['CIFAR10'] += predicted[cifar10_mask].eq(target[cifar10_mask]).sum().item()
+                        per_dataset_total['CIFAR10'] += cifar10_mask.sum().item()
+                    if mnist_mask.any():
+                        per_dataset_correct['MNIST'] += predicted[mnist_mask].eq(target[mnist_mask]).sum().item()
+                        per_dataset_total['MNIST'] += mnist_mask.sum().item()
+                    if ptsd_mask.any():
+                        per_dataset_correct['PTSD'] += predicted[ptsd_mask].eq(target[ptsd_mask]).sum().item()
+                        per_dataset_total['PTSD'] += ptsd_mask.sum().item()
+
     avg_loss = total_loss / len(loader)
     avg_balance_loss = total_balance_loss / len(loader) if not args.meta_moe else 0
     avg_gating_loss = total_gating_loss / len(loader) if args.meta_moe else 0
     accuracy = correct / total
     gating_accuracy = gating_correct / total if args.meta_moe else 0
-    gtsrb_accuracy = gtsrb_correct / gtsrb_total if gtsrb_total > 0 and args.meta_moe else 0
-    cifar10_accuracy = cifar10_correct / cifar10_total if cifar10_total > 0 and args.meta_moe else 0
-    mnist_accuracy = mnist_correct / mnist_total if mnist_total > 0 and args.meta_moe else 0
+
+    # Calculate per-dataset accuracies with fallback values of 0 for missing datasets
+    gtsrb_accuracy = per_dataset_correct.get('GTSRB', 0) / per_dataset_total.get('GTSRB', 1) if per_dataset_total.get('GTSRB', 0) > 0 and args.meta_moe else 0
+    cifar10_accuracy = per_dataset_correct.get('CIFAR10', 0) / per_dataset_total.get('CIFAR10', 1) if per_dataset_total.get('CIFAR10', 0) > 0 and args.meta_moe else 0
+    mnist_accuracy = per_dataset_correct.get('MNIST', 0) / per_dataset_total.get('MNIST', 1) if per_dataset_total.get('MNIST', 0) > 0 and args.meta_moe else 0
+
     if args.meta_moe:
         avg_router_time = total_router_time / total_images if total_images > 0 else 0
         avg_experts_time = total_experts_time / total_images if total_images > 0 else 0
@@ -853,7 +883,7 @@ def main():
         test_loss, test_balance_loss, test_gating_loss, test_acc, test_gating_acc, test_gtsrb_acc, test_cifar10_acc, test_mnist_acc, test_inference_time = None, None, None, None, None, None, None, None, None
         if epoch >= TEST_START_EPOCH and (epoch - TEST_START_EPOCH) % TEST_FREQUENCY == 0:
             if args.meta_moe:
-                test_results = test(model, test_loader, optimizer, criterion, DEVICE)
+                test_results = test(model, test_loader, optimizer, criterion, DEVICE, datasets=datasets)
             else:
                 test_results = test(model, test_loader, optimizer, criterion, DEVICE, default_meta_class=default_meta_class)
             if args.meta_moe:
