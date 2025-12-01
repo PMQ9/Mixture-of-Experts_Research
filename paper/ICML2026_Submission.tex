@@ -90,6 +90,8 @@ Let $x \in \mathbb{R}^{d}$ be an input with label $y$. A heterogeneous MoE consi
 
 \subsection{Main Result}
 
+We now formalize the compositional robustness guarantee.
+
 \begin{theorem}[Compositional Robustness]
 \label{thm:compositional}
 Let $\mathrm{MoE} = (\mathcal{G}, \{E_i\})$ use top-1 routing and let
@@ -97,12 +99,14 @@ $m^* = \arg\max_i \mathcal{G}_i(x)$.
 If
 \[
 \forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^*
-\quad\text{(router stability)}
+%\quad\text{(router stability)}
+\text{(router stability)}
 \]
 and
 \[
 \forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y
-\quad\text{(expert robustness),}
+% \quad\text{(expert robustness),}
+\text{(expert robustness),}
 \]
 then the MoE is $\varepsilon$-robust at $x$.
 \end{theorem}
@@ -139,7 +143,7 @@ Both router and experts use \textbf{VerifiableCNN} (96K parameters) designed for
 %==============================================================================
 \section{Experiments}
 
-We evaluate on CIFAR-10 and MNIST---visually dissimilar domains enabling clean isolation of compositional effects. Extended experiments on similar domains appear in Appendix~\ref{app:similar_domains}.
+We evaluate on CIFAR-10 and MNIST---visually dissimilar domains enabling controlled analysis of compositional effects. Extended experiments on similar domains appear in Appendix~\ref{app:similar_domains}.
 
 \subsection{Router Verification Enables Compositional Guarantees}
 
@@ -159,7 +163,7 @@ Robust (RT) & 100 & 100 & 100 \\
 \label{tab:router}
 \end{table}
 
-\textbf{Key Finding:} Routers achieve high formal certification even without adversarial training at practical $\varepsilon$. The router achieves high certified accuracy because CIFAR-10 and MNIST lie on well-separated data manifolds, giving the router natural decision margins far exceeding $\varepsilon$. The router's empirical adversarial accuracy ($\sim$35\%) appears to contradict formal certification (100\%), but this reflects the distinction between heuristic attack success and worst-case guarantees: PGD finds \textit{some} adversarial examples, while formal verification proves \textit{none exist} that change routing.
+\textbf{Key Finding:} Routers achieve high formal certification even without adversarial training at practical $\varepsilon$. The router achieves high certified accuracy because CIFAR-10 and MNIST lie on well-separated data manifolds, giving the router natural decision margins far exceeding $\varepsilon$. The router's empirical adversarial accuracy ($\sim$35\%) differs from its (100\%) certified accuracy because heuristic attacks explore only local gradient directions, while certification reasons about all perturbations within $B_{\varepsilon}(x)$. This reflects the distinction between heuristic attack success and worst-case guarantees: PGD finds \textit{some} adversarial examples, while formal verification proves \textit{none exist} that change routing.
 
 \subsection{Expert Verification Requires Robust Training}
 
@@ -182,7 +186,7 @@ Robust (RT) & 100 & 100 & 100 \\
 \label{tab:expert}
 \end{table}
 
-\textbf{Key Finding:} Robust training is a \textit{prerequisite} for verifiability, not merely beneficial. Non-robust CIFAR-10 experts produce chaotic decision boundaries that yield loose CROWN bounds and universal verification failure. Adversarial training smooths boundaries, enabling tractable formal analysis.
+\textbf{Key Finding:} Robust training is a \textit{prerequisite} for verifiability, not merely beneficial. Non-robust CIFAR-10 experts produce highly irregular decision boundaries that yield loose CROWN bounds and universal verification failure. Adversarial training smooths boundaries, enabling tractable formal analysis.
 
 \subsection{Expert Robustness Dominates System Behavior}
 
@@ -206,7 +210,7 @@ Both Experts NRT & \textbf{91.32} & 28.78 \\
 
 All configurations achieve \textbf{100\% routing accuracy} (clean and adversarial), validating the compositional property: the router acts as a deterministic switch, accurately transferring expert robustness to the system.
 
-\textbf{Practical Implication:} For dissimilar domains, skip router adversarial training (4$\times$ speedup, 968s vs 4107s) and focus resources on expert robustness.
+\textbf{Practical Implication:} For dissimilar domains, Router adversarial training can be omitted (4$\times$ speedup, 968s vs 4107s) and focus resources on expert robustness.
 
 \subsection{Scalability}
 
@@ -233,9 +237,12 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 
 We establish that MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness. This decomposition achieves 20$\times$ verification speedup and enables incremental expert integration.
 
-Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are fundamentally incompatible with sound verification.
+Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are incompatible with sound verification at practical scales.
 
 These results demonstrate that compositional design enables tractable formal verification of modular AI systems, advancing the path toward verifiable, safety-critical deployment.
+
+Future work includes extending compositional guarantees to top-$k$ routing and larger transformer-based MoE systems.
+
 
 %==============================================================================
 % REFERENCES
