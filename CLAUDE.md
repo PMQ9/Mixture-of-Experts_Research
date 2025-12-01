@@ -10,7 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Mixture-of-Experts (MoE) research project for safety-critical systems at Vanderbilt University's Institute of Software Integrated Systems. The project trains separate expert models on different datasets (GTSRB, CIFAR-10, MNIST, etc.), freezes them, and trains a meta-router to dynamically select which expert to activate based on input. This approach is designed to be scalable and resource-efficient.
+This is a Mixture-of-Experts (MoE) research project for safety-critical systems at Vanderbilt University's Institute of Software Integrated Systems. The project trains separate expert models on different datasets (GTSRB, PTSD, CIFAR-10, MNIST, etc.), freezes them, and trains a meta-router to dynamically select which expert to activate based on input. This approach is designed to be scalable and resource-efficient.
+
+**Supported datasets:**
+- **GTSRB** (German Traffic Sign Recognition Benchmark): 43 classes, real-world traffic signs from German roads
+- **PTSD** (Persian Traffic Sign Dataset): 43 classes, Persian traffic signs from Iran
+- **CIFAR-10**: 10 classes, natural images for general-purpose classification
+- **MNIST**: 10 classes, handwritten digits
 
 ## Core Architecture
 
@@ -31,10 +37,11 @@ This is a Mixture-of-Experts (MoE) research project for safety-critical systems 
 ### Key Components
 
 **Expert Architectures** (`src/Vision_Transformer_Pytorch/small_expert.py`):
-- `SmallExpertCNN`: ~1.5M params (for complex datasets like GTSRB)
+- `SmallExpertCNN`: ~1.5M params (for complex traffic sign datasets like GTSRB/PTSD with 43 classes)
 - `TinyExpertCNN`: ~620K params (for CIFAR-10/MNIST)
 - `MicroExpertCNN`: ~67K params (optimized for formal verification tools, uses MaxPool)
 - `NNVCompatibleCNN`: ~67K params (uses AvgPool instead of MaxPool for NNV compatibility, 1-3% accuracy drop)
+- `UltraVerifiableCNN`: ~96K params (balanced for verification, 87% GTSRB accuracy)
 - Also supports larger models: ConvNeXt-Tiny (~28M params), ResNet50, EfficientNet, etc.
 
 **Router Architecture**:
@@ -53,34 +60,63 @@ This is a Mixture-of-Experts (MoE) research project for safety-critical systems 
 
 ### Training Individual Experts
 
-Train a GTSRB expert with small CNN:
+**Recommended architecture:** Use `ultra_verifiable_cnn` (96K params, 87% GTSRB accuracy) for optimal balance between performance and verification compatibility.
+
+Train a GTSRB expert:
 ```bash
-python train.py --dataset GTSRB --model_arch small_cnn --epochs 100
+python train.py --dataset GTSRB --model_arch ultra_verifiable_cnn --epochs 100
 ```
 
-Train CIFAR-10 expert with tiny CNN:
+Train CIFAR-10 expert:
 ```bash
-python train.py --dataset CIFAR10 --model_arch tiny_cnn --epochs 100
+python train.py --dataset CIFAR10 --model_arch ultra_verifiable_cnn --epochs 100
+```
+
+Train PTSD expert (Persian Traffic Sign, 43 classes):
+```bash
+python train.py --dataset PTSD --model_arch ultra_verifiable_cnn --epochs 100
+```
+
+Train MNIST expert:
+```bash
+python train.py --dataset MNIST --model_arch ultra_verifiable_cnn --epochs 100
 ```
 
 Train with adversarial robustness:
 ```bash
-python train.py --dataset GTSRB --model_arch small_cnn --epochs 100 --adv_training
+python train.py --dataset GTSRB --model_arch ultra_verifiable_cnn --epochs 100 --adv_training
+```
+
+Train PTSD expert with adversarial robustness:
+```bash
+python train.py --dataset PTSD --model_arch ultra_verifiable_cnn --epochs 100 --adv_training
 ```
 
 ### Training MetaMoE
 
 **IMPORTANT:** For MetaMoE training, use `--gating_backbone` (NOT `--model_arch`) to specify the router architecture. The `--model_arch` argument specifies the expert architecture, while `--gating_backbone` specifies the router/gating network architecture.
 
-**Recommended architecture:** Use `ultra_verifiable_cnn` for both experts and router for formal verification compatibility.
+**Recommended architecture:** Use `ultra_verifiable_cnn` (96K params) for both experts and router. This architecture provides optimal balance between accuracy (87% on GTSRB) and formal verification compatibility.
 
-Train MetaMoE with 2 pre-trained experts (supports wildcards in paths):
+Train MetaMoE with 2 CIFAR-10 and MNIST experts (supports wildcards in paths):
 ```bash
 python train.py --meta_moe \
     --model_arch ultra_verifiable_cnn \
     --gating_backbone ultra_verifiable_cnn \
-    --gtsrb_model_path artifacts/results/gtsrb_*_best.pth \
     --cifar10_model_path artifacts/results/cifar10_*_best.pth \
+    --mnist_model_path artifacts/results/mnist_*_best.pth \
+    --epochs 100 \
+    --meta_top_k 1
+```
+
+Train MetaMoE with 2 GTSRB and PTSD experts (traffic sign datasets):
+```bash
+python train.py --meta_moe \
+    --meta_datasets GTSRB,PTSD \
+    --model_arch ultra_verifiable_cnn \
+    --gating_backbone ultra_verifiable_cnn \
+    --gtsrb_model_path artifacts/results/gtsrb_*_best.pth \
+    --ptsd_model_path artifacts/results/ptsd_*_best.pth \
     --epochs 100 \
     --meta_top_k 1
 ```
@@ -93,13 +129,26 @@ python train.py --meta_moe --fine_tune_meta_moe \
     --mnist_model_path artifacts/results/mnist_*_best.pth
 ```
 
-Train MetaMoE with adversarial gating:
+Train MetaMoE with adversarial gating (CIFAR10+MNIST):
 ```bash
 python train.py --meta_moe \
     --model_arch ultra_verifiable_cnn \
     --gating_backbone ultra_verifiable_cnn \
-    --gtsrb_model_path artifacts/results/gtsrb_*_best.pth \
     --cifar10_model_path artifacts/results/cifar10_*_best.pth \
+    --mnist_model_path artifacts/results/mnist_*_best.pth \
+    --adv_gating_train \
+    --at_mode TRADES \
+    --trades_beta 6.0
+```
+
+Train MetaMoE with adversarial gating (GTSRB+PTSD):
+```bash
+python train.py --meta_moe \
+    --meta_datasets GTSRB,PTSD \
+    --model_arch ultra_verifiable_cnn \
+    --gating_backbone ultra_verifiable_cnn \
+    --gtsrb_model_path artifacts/results/gtsrb_*_best.pth \
+    --ptsd_model_path artifacts/results/ptsd_*_best.pth \
     --adv_gating_train \
     --at_mode TRADES \
     --trades_beta 6.0
@@ -140,6 +189,18 @@ Available config parameters (see `VisionTransformerConfig` in `vision_transforme
 Calculate dataset normalization values:
 ```bash
 python src/Normalization_Value/gtsrb_normalization_compute.py --dataset GTSRB
+python src/Normalization_Value/gtsrb_normalization_compute.py --dataset PTSD
+python src/Normalization_Value/gtsrb_normalization_compute.py --dataset CIFAR10
+python src/Normalization_Value/gtsrb_normalization_compute.py --dataset MNIST
+```
+
+Calculate unified normalization values across multiple datasets:
+```bash
+# GTSRB + PTSD unified normalization
+python src/Normalization_Value/gtsrb_normalization_compute.py --dataset unified_norm_gtsrb_ptsd
+
+# CIFAR-10 + MNIST unified normalization
+python src/Normalization_Value/gtsrb_normalization_compute.py --dataset unified_norm_cifar10_mnist
 ```
 
 Test small expert architectures:
@@ -152,6 +213,22 @@ Visualize robustness (expert switching under adversarial perturbations):
 python train.py --meta_moe --visualize_robustness
 ```
 
+## Normalization Values
+
+Dataset normalization values (mean and std for RGB channels) are pre-calculated and stored in [config.py](src/Vision_Transformer_Pytorch/config.py). These values are used during training and inference to standardize input images.
+
+**Individual dataset normalization:**
+- **GTSRB** (German Traffic Sign Recognition, 43 classes): Mean=(0.343, 0.313, 0.322), Std=(0.274, 0.260, 0.266)
+- **PTSD** (Persian Traffic Sign Dataset, 43 classes): Mean=(0.422, 0.404, 0.424), Std=(0.255, 0.227, 0.225)
+- **CIFAR-10** (10 classes): Mean=(0.491, 0.482, 0.447), Std=(0.247, 0.243, 0.262)
+- **MNIST** (10 classes): Mean=(0.131, 0.131, 0.131), Std=(0.289, 0.289, 0.289)
+
+**Unified normalization (for MetaMoE with multiple datasets):**
+- **GTSRB+PTSD** (traffic sign datasets): Mean=(0.371, 0.345, 0.358), Std=(0.270, 0.253, 0.257) - calculated from 42M pixels
+- **CIFAR-10+MNIST** (image classification): Mean=(0.295, 0.291, 0.274), Std=(0.325, 0.321, 0.319)
+
+When training MetaMoE with GTSRB and PTSD experts using `--meta_datasets GTSRB,PTSD`, the unified GTSRB+PTSD normalization is automatically applied.
+
 ## Dataset Structure
 
 Datasets must be organized with CSV metadata files containing `meta_class` labels:
@@ -159,6 +236,13 @@ Datasets must be organized with CSV metadata files containing `meta_class` label
 ```
 data/
 ├── GTSRB/
+│   ├── Training/
+│   │   ├── train_with_meta_class.csv  # Required: has 'meta_class' column
+│   │   └── [images organized by class folders]
+│   └── Test/
+│       ├── testset_with_meta_class.csv  # Required
+│       └── Images/
+├── PTSD/
 │   ├── Training/
 │   │   ├── train_with_meta_class.csv  # Required: has 'meta_class' column
 │   │   └── [images organized by class folders]
@@ -182,9 +266,10 @@ data/
 - Test CSV: `Filename`, `ClassId`, `meta_class` columns (meta_class can be auto-filled via `default_meta_class` parameter)
 
 **Meta-class mapping** (for MetaMoE):
-- 0: GTSRB
-- 1: CIFAR-10
-- 2: MNIST
+- 0: CIFAR-10
+- 1: MNIST
+- 2: GTSRB (German Traffic Sign Recognition Benchmark, 43 classes)
+- 3: PTSD (Persian Traffic Sign Dataset, 43 classes)
 
 ## Model Output Structure
 
@@ -215,6 +300,14 @@ paper/artifacts/
 │   └── mnist_ultra_verifiable_cnn_best_RT_eps0.031.pth
 ├── E_1_CNN_NAT/         # MNIST Non-Adversarially Trained expert
 │   └── mnist_ultra_verifiable_cnn_best_NRT.pth
+├── E_2_CNN_AT/          # GTSRB Adversarially Trained expert (ε=0.03137)
+│   └── gtsrb_ultra_verifiable_cnn_best_RT_eps0.031.pth
+├── E_2_CNN_NAT/         # GTSRB Non-Adversarially Trained expert
+│   └── gtsrb_ultra_verifiable_cnn_best_NRT.pth
+├── E_3_CNN_AT/          # PTSD Adversarially Trained expert (ε=0.03137)
+│   └── ptsd_ultra_verifiable_cnn_best_RT_eps0.031.pth
+├── E_3_CNN_NAT/         # PTSD Non-Adversarially Trained expert
+│   └── ptsd_ultra_verifiable_cnn_best_NRT.pth
 ├── MoE_CNN_AT/          # MoE Router trained with Adversarial Gating
 │   └── meta_moe_ultra_verifiable_cnn_best_RT_eps0.03137.pth
 └── MoE_CNN_NAT/         # MoE Router trained with Non-Adversarial Gating
@@ -224,6 +317,8 @@ paper/artifacts/
 **Expert naming convention:**
 - `E_0_*`: CIFAR-10 expert
 - `E_1_*`: MNIST expert
+- `E_2_*`: GTSRB expert (German traffic signs, 43 classes)
+- `E_3_*`: PTSD expert (Persian traffic signs, 43 classes)
 - `*_AT`: Adversarially Trained (robust) → `*_best_RT_eps0.031.pth` (ε=8/255=0.03137)
 - `*_NAT`: Non-Adversarially Trained (standard) → `*_best_NRT.pth`
 
@@ -256,7 +351,31 @@ python train.py --meta_moe \
     --epochs 200
 ```
 
-The `--adv_gating_train` flag enables adversarial training for the router (gating network). Omit it for non-adversarial router training.
+Train router with GTSRB+PTSD traffic sign experts (adversarial gating, AT experts):
+```bash
+python train.py --meta_moe \
+    --meta_datasets GTSRB,PTSD \
+    --model_arch ultra_verifiable_cnn \
+    --gating_backbone ultra_verifiable_cnn \
+    --gtsrb_model_path paper/artifacts/E_2_CNN_AT/gtsrb_ultra_verifiable_cnn_best_RT_eps0.031.pth \
+    --ptsd_model_path paper/artifacts/E_3_CNN_AT/ptsd_ultra_verifiable_cnn_best_RT_eps0.031.pth \
+    --adv_gating_train \
+    --art_attack \
+    --epochs 200
+```
+
+Train router with GTSRB+PTSD traffic sign experts (standard gating, NRT experts):
+```bash
+python train.py --meta_moe \
+    --meta_datasets GTSRB,PTSD \
+    --model_arch ultra_verifiable_cnn \
+    --gating_backbone ultra_verifiable_cnn \
+    --gtsrb_model_path paper/artifacts/E_2_CNN_NAT/gtsrb_ultra_verifiable_cnn_best_NRT.pth \
+    --ptsd_model_path paper/artifacts/E_3_CNN_NAT/ptsd_ultra_verifiable_cnn_best_NRT.pth \
+    --epochs 200
+```
+
+The `--adv_gating_train` flag enables adversarial training for the router (gating network). Omit it for non-adversarial router training. The `--meta_datasets` argument specifies which dataset combination to use and automatically selects the appropriate unified normalization.
 
 ## Neural Network Verification
 

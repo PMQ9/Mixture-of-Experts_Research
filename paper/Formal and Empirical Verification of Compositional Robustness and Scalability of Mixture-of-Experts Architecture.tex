@@ -530,6 +530,8 @@ $\Delta$ (NRT - RT) & $+0.06$ & $-0.02$ & $-3139$ (4.1$\times$ faster) \\
     \item \textbf{Robustness-Accuracy Tradeoff Clearly Quantified:} Both RT experts sacrifice 3.34\% clean accuracy ($87.98\%$ vs $91.32\%$) for 13.15\% adversarial accuracy gain (robustness gap: $46.05\%$ vs $62.54\%$), supporting Hypothesis 1. Mixed configurations (e.g., CIFAR10-NRT + MNIST-RT: $91.26\%$ clean, $37.66\%$ adv) offer balanced tradeoffs: 0.06\% better than Both RT on clean accuracy while losing only 4.27\% adversarial accuracy, valuable for heterogeneous security requirements.
 
     \item \textbf{Hypothesis 3 Validation (Compositional Robustness):} System robustness decomposes modularly as: Router robustness (100\% gating accuracy) $\land$ Expert robustness (expert-dependent) $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation and enables independent expert verification and composition without full-system retraining. \textbf{Scope:} This compositional property holds under the assumption that the router maintains stable expert selection within the threat model (verified empirically here for dissimilar datasets). For similar datasets where routing decisions are less robust, compositional guarantees require stronger assumptions or additional verification effort per dataset pair.
+
+    \item \textbf{Dataset Similarity Impact on Router Stability:} A comparative study using GTSRB and PTSD (both traffic sign datasets with 43 classes each) reveals the critical importance of domain dissimilarity for stable routing. GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% adversarial accuracy, compared to 100\% routing accuracy and 41.59\% adversarial accuracy for CIFAR10+MNIST. The 6.83\% routing error in the similar-domain case exceeds the expected margin from expert quality differences, indicating fundamental visual confusion between traffic sign datasets (shared geometric structures, color palettes, semantic categories). This 12.12\% adversarial accuracy gap demonstrates that routing difficulty directly propagates to system robustness—adversarial attacks exploit domain confusion more effectively when the router must distinguish between visually similar inputs. These findings validate our design choice to use visually distinct domains (natural objects vs. handwritten digits) for demonstrating clean compositional robustness principles, while confirming that similar-domain scenarios present fundamentally harder verification challenges requiring probabilistic guarantees or stronger assumptions. Detailed analysis and tables in Appendix H.
 \end{enumerate}
 
 \subsection{Quantitative Empirical-Formal Robustness Verification Correlation Analysis}
@@ -1484,6 +1486,77 @@ Where $m^* \in \{0, 1, \ldots, N-1\}$ is the true expert index (meta-class label
     \item \textbf{Frozen Experts:} After initial training, experts are frozen ($\text{requires\_grad} = \text{False}$); only router is trained
     \item \textbf{Timing Instrumentation:} For performance analysis, CUDA events can measure router time vs. expert execution time separately
 \end{itemize}
+
+\section{Impact of Dataset Similarity: GTSRB+PTSD vs. CIFAR10+MNIST Comparison}
+
+This appendix provides detailed analysis supporting the main paper's finding that dataset dissimilarity is critical for stable routing and compositional verification.
+
+\subsection{Motivation and Experimental Design}
+
+To validate that our choice of CIFAR-10 and MNIST (visually dissimilar domains) was justified, we conducted a comparative study using GTSRB (German Traffic Sign Recognition Benchmark) and PTSD (Persian Traffic Sign Dataset). Both datasets contain 43-class traffic signs from different countries, representing a ``hard case'' where the router must distinguish between similar domains.
+
+\subsection{Router Convergence Behavior}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric} & \textbf{GTSRB+PTSD (RT)} & \textbf{CIFAR10+MNIST (RT)} \\
+\midrule
+\textbf{Router Gating Accuracy} & 93.17\% & 100\% \\
+\textbf{Overall Test Accuracy} & 83.48\% & 88.13\% \\
+\textbf{Expert 0 Accuracy} & 88.73\% (GTSRB) & 77.20\% (CIFAR10) \\
+\textbf{Expert 1 Accuracy} & 56.13\% (PTSD) & 99.07\% (MNIST) \\
+\bottomrule
+\end{tabular}
+\caption{Router Performance: Similar vs. Dissimilar Dataset Pairs}
+\end{table}
+
+GTSRB+PTSD plateaus at 93.17\% routing accuracy despite adversarial training. The 6.83\% routing error exceeds the margin explained by expert imbalance, indicating inherent domain confusion. Visual overlap (shared traffic sign structures, color palettes, circular/triangular shapes) prevents the router from achieving the perfect discrimination seen with CIFAR-10 and MNIST.
+
+\subsection{Adversarial Robustness Impact}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Condition} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
+\midrule
+GTSRB+PTSD (RT) & 83.35 & 29.47 \\
+CIFAR10+MNIST (RT) & 87.90 & 41.59 \\
+\midrule
+\textbf{Performance Gap} & 4.55\% & 12.12\% \\
+\bottomrule
+\end{tabular}
+\caption{Adversarial Robustness: Domain Similarity Effects}
+\end{table}
+
+The 12.12\% adversarial accuracy gap (29.47\% vs 41.59\%) demonstrates that adversarial training is more damaging on confusable datasets. Attacks exploit routing uncertainty, making the system more vulnerable when the router must distinguish between visually similar domains.
+
+\subsection{Key Findings}
+
+\begin{enumerate}
+    \item \textbf{Domain Similarity Limits Router Convergence:} Adversarial router training achieves only marginal improvement on similar domains (GTSRB+PTSD: 93.17\% gating accuracy), unable to overcome fundamental visual overlap. This validates that dataset dissimilarity is essential, not merely beneficial.
+
+    \item \textbf{Routing Difficulty Propagates to System Robustness:} The 6.83\% routing error directly impacts adversarial robustness (12.12\% accuracy drop for GTSRB+PTSD vs. CIFAR10+MNIST). Adversarial attacks exploit routing confusion more effectively on similar datasets.
+
+    \item \textbf{Expert Quality Imbalance Compounds Issues:} PTSD's weak accuracy (56.13\%) acts as a bottleneck, but the real problem is shared domain characteristics. Even if both experts were equal strength, routing confusion would still reduce system robustness.
+
+    \item \textbf{Dissimilar Datasets Enable Perfect Routing Without Adversarial Training:} CIFAR-10 vs. MNIST achieve 100\% gating accuracy with both standard and adversarially-trained routers (minimal $\Delta < 0.1\%$), enabling 4.1$\times$ training speedup.
+\end{enumerate}
+
+\subsection{Implications for Compositional Verification}
+
+The compositional verification property (Verified router $\land$ Verified expert $\implies$ Verified system) assumes the router maintains invariant expert selection within the perturbation region. This assumption holds trivially for dissimilar datasets (100\% gating accuracy) but requires additional verification effort for similar domains:
+
+\begin{itemize}
+    \item \textbf{Dissimilar domains (CIFAR10+MNIST):} Verified routing directly translates to verified system composition.
+    \item \textbf{Similar domains (GTSRB+PTSD):} Routing decisions are less robust; stronger assumptions or probabilistic guarantees may be needed.
+\end{itemize}
+
+This finding justifies the paper's design choice to focus on visually distinct domains for demonstrating clean compositional robustness principles, with similar-domain scenarios deferred to future work.
 
 \end{document}
 

@@ -68,12 +68,11 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                  train_balance_losses, test_balance_losses,
                  train_gating_losses, test_gating_losses,
                  train_gating_accs, test_gating_accs,
-                 test_gtsrb_accs, test_cifar10_accs, test_mnist_accs,
-                 plot_epochs, plot_test_start_epoch, plot_test_freq, output_dir,
+                 per_dataset_accs_history=None, epochs=0, test_start_epoch=0, test_frequency=1, output_dir='',
                  meta_moe=False, model_arch='', adv_training=False,
-                 best_train_acc=0.0, best_test_acc=0.0, adv_test_acc=None, dataset_name=''):
-    train_epochs = list(range(plot_epochs))
-    test_epochs = list(range(plot_test_start_epoch, plot_epochs, plot_test_freq))
+                 best_train_acc=0.0, best_test_acc=0.0, adv_test_acc=None, dataset_name='', datasets=None):
+    train_epochs = list(range(epochs))
+    test_epochs = list(range(test_start_epoch, epochs, test_frequency))
 
     if meta_moe:
         fig, axes = plt.subplots(5, 2, figsize=(12, 15))
@@ -125,20 +124,39 @@ def plot_metrics(train_losses, test_losses, train_accs, test_accs,
                        verticalalignment='bottom',
                        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
-        # Per-Meta-Class Accuracy
-        axes[2, 0].plot(test_epochs[:len(test_cifar10_accs)], test_cifar10_accs, label='CIFAR10 Test Accuracy')
-        axes[2, 0].set_xlabel('Epoch')
-        axes[2, 0].set_ylabel('Accuracy')
-        axes[2, 0].set_title('CIFAR10 Test Accuracy (Expert 0)')
-        axes[2, 0].legend()
-        axes[2, 0].grid(True)
+        # Per-Meta-Class Accuracy - dynamically show actual datasets
+        if per_dataset_accs_history is None:
+            per_dataset_accs_history = {}
 
-        axes[2, 1].plot(test_epochs[:len(test_mnist_accs)], test_mnist_accs, label='MNIST Test Accuracy')
-        axes[2, 1].set_xlabel('Epoch')
-        axes[2, 1].set_ylabel('Accuracy')
-        axes[2, 1].set_title('MNIST Test Accuracy (Expert 1)')
-        axes[2, 1].legend()
-        axes[2, 1].grid(True)
+        # Determine which datasets to plot
+        if datasets:
+            plot_datasets = datasets[:2]  # Plot up to 2 datasets
+        else:
+            plot_datasets = list(per_dataset_accs_history.keys())[:2] if per_dataset_accs_history else []
+
+        # Plot first dataset on axes[2, 0]
+        if len(plot_datasets) > 0:
+            dataset_name_0 = plot_datasets[0]
+            accs_0 = per_dataset_accs_history.get(dataset_name_0, [])
+            if accs_0:
+                axes[2, 0].plot(test_epochs[:len(accs_0)], accs_0, label=f'{dataset_name_0} Test Accuracy')
+            axes[2, 0].set_xlabel('Epoch')
+            axes[2, 0].set_ylabel('Accuracy')
+            axes[2, 0].set_title(f'{dataset_name_0} Test Accuracy (Expert 0)')
+            axes[2, 0].legend()
+            axes[2, 0].grid(True)
+
+        # Plot second dataset on axes[2, 1]
+        if len(plot_datasets) > 1:
+            dataset_name_1 = plot_datasets[1]
+            accs_1 = per_dataset_accs_history.get(dataset_name_1, [])
+            if accs_1:
+                axes[2, 1].plot(test_epochs[:len(accs_1)], accs_1, label=f'{dataset_name_1} Test Accuracy')
+            axes[2, 1].set_xlabel('Epoch')
+            axes[2, 1].set_ylabel('Accuracy')
+            axes[2, 1].set_title(f'{dataset_name_1} Test Accuracy (Expert 1)')
+            axes[2, 1].legend()
+            axes[2, 1].grid(True)
 
         # axes[2, 2].plot(test_epochs[:len(test_tsrd_accs)], test_tsrd_accs, label='TSRD Test Accuracy')
         # axes[2, 2].set_xlabel('Epoch')
