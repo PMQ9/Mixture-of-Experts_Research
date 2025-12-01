@@ -11,6 +11,7 @@
 \usepackage{multirow}
 \usepackage{algpseudocode}
 \usepackage{xcolor}
+\usepackage{microtype}
 \usepackage[margin=1in]{geometry}
 
 % Define theorem environments
@@ -35,7 +36,7 @@ Vanderbilt University \\
 % ABSTRACT 
 %==============================================================================
 \begin{abstract}
-Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet the interaction between routing stability and expert robustness in heterogeneous MoEs remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and system scale exceeds current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction).
+Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet the interaction between routing stability and expert robustness in heterogeneous MoEs remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and model scale overwhelms current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction).
 
 Empirically, we show that expert robustness dominates system behavior (13.1 percentage point improvement with adversarial training) while router training has negligible impact ($<$0.1\%) for dissimilar domains. Verified routers achieve 100\% certified accuracy at practical threat models. These results establish a principled path toward scalable, formally verified modular AI.
 \end{abstract}
@@ -45,7 +46,7 @@ Empirically, we show that expert robustness dominates system behavior (13.1 perc
 %==============================================================================
 \section{Introduction}
 
-Formal verification of neural networks provides provable robustness guarantees critical for safety-critical deployment. However, verifying Mixture-of-Experts (MoE) systems poses unique challenges: dynamic routing creates input-dependent computation paths, and the scale of typical MoEs exceeds the capacity of current complete verifiers like $\alpha$--$\beta$-CROWN.
+Formal verification of neural networks provides provable robustness guarantees critical for safety-critical deployment. However, verifying Mixture-of-Experts (MoE) systems poses unique challenges: dynamic routing creates input-dependent computation paths, and the scale of standard MoEs exceeds the capacity of current complete verifiers like $\alpha$--$\beta$-CROWN. To make verification tractable, we treat routing and expert prediction as separable subproblems and show that their guarantees compose cleanly.
 
 We address this challenge through a \textbf{compositional verification} approach. Our central result is:
 
@@ -80,7 +81,7 @@ A \textit{heterogeneous MoE} combines domain-specific experts (potentially with 
 \paragraph{Research Gap.} Prior work addresses homogeneous MoE scalability or monolithic neural network verification. We provide the first compositional verification framework for heterogeneous MoE systems, bridging modular architecture design with formal robustness guarantees.
 
 %==============================================================================
-% 3. COMPOSITIONAL VERIFICATION FRAMEWORK - REVISED: theorem emphasis
+% 3. COMPOSITIONAL VERIFICATION FRAMEWORK
 %==============================================================================
 \section{Compositional Verification Framework}
 
@@ -99,14 +100,14 @@ $m^* = \arg\max_i \mathcal{G}_i(x)$.
 If
 \[
 \forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^*
-%\quad\text{(router stability)}
-\text{(router stability)}
+\quad\text{(router stability)}
+% \text{(router stability)}
 \]
 and
 \[
 \forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y
-% \quad\text{(expert robustness),}
-\text{(expert robustness),}
+\quad\text{(expert robustness),}
+% \text{(expert robustness)}
 \]
 then the MoE is $\varepsilon$-robust at $x$.
 \end{theorem}
@@ -163,7 +164,7 @@ Robust (RT) & 100 & 100 & 100 \\
 \label{tab:router}
 \end{table}
 
-\textbf{Key Finding:} Routers achieve high formal certification even without adversarial training at practical $\varepsilon$. The router achieves high certified accuracy because CIFAR-10 and MNIST lie on well-separated data manifolds, giving the router natural decision margins far exceeding $\varepsilon$. The router's empirical adversarial accuracy ($\sim$35\%) differs from its (100\%) certified accuracy because heuristic attacks explore only local gradient directions, while certification reasons about all perturbations within $B_{\varepsilon}(x)$. This reflects the distinction between heuristic attack success and worst-case guarantees: PGD finds \textit{some} adversarial examples, while formal verification proves \textit{none exist} that change routing.
+\textbf{Key Finding:} Routers achieve high formal certification even without adversarial training at practical $\varepsilon$. The router achieves high certified accuracy because CIFAR-10 and MNIST lie on well-separated manifolds, yielding large decision margins far exceeding $\varepsilon$. The router's empirical adversarial accuracy ($\sim$35\%) differs from its (100\%) certified accuracy because heuristic attacks explore limited local gradient directions, while certification reasons about all perturbations within $B_{\varepsilon}(x)$. This reflects the distinction between heuristic attack success and worst-case guarantees: PGD finds \textit{some} adversarial examples, while formal verification proves \textit{none exist} that change routing.
 
 \subsection{Expert Verification Requires Robust Training}
 
@@ -186,7 +187,7 @@ Robust (RT) & 100 & 100 & 100 \\
 \label{tab:expert}
 \end{table}
 
-\textbf{Key Finding:} Robust training is a \textit{prerequisite} for verifiability, not merely beneficial. Non-robust CIFAR-10 experts produce highly irregular decision boundaries that yield loose CROWN bounds and universal verification failure. Adversarial training smooths boundaries, enabling tractable formal analysis.
+\textbf{Key Finding:} Robust training is a \textit{prerequisite} for verifiability, not merely beneficial. Non-robust CIFAR-10 experts produce highly irregular decision boundaries, which lead to loose CROWN bounds and universal verification failure. Adversarial training smooths boundaries, enabling tractable formal analysis.
 
 \subsection{Expert Robustness Dominates System Behavior}
 
@@ -210,7 +211,7 @@ Both Experts NRT & \textbf{91.32} & 28.78 \\
 
 All configurations achieve \textbf{100\% routing accuracy} (clean and adversarial), validating the compositional property: the router acts as a deterministic switch, accurately transferring expert robustness to the system.
 
-\textbf{Practical Implication:} For dissimilar domains, Router adversarial training can be omitted (4$\times$ speedup, 968s vs 4107s) and focus resources on expert robustness.
+\textbf{Practical Implication:} For dissimilar domains, router adversarial training can be omitted (4$\times$ speedup, 968s vs 4107s) and focus resources on expert robustness.
 
 \subsection{Scalability}
 
@@ -222,7 +223,7 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 \section{Discussion and Limitations}
 \label{sec:limitations}
 
-\paragraph{When Does Compositional Verification Apply?} The framework requires router stability within $B_\varepsilon(x)$. For dissimilar domains (CIFAR-10 vs MNIST), routers learn large decision margins enabling easy certification. For similar domains (GTSRB vs PTSD traffic signs), routing accuracy degrades to 93\% and system adversarial accuracy drops 12\% (Appendix~\ref{app:similar_domains}). Similar domains may require stronger router training or probabilistic certification; otherwise compositional guarantees degrade.
+\paragraph{When Does Compositional Verification Apply?} The framework requires router stability within $B_\varepsilon(x)$. For dissimilar domains (CIFAR-10 vs MNIST), routers learn large decision margins enabling easy certification. For similar domains (e.g., GTSRB vs PTSD traffic signs), routing accuracy degrades to 93\%, and compositional guarantees degrade unless the router achieves sufficiently large margins; this may require stronger adversarial training or probabilistic certification.
 
 \paragraph{Architecture Scope.} Our verification-compatible CNNs (96K parameters) demonstrate the framework but limit expressiveness. Scaling to Transformers faces verifier memory constraints. Promising directions include verification-aware architecture search and combining compositional decomposition with randomized smoothing for probabilistic certificates on larger models.
 
@@ -237,7 +238,7 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 
 We establish that MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness. This decomposition achieves 20$\times$ verification speedup and enables incremental expert integration.
 
-Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are incompatible with sound verification at practical scales.
+Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are generally incompatible with sound verification at practical scales.
 
 These results demonstrate that compositional design enables tractable formal verification of modular AI systems, advancing the path toward verifiable, safety-critical deployment.
 
@@ -247,7 +248,8 @@ Future work includes extending compositional guarantees to top-$k$ routing and l
 %==============================================================================
 % REFERENCES
 %==============================================================================
-\bibliographystyle{plain}
+%\bibliographystyle{plain}
+\bibliographystyle{icml2026}
 \begin{thebibliography}{12}
 
 \bibitem{jacobs1991}
