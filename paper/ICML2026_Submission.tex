@@ -92,9 +92,9 @@ Unlike homogeneous MoEs where experts share structure and training distribution,
 
 \paragraph{Contributions.}
 \begin{enumerate}
-    \item \textbf{Compositional Verification Framework for Heterogeneous MoE:} We formalize conditions under which heterogeneous MoE robustness decomposes into router stability and expert robustness, enabling \textbf{20$\times$ verification speedup} and incremental expert integration without re-verifying the full system.
+    \item \textbf{Compositional Verification Framework for Heterogeneous MoE:} \textbf{20$\times$ verification speedup} is achieved by formalizing conditions under which heterogeneous MoE robustness decomposes into router stability and expert robustness, enabling incremental expert integration without re-verifying the full system.
 
-    \item \textbf{Expert Dominance Finding:} In heterogeneous MoE, expert training determines system robustness (13.1\% adversarial accuracy difference); router adversarial training has negligible impact ($<$0.1\%) for visually dissimilar domains, enabling 4$\times$ training speedup.
+    \item \textbf{Expert Dominance Finding:} \textbf{13.1 percentage point} adversarial accuracy improvement stems from expert training, which determines system robustness; router adversarial training has negligible impact ($<$0.1\%) for visually dissimilar domains, enabling \textbf{4$\times$ training speedup}.
 
     \item \textbf{Verification-Aware Design:} We identify architectural requirements for tractable heterogeneous MoE verification and demonstrate that adversarial training is a \textit{prerequisite} for formal verifiability.
 \end{enumerate}
@@ -248,11 +248,11 @@ Both Experts NRT & \textbf{91.32} & 28.78 \\
 \label{tab:moe}
 \end{table}
 
-Table~\ref{tab:moe} shows that expert training dominates system robustness: RT experts improve adversarial accuracy by 13.15 percentage points, while router training contributes $<$0.1\%. All configurations achieve 100\% routing accuracy, validating the compositional property. \textbf{Practical implication:} for dissimilar domains, router adversarial training can be omitted (4$\times$ speedup).
+Table~\ref{tab:moe} shows that expert training dominates system robustness: \textbf{13.15 percentage point} adversarial accuracy improvement from RT experts, while router training contributes $<$0.1\%. All configurations achieve 100\% routing accuracy, validating the compositional property. \textbf{Practical implication:} \textbf{4$\times$ training speedup} is achieved by omitting router adversarial training for dissimilar domains.
 
 \subsection{Scalability}
 
-Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M full MoE $\to$ 96K largest component) and \textbf{4.6s average verification time} per sample at practical $\varepsilon$. New experts integrate by verifying only the new component---existing verifications remain valid. Training efficiency improves 16.7\% for 3-expert systems via frozen-expert router fine-tuning.
+\textbf{20$\times$ parameter reduction} (2M full MoE $\to$ 96K largest component) and \textbf{4.6s average verification time} per sample at practical $\varepsilon$ are achieved through compositional verification. New experts integrate by verifying only the new component---existing verifications remain valid. \textbf{16.7\% training efficiency improvement} is achieved for 3-expert systems via frozen-expert router fine-tuning.
 
 %==============================================================================
 % 5. DISCUSSION AND LIMITATIONS
@@ -273,7 +273,7 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 
 We establish that heterogeneous MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness.
 
-Our experiments reveal that expert robustness dominates system behavior (13.1\% accuracy difference) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is a prerequisite for formal verifiability---non-robust components produce decision boundaries incompatible with sound verification.
+Our experiments reveal \textbf{13.1 percentage point} accuracy improvement from expert robustness, which dominates system behavior, while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is a prerequisite for formal verifiability---non-robust components produce decision boundaries incompatible with sound verification.
 
 These results demonstrate that compositional design enables tractable formal verification of modular AI systems. Future work includes extending guarantees to top-$k$ routing and scaling to transformer-based architectures.
 
