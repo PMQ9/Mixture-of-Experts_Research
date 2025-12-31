@@ -137,7 +137,10 @@ We now formalize the compositional robustness guarantee.
 
 \begin{theorem}[Compositional Robustness]
 \label{thm:compositional}
-Let $\mathrm{MoE} = (\mathcal{G}, \{E_i\})$ use top-1 routing and let
+The robustness of a heterogeneous MoE system decomposes into two independently verifiable conditions: router stability (expert selection invariance) and expert robustness (correct classification within the perturbation region).
+
+\smallskip
+\noindent\textbf{Formal Statement.} Let $\mathrm{MoE} = (\mathcal{G}, \{E_i\})$ use top-1 routing and let
 $m^* = \arg\max_i \mathcal{G}_i(x)$.
 If
 \begin{equation}
@@ -151,10 +154,10 @@ then the MoE is $\varepsilon$-robust at $x$.
 \end{theorem}
 
 \paragraph{Intuition.}
-The router partitions the input space into disjoint expert regions; if these partitions are stable under perturbation and the selected expert is robust within its region, the entire system inherits robustness.
+The router partitions the input space into disjoint expert regions. If these partitions are \textit{stable}---meaning the router satisfies $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$, so no adversarial perturbation can alter expert selection---and the selected expert maintains correct classification throughout $B_\varepsilon(x)$, then the composed system inherits robustness without requiring monolithic verification.
 
-\begin{proof}
-For any $x' \in B_\varepsilon(x)$: router stability guarantees $\arg\max_i \mathcal{G}_i(x') = m^*$, so expert $E_{m^*}$ processes $x'$. Expert robustness guarantees $\arg\max E_{m^*}(x') = y$. Since MoE output depends solely on the selected expert's prediction, the system output remains $y$ for all $x' \in B_\varepsilon(x)$.
+\begin{proof}[Proof Sketch]
+Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation. By the stability condition~(1), the router selects expert $m^*$ for all inputs in $B_\varepsilon(x)$, hence $\mathrm{MoE}(x') = E_{m^*}(x')$. By the robustness condition~(2), expert $E_{m^*}$ correctly classifies all such perturbations: $\arg\max E_{m^*}(x') = y$. Since the MoE output is determined solely by the selected expert, we have $\arg\max \mathrm{MoE}(x') = y$ for all $x' \in B_\varepsilon(x)$, establishing $\varepsilon$-robustness. Full proof in Appendix~\ref{app:proof}.
 \end{proof}
 
 \begin{remark}[Top-1 Requirement]
@@ -395,6 +398,44 @@ H.~Zhang, H.~Chen, C.~Xiao, S.~Gowal, R.~Stanforth, B.~Li, D.~Boning, and C.-J. 
 \label{app:similar_domains}
 
 GTSRB + PTSD (both traffic sign datasets): routing accuracy degrades to 93.17\% (vs 100\% for CIFAR-10 + MNIST), adversarial accuracy drops to 29.47\% (vs 41.59\%). The 6.83\% routing error propagates to 12.12\% system accuracy reduction, demonstrating that compositional guarantees depend on router margin geometry.
+
+\section{Proof of Theorem~\ref{thm:compositional}}
+\label{app:proof}
+
+\begin{proof}
+We prove that under the stated conditions, the MoE system is $\varepsilon$-robust at input $x$ with label $y$.
+
+\textbf{Setup.} Let $\mathrm{MoE} = (\mathcal{G}, \{E_i\}_{i=1}^N)$ be a heterogeneous mixture-of-experts with top-1 routing. For input $x$, let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert. The MoE prediction is defined as:
+\[
+\mathrm{MoE}(x) = E_{m^*}(x)
+\]
+
+\textbf{Goal.} Show that $\forall x' \in B_\varepsilon(x): \arg\max \mathrm{MoE}(x') = y$.
+
+\textbf{Proof.} Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation satisfying $\|x' - x\|_\infty \leq \varepsilon$.
+
+\textit{Step 1 (Router Stability).} By assumption~(1):
+\[
+\forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^*
+\]
+Thus, the router selects expert $E_{m^*}$ for all perturbations in $B_\varepsilon(x)$. This implies:
+\[
+\mathrm{MoE}(x') = E_{m^*}(x') \quad \forall x' \in B_\varepsilon(x)
+\]
+
+\textit{Step 2 (Expert Robustness).} By assumption~(2):
+\[
+\forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y
+\]
+The selected expert correctly classifies all perturbations within the $\varepsilon$-ball.
+
+\textit{Step 3 (Composition).} Combining Steps 1 and 2:
+\[
+\arg\max \mathrm{MoE}(x') = \arg\max E_{m^*}(x') = y \quad \forall x' \in B_\varepsilon(x)
+\]
+
+Therefore, the MoE system maintains correct classification for all inputs in $B_\varepsilon(x)$, satisfying the definition of $\varepsilon$-robustness.
+\end{proof}
 
 \section{Hardware and Software}
 \label{app:hardware}
