@@ -176,7 +176,7 @@ We use $\alpha$,$\beta$-CROWN for component verification:
 
 \subsection{Verification-Aware Architecture}
 
-Both router and experts use \textbf{VerifiableCNN} (96K parameters) designed for $\alpha$,$\beta$-CROWN: average pooling (linear, unlike max pooling which introduces additional branching), no BatchNorm (folded into weights), minimal operators. Training uses PGD adversarial training ($\varepsilon = 8/255$) for robust variants. Full specifications in Appendix~\ref{app:architecture}.
+Both router and experts use \textbf{VerifiableCNN} (96K parameters) designed for $\alpha$,$\beta$-CROWN: average pooling (linear, unlike max pooling which introduces additional branching), no BatchNorm (folded into weights), and minimal operators. Training uses PGD adversarial training ($\varepsilon = 8/255$) for robust variants. Full specifications in Appendix~\ref{app:architecture}.
 
 %==============================================================================
 % 4. EXPERIMENTS
@@ -376,23 +376,6 @@ H.~Zhang, H.~Chen, C.~Xiao, S.~Gowal, R.~Stanforth, B.~Li, D.~Boning, and C.-J. 
 \newpage
 \appendix
 
-\section{Training Configuration}
-\label{app:hyperparams}
-
-\textbf{Experts:} Adam optimizer, learning rate $10^{-3}$, 200 epochs, batch size 128. RT variant: PGD adversarial training ($\varepsilon = 8/255$, 7 steps, step size $2/255$).
-
-\textbf{Router:} Adam optimizer, learning rate $10^{-3}$, 50 epochs on frozen experts. Same PGD configuration for RT variant.
-
-\section{Architecture}
-\label{app:architecture}
-
-\textbf{VerifiableCNN (96K parameters):} 4 convolutional blocks ($3 \to 20 \to 28 \to 40 \to 56$ channels), $3 \times 3$ kernels, ReLU activations, average pooling. Global average pooling $\to$ FC(56, 128) $\to$ ReLU $\to$ FC(128, $C$). No BatchNorm layers (folded into convolutional weights for ONNX export).
-
-\section{Similar Domain Experiments}
-\label{app:similar_domains}
-
-GTSRB + PTSD (both traffic sign datasets): routing accuracy degrades to 93.17\% (vs 100\% for CIFAR-10 + MNIST), adversarial accuracy drops to 29.47\% (vs 41.59\%). The 6.83\% routing error propagates to 12.12\% system accuracy reduction, demonstrating that compositional guarantees depend on router margin geometry.
-
 \section{Proof of Theorem~\ref{thm:compositional}}
 \label{app:proof}
 
@@ -431,9 +414,18 @@ The selected expert correctly classifies all perturbations within the $\varepsil
 Therefore, the MoE system maintains correct classification for all inputs in $B_\varepsilon(x)$, satisfying the definition of $\varepsilon$-robustness.
 \end{proof}
 
-\section{Hardware and Software}
-\label{app:hardware}
+\section{Architecture and Training}
+\label{app:architecture}
 
-Intel i7-14700K CPU, NVIDIA RTX 4060 8GB GPU, 64GB RAM. PyTorch 2.1, $\alpha$,$\beta$-CROWN (December 2024 release), Gurobi 11.0 LP solver. Verification timeout: 300 seconds per sample.
+\textbf{VerifiableCNN (96K parameters):} 4 convolutional blocks ($3 \to 20 \to 28 \to 40 \to 56$ channels), $3 \times 3$ kernels, ReLU activations, average pooling. Global average pooling $\to$ FC(56, 128) $\to$ ReLU $\to$ FC(128, $C$). No BatchNorm layers (folded into convolutional weights for ONNX export).
+
+\textbf{Training:} Adam optimizer, learning rate $10^{-3}$, batch size 128. Experts: 200 epochs; Router: 50 epochs on frozen experts. RT variants: PGD adversarial training ($\varepsilon = 8/255$, 7 steps, step size $2/255$).
+
+\textbf{Hardware:} Intel i7-14700K CPU, NVIDIA RTX 4060 8GB GPU, 64GB RAM. PyTorch 2.1, $\alpha$,$\beta$-CROWN (December 2024 release), Gurobi 11.0 LP solver. Verification timeout: 300 seconds per sample.
+
+\section{Similar Domain Experiments}
+\label{app:similar_domains}
+
+GTSRB + PTSD (both traffic sign datasets): routing accuracy degrades to 93.17\% (vs 100\% for CIFAR-10 + MNIST), adversarial accuracy drops to 29.47\% (vs 41.59\%). The 6.83\% routing error propagates to 12.12\% system accuracy reduction, demonstrating that compositional guarantees depend on router margin geometry.
 
 \end{document}
