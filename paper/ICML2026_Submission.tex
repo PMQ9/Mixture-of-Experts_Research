@@ -1,54 +1,81 @@
+%%%%%%%% ICML 2026 SUBMISSION FILE %%%%%%%%%%%%%%%%%
+
 \documentclass{article}
 
-% ICML 2026 style (use official icml2026.sty when available)
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath,amsfonts,amssymb}
-\usepackage{amsthm}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{algorithm}
-\usepackage{multirow}
-\usepackage{algpseudocode}
-\usepackage{xcolor}
+% Recommended, but optional, packages for figures and better typesetting:
 \usepackage{microtype}
-\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs} % for professional tables
 
-% Define theorem environments
-\newtheorem{theorem}{Theorem}
-\newtheorem{remark}{Remark}
+% hyperref makes hyperlinks in the resulting PDF.
+\usepackage{hyperref}
 
-\title{Compositional Verification of Robust Mixture of experts Architectures}
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
 
-\author{
-Connor Pham \\
-Vanderbilt University \\
-\texttt{quang.m.pham@vanderbilt.edu}
-}
+% Use the following line for the initial blind version submitted for review:
+\usepackage{icml2026}
 
-\date{}
+% If accepted, instead use the following line for the camera-ready submission:
+% \usepackage[accepted]{icml2026}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{multirow}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THEOREMS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Compositional Verification of Robust MoE Architectures}
 
 \begin{document}
 
-\maketitle
+\twocolumn[
+  \icmltitle{Compositional Verification of Robust Mixture-of-Experts Architectures}
+
+  % It is OKAY to include author information, even for blind submissions:
+  % the style file will automatically remove it for you unless you've provided
+  % the [accepted] option to the icml2026 package.
+
+  \begin{icmlauthorlist}
+    \icmlauthor{Anonymous Author(s)}{}
+  \end{icmlauthorlist}
+
+  % You may provide any keywords that you find helpful for describing your
+  % paper; these are used to populate the "keywords" metadata in the PDF but
+  % will not be shown in the document
+  \icmlkeywords{Neural Network Verification, Mixture-of-Experts, Adversarial Robustness, Compositional Verification}
+
+  \vskip 0.3in
+]
+
+% This command actually creates the footnote in the first column
+% listing the affiliations and the copyright notice.
+\printAffiliationsAndNotice{}
 
 %==============================================================================
-% ABSTRACT 
+% ABSTRACT
 %==============================================================================
 \begin{abstract}
-Mixture of experts (MoE) architectures offer modularity and scalability, yet the interaction between routing stability and expert robustness in heterogeneous MoEs remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and model scale overwhelms current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction).
-
-Empirically, we show that expert robustness dominates system behavior (13.1 percentage point improvement with adversarial training) while router training has negligible impact ($<$0.1\%) for dissimilar domains. Verified routers achieve 100\% certified accuracy at practical threat models. These results establish a principled path toward scalable, formally verified modular AI.
+Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet the interaction between routing stability and expert robustness in heterogeneous MoEs remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and model scale overwhelms current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction). Empirically, we show that expert robustness dominates system behavior (13.1 percentage point improvement with adversarial training) while router training has negligible impact ($<$0.1\%) for dissimilar domains. Verified routers achieve 100\% certified accuracy at practical threat models. These results establish a principled path toward scalable, formally verified modular AI.
 \end{abstract}
 
 %==============================================================================
-% 1. INTRODUCTION 
+% 1. INTRODUCTION
 %==============================================================================
 \section{Introduction}
 
-Mixture of expert (MoE) models scale capacity by routing inputs to a subset of expert networks via a learned gating function, but this conditional execution yields input-dependent architectures with intertwined discrete and continuous behavior. Formal neural network verification which provides sound guarantees over all inputs in a specified set already faces scalability challenges for standard networks. MoE architectures further induce a combinatorial explosion from expert selection and routing boundaries. Existing verifiers either fail to scale or rely on coarse relaxations that produce vacuous guarantees. We address this challenge by exploiting the structured partitioning of the input space induced by MoE gating, enabling sound and scalable verification through explicit reasoning over routing regions and expert-level decoupling.
+Mixture-of-Experts (MoE) models scale capacity by routing inputs to a subset of expert networks via a learned gating function, but this conditional execution yields input-dependent architectures with intertwined discrete and continuous behavior. Formal neural network verification, which provides sound guarantees over all inputs in a specified set, already faces scalability challenges for standard networks. MoE architectures further induce a combinatorial explosion from expert selection and routing boundaries. Existing verifiers either fail to scale or rely on coarse relaxations that produce vacuous guarantees. We address this challenge by exploiting the structured partitioning of the input space induced by MoE gating, enabling sound and scalable verification through explicit reasoning over routing regions and expert-level decoupling.
 
-Formal verification of neural networks provides provable robustness guarantees for safety-critical deployment. However, verifying Mixture of experts (MoE) systems poses unique challenges: dynamic routing creates input-dependent computation paths, and the scale of standard MoEs exceeds the capacity of current complete verifiers like $\alpha$--$\beta$-CROWN. Complete neural network verification is NP-complete \cite{katz2017}, with complexity scaling exponentially in network size. While state-of-the-art verifiers like $\alpha$--$\beta$-CROWN can handle networks up to a few million parameters on specialized benchmarks \cite{brix2024}, typical MoE systems with hundreds of millions to billions of parameters remain fundamentally intractable. To make verification tractable, we treat routing and expert prediction as separable subproblems and show that their guarantees compose cleanly.
+Formal verification of neural networks provides provable robustness guarantees for safety-critical deployment. However, verifying MoE systems poses unique challenges: dynamic routing creates input-dependent computation paths, and the scale of standard MoEs exceeds the capacity of current complete verifiers like $\alpha$,$\beta$-CROWN. Complete neural network verification is NP-complete \citep{katz2017}, with complexity scaling exponentially in network size. While state-of-the-art verifiers like $\alpha$,$\beta$-CROWN can handle networks up to a few million parameters on specialized benchmarks \citep{brix2024}, typical MoE systems with hundreds of millions to billions of parameters remain fundamentally intractable. To make verification tractable, we treat routing and expert prediction as separable subproblems and show that their guarantees compose cleanly.
 
 We address this challenge through a \textbf{compositional verification} approach. Our central result is:
 
@@ -62,23 +89,23 @@ A \textit{heterogeneous MoE} combines domain-specific experts (potentially with 
 
 \paragraph{Contributions.}
 \begin{enumerate}
-    \item \textbf{Compositional Verification Framework:} We formalize conditions under which MoE robustness decomposes into router stability and experts robustness, enabling \textbf{20$\times$ verification speedup} and incremental expert integration without re-verifying the full system.
-    
+    \item \textbf{Compositional Verification Framework:} We formalize conditions under which MoE robustness decomposes into router stability and expert robustness, enabling \textbf{20$\times$ verification speedup} and incremental expert integration without re-verifying the full system.
+
     \item \textbf{Expert Dominance Finding:} Expert training determines system robustness (13.1\% adversarial accuracy difference); router adversarial training has negligible impact ($<$0.1\%) for visually dissimilar domains, enabling 4$\times$ training speedup.
-    
+
     \item \textbf{Verification-Aware Design:} We identify architectural requirements for tractable MoE verification and demonstrate that adversarial training is a \textit{prerequisite} for formal verifiability.
 \end{enumerate}
 
 %==============================================================================
-% 2. BACKGROUND AND RELATED WORK 
+% 2. BACKGROUND AND RELATED WORK
 %==============================================================================
 \section{Background and Related Work}
 
-\paragraph{Mixture of experts.} The MoE paradigm \cite{jacobs1991} decomposes problems into specialized subtasks via gating networks. Shazeer et al.~\cite{shazeer2017} scaled this through sparse top-$k$ routing, and Riquelme et al.~\cite{riquelme2021} extended MoE to vision. Recent work explores heterogeneous compositions \cite{fedus2023} and modular architectures \cite{pfeiffer2023}, but formal robustness properties remain unaddressed.
+\paragraph{Mixture-of-Experts.} The MoE paradigm \citep{jacobs1991} decomposes problems into specialized subtasks via gating networks. \citet{shazeer2017} scaled this through sparse top-$k$ routing, and \citet{riquelme2021} extended MoE to vision. Recent work explores heterogeneous compositions \citep{fedus2022} and modular architectures \citep{pfeiffer2023}, but formal robustness properties remain unaddressed.
 
-\paragraph{Neural Network Verification.} Complete verifiers like $\alpha$--$\beta$-CROWN \cite{wang2021} provide sound robustness certificates via bound propagation and branch-and-bound. Certified training methods (CROWN-IBP \cite{zhang2020}, SABR \cite{mueller2023}) improve verifiability by training with formal bounds. Randomized smoothing \cite{cohen2019} offers probabilistic certificates for larger models. However, all approaches face scalability limits with multi-million parameter systems.
+\paragraph{Neural Network Verification.} Complete verifiers like $\alpha$,$\beta$-CROWN \citep{wang2021} provide sound robustness certificates via bound propagation and branch-and-bound. Certified training methods (CROWN-IBP \citep{zhang2020}, SABR \citep{mueller2023}) improve verifiability by training with formal bounds. Randomized smoothing \citep{cohen2019} offers probabilistic certificates for larger models. However, all approaches face scalability limits with multi-million parameter systems.
 
-\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \cite{henzinger1998}. For neural networks, modular verification remains nascent. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
+\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \citep{henzinger1998}. For neural networks, modular verification remains nascent. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
 
 \paragraph{Research Gap.} Prior work addresses homogeneous MoE scalability or monolithic neural network verification. We provide the first compositional verification framework for heterogeneous MoE systems, bridging modular architecture design with formal robustness guarantees.
 
@@ -95,7 +122,7 @@ A \textit{heterogeneous MoE} combines domain-specific experts (potentially with 
     \item \textbf{Router Stability:} The router is stable at $x$ if expert selection remains unchanged for all $x' \in B_\varepsilon(x)$, i.e., $\arg\max_i \mathcal{G}_i(x') = \arg\max_i \mathcal{G}_i(x)$.
     \item \textbf{Certified vs.\ Adversarial Accuracy:} Certified accuracy counts inputs with formal robustness proofs; adversarial accuracy counts inputs where heuristic attacks (e.g., PGD) fail. Certified accuracy $\leq$ adversarial accuracy, as certification is strictly stronger.
 \end{itemize}
-We also distinguish training regimes: \textbf{Robust Training (RT)} uses adversarial examples during training \cite{madry2018}; \textbf{Non-Robust Training (NRT)} uses standard supervised learning without adversarial augmentation.
+We also distinguish training regimes: \textbf{Robust Training (RT)} uses adversarial examples during training \citep{madry2018}; \textbf{Non-Robust Training (NRT)} uses standard supervised learning without adversarial augmentation.
 
 \paragraph{Notation.} Let $x \in \mathbb{R}^{d}$ be an input with label $y$. We define the \textbf{$\ell_\infty$ perturbation ball} $B_\varepsilon(x) = \{x': \|x' - x\|_\infty \leq \varepsilon\}$, where $\|z\|_\infty = \max_i |z_i|$ bounds the maximum per-pixel change. For images with pixel values in $[0,1]$, $\varepsilon = 8/255 \approx 0.031$ represents imperceptible perturbations.
 
@@ -110,17 +137,13 @@ We now formalize the compositional robustness guarantee.
 Let $\mathrm{MoE} = (\mathcal{G}, \{E_i\})$ use top-1 routing and let
 $m^* = \arg\max_i \mathcal{G}_i(x)$.
 If
-\[
-\forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^*
-\quad\text{(router stability)}
-% \text{(router stability)}
-\]
+\begin{equation}
+\forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^* \;\text{(stability)}
+\end{equation}
 and
-\[
-\forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y
-\quad\text{(expert robustness),}
-% \text{(expert robustness)}
-\]
+\begin{equation}
+\forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y \;\text{(robustness),}
+\end{equation}
 then the MoE is $\varepsilon$-robust at $x$.
 \end{theorem}
 
@@ -139,7 +162,7 @@ Theorem~\ref{thm:compositional} requires top-1 routing. For top-$k$ routing ($k 
 
 \subsection{Verification Implementation}
 
-We use $\alpha$--$\beta$-CROWN for component verification:
+We use $\alpha$,$\beta$-CROWN for component verification:
 
 \textbf{Router Verification:} For input $x$ with selection $m^*$, verify $\mathcal{G}_{m^*}(x') - \mathcal{G}_j(x') > 0$ for all $j \neq m^*$ and $x' \in B_\varepsilon(x)$. This reduces to $N-1$ binary properties per input.
 
@@ -149,10 +172,10 @@ We use $\alpha$--$\beta$-CROWN for component verification:
 
 \subsection{Verification-Aware Architecture}
 
-Both router and experts use \textbf{VerifiableCNN} (96K parameters) designed for $\alpha$--$\beta$-CROWN: average pooling (linear, unlike max pooling which introduces additional branching), no BatchNorm (folded into weights), minimal operators. Training uses PGD adversarial training ($\varepsilon = 8/255$) for robust variants. Full specifications in Appendix~\ref{app:architecture}.
+Both router and experts use \textbf{VerifiableCNN} (96K parameters) designed for $\alpha$,$\beta$-CROWN: average pooling (linear, unlike max pooling which introduces additional branching), no BatchNorm (folded into weights), minimal operators. Training uses PGD adversarial training ($\varepsilon = 8/255$) for robust variants. Full specifications in Appendix~\ref{app:architecture}.
 
 %==============================================================================
-% 4. EXPERIMENTS 
+% 4. EXPERIMENTS
 %==============================================================================
 \section{Experiments}
 
@@ -160,13 +183,13 @@ We evaluate on CIFAR-10 and MNIST because their feature manifolds are nearly dis
 
 \subsection{Router Verification Enables Compositional Guarantees}
 
-\begin{table}[ht]
+\begin{table}[t]
 \centering
 \small
-\begin{tabular}{lccc}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-& \multicolumn{3}{c}{\textbf{Certified Routing Accuracy (\%)}} \\
-\textbf{Training} & $\varepsilon = 2/255$ & $\varepsilon = 4/255$ & $\varepsilon = 8/255$ \\
+& \multicolumn{3}{c}{\textbf{Certified Routing Acc.\ (\%)}} \\
+\textbf{Training} & $\epsilon{=}2/255$ & $\epsilon{=}4/255$ & $\epsilon{=}8/255$ \\
 \midrule
 Non-Robust (NRT) & 100 & 100 & 60 \\
 Robust (RT) & 100 & 100 & 100 \\
@@ -180,13 +203,13 @@ Robust (RT) & 100 & 100 & 100 \\
 
 \subsection{Expert Verification Requires Robust Training}
 
-\begin{table}[ht]
+\begin{table}[t]
 \centering
 \small
-\begin{tabular}{llccc}
+\begin{tabular}{@{}llccc@{}}
 \toprule
-& & \multicolumn{3}{c}{\textbf{Certified Robustness Accuracy (\%)}} \\
-\textbf{Expert} & \textbf{Training} & $\varepsilon = 2/255$ & $\varepsilon = 4/255$ & $\varepsilon = 8/255$ \\
+& & \multicolumn{3}{c}{\textbf{Certified Acc.\ (\%)}} \\
+\textbf{Expert} & \textbf{Train} & $\epsilon{=}2/255$ & $\epsilon{=}4/255$ & $\epsilon{=}8/255$ \\
 \midrule
 \multirow{2}{*}{CIFAR-10} & NRT & 0 & 0 & 0 \\
 & RT & 90 & 54 & 0 \\
@@ -203,21 +226,21 @@ Robust (RT) & 100 & 100 & 100 \\
 
 \subsection{Expert Robustness Dominates System Behavior}
 
-\begin{table}[ht]
+\begin{table}[t]
 \centering
 \small
-\begin{tabular}{lcc}
+\begin{tabular}{@{}lcc@{}}
 \toprule
-\textbf{Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
+\textbf{Configuration} & \textbf{Clean (\%)} & \textbf{Adv (\%)} \\
 \midrule
-Both experts RT & 87.98 & \textbf{41.93} \\
-Both experts NRT & \textbf{91.32} & 28.78 \\
+Both Experts RT & 87.98 & \textbf{41.93} \\
+Both Experts NRT & \textbf{91.32} & 28.78 \\
 \midrule
-\textit{Difference from expert config} & \textit{3.34} & \textit{13.15} \\
-\textit{Difference from router config} & \textit{$<$0.1} & \textit{$<$0.1} \\
+\textit{$\Delta$ from expert config} & \textit{3.34} & \textit{13.15} \\
+\textit{$\Delta$ from router config} & \textit{$<$0.1} & \textit{$<$0.1} \\
 \bottomrule
 \end{tabular}
-\caption{MoE compositional robustness (8 configurations $\times$ 5 runs). Expert configuration causes 13.15\% adversarial accuracy difference; router training (RT vs NRT) causes $<$0.1\% difference across all metrics.}
+\caption{MoE compositional robustness (8 configurations $\times$ 5 runs). Expert configuration causes 13.15\% adversarial accuracy difference; router training (RT vs NRT) causes $<$0.1\% difference.}
 \label{tab:moe}
 \end{table}
 
@@ -256,78 +279,79 @@ These results demonstrate that compositional design enables tractable formal ver
 
 Future work includes extending compositional guarantees to top-$k$ routing and larger transformer-based MoE systems.
 
-
 %==============================================================================
 % REFERENCES
 %==============================================================================
-%\bibliographystyle{plain}
-\bibliographystyle{icml2026}
-\begin{thebibliography}{12}
+% Note: Using inline thebibliography. For .bib file, replace with:
+% \bibliographystyle{icml2026}
+% \bibliography{references}
 
-\bibitem{jacobs1991}
-R.~A. Jacobs, M.~I. Jordan, S.~J. Nowlan, and G.~E. Hinton.
-\newblock Adaptive mixtures of local experts.
-\newblock {\em Neural Computation}, 3(1):79--87, 1991.
+\begin{thebibliography}{13}
 
-\bibitem{shazeer2017}
-N.~Shazeer et~al.
-\newblock Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.
-\newblock {\em ICLR}, 2017.
-
-\bibitem{riquelme2021}
-C.~Riquelme et~al.
-\newblock Scaling vision with sparse mixture of experts.
-\newblock {\em NeurIPS}, 2021.
-
-\bibitem{fedus2023}
-W.~Fedus, B.~Zoph, and N.~Shazeer.
-\newblock Switch transformers: Scaling to trillion parameter models.
-\newblock {\em JMLR}, 23(120):1--39, 2022.
-
-\bibitem{pfeiffer2023}
-J.~Pfeiffer et~al.
-\newblock Modular deep learning.
-\newblock {\em arXiv:2302.11529}, 2023.
-
-\bibitem{wang2021}
-S.~Wang et~al.
-\newblock Beta-CROWN: Efficient bound propagation with per-neuron split constraints.
-\newblock {\em NeurIPS}, 2021.
-
-\bibitem{zhang2020}
-H.~Zhang et~al.
-\newblock Towards stable and efficient training of verifiably robust neural networks.
-\newblock {\em ICLR}, 2020.
-
-\bibitem{mueller2023}
-M.~N. M\"uller et~al.
-\newblock Certified training: Small boxes are all you need.
-\newblock {\em ICLR}, 2023.
-
-\bibitem{cohen2019}
-J.~Cohen, E.~Rosenfeld, and Z.~Kolter.
-\newblock Certified adversarial robustness via randomized smoothing.
-\newblock {\em ICML}, 2019.
-
-\bibitem{henzinger1998}
-T.~A. Henzinger et~al.
-\newblock You assume, we guarantee: Methodology and case studies.
-\newblock {\em CAV}, 1998.
-
-\bibitem{madry2018}
-A.~Madry et~al.
-\newblock Towards deep learning models resistant to adversarial attacks.
-\newblock {\em ICLR}, 2018.
-
-\bibitem{katz2017}
-G.~Katz et~al.
-\newblock Reluplex: An efficient SMT solver for verifying deep neural networks.
-\newblock {\em CAV}, 2017.
-
-\bibitem{brix2024}
+\bibitem[Brix et~al.(2024)]{brix2024}
 C.~Brix, S.~Bak, T.~T. Johnson, and H.~Wu.
 \newblock The fifth international verification of neural networks competition (VNN-COMP 2024): Summary and results.
-\newblock {\em arXiv:2412.19985}, 2024.
+\newblock \emph{arXiv preprint arXiv:2412.19985}, 2024.
+
+\bibitem[Cohen et~al.(2019)]{cohen2019}
+J.~Cohen, E.~Rosenfeld, and Z.~Kolter.
+\newblock Certified adversarial robustness via randomized smoothing.
+\newblock In \emph{ICML}, 2019.
+
+\bibitem[Fedus et~al.(2022)]{fedus2022}
+W.~Fedus, B.~Zoph, and N.~Shazeer.
+\newblock Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity.
+\newblock \emph{JMLR}, 23(120):1--39, 2022.
+
+\bibitem[Henzinger et~al.(1998)]{henzinger1998}
+T.~A. Henzinger, S.~Qadeer, and S.~K. Rajamani.
+\newblock You assume, we guarantee: Methodology and case studies.
+\newblock In \emph{CAV}, 1998.
+
+\bibitem[Jacobs et~al.(1991)]{jacobs1991}
+R.~A. Jacobs, M.~I. Jordan, S.~J. Nowlan, and G.~E. Hinton.
+\newblock Adaptive mixtures of local experts.
+\newblock \emph{Neural Computation}, 3(1):79--87, 1991.
+
+\bibitem[Katz et~al.(2017)]{katz2017}
+G.~Katz, C.~Barrett, D.~L. Dill, K.~Julian, and M.~J. Kochenderfer.
+\newblock Reluplex: An efficient SMT solver for verifying deep neural networks.
+\newblock In \emph{CAV}, 2017.
+
+\bibitem[Madry et~al.(2018)]{madry2018}
+A.~Madry, A.~Makelov, L.~Schmidt, D.~Tsipras, and A.~Vladu.
+\newblock Towards deep learning models resistant to adversarial attacks.
+\newblock In \emph{ICLR}, 2018.
+
+\bibitem[M{\"u}ller et~al.(2023)]{mueller2023}
+M.~N. M{\"u}ller, F.~Fischer, C.~Staber, P.~Spreitzer, and M.~Vechev.
+\newblock Certified training: Small boxes are all you need.
+\newblock In \emph{ICLR}, 2023.
+
+\bibitem[Pfeiffer et~al.(2023)]{pfeiffer2023}
+J.~Pfeiffer, S.~Ruder, I.~Vuli{\'c}, and E.~Ponti.
+\newblock Modular deep learning.
+\newblock \emph{arXiv preprint arXiv:2302.11529}, 2023.
+
+\bibitem[Riquelme et~al.(2021)]{riquelme2021}
+C.~Riquelme, J.~Puigcerver, B.~Mustafa, M.~Neumann, R.~Jenatton, A.~Susano~Pinto, D.~Keysers, and N.~Houlsby.
+\newblock Scaling vision with sparse mixture of experts.
+\newblock In \emph{NeurIPS}, 2021.
+
+\bibitem[Shazeer et~al.(2017)]{shazeer2017}
+N.~Shazeer, A.~Mirhoseini, K.~Maziarz, A.~Davis, Q.~Le, G.~Hinton, and J.~Dean.
+\newblock Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.
+\newblock In \emph{ICLR}, 2017.
+
+\bibitem[Wang et~al.(2021)]{wang2021}
+S.~Wang, H.~Zhang, K.~Xu, X.~Lin, S.~Jana, C.-J. Hsieh, and J.~Z. Kolter.
+\newblock Beta-CROWN: Efficient bound propagation with per-neuron split constraints for neural network robustness verification.
+\newblock In \emph{NeurIPS}, 2021.
+
+\bibitem[Zhang et~al.(2020)]{zhang2020}
+H.~Zhang, H.~Chen, C.~Xiao, S.~Gowal, R.~Stanforth, B.~Li, D.~Boning, and C.-J. Hsieh.
+\newblock Towards stable and efficient training of verifiably robust neural networks.
+\newblock In \emph{ICLR}, 2020.
 
 \end{thebibliography}
 
@@ -340,23 +364,23 @@ C.~Brix, S.~Bak, T.~T. Johnson, and H.~Wu.
 \section{Training Configuration}
 \label{app:hyperparams}
 
-\textbf{Experts:} Adam, LR $10^{-3}$, 200 epochs, batch 128. RT: PGD ($\varepsilon = 8/255$, 7 steps, step $2/255$).
+\textbf{Experts:} Adam optimizer, learning rate $10^{-3}$, 200 epochs, batch size 128. RT variant: PGD adversarial training ($\varepsilon = 8/255$, 7 steps, step size $2/255$).
 
-\textbf{Router:} Adam, LR $10^{-3}$, 50 epochs on frozen experts. Same PGD for RT.
+\textbf{Router:} Adam optimizer, learning rate $10^{-3}$, 50 epochs on frozen experts. Same PGD configuration for RT variant.
 
 \section{Architecture}
 \label{app:architecture}
 
-\textbf{VerifiableCNN (96K params):} 4 conv blocks ($3 \to 20 \to 28 \to 40 \to 56$ channels), $3 \times 3$ kernels, ReLU, AvgPool. Global average pooling $\to$ FC(56, 128) $\to$ ReLU $\to$ FC(128, $C$). No BatchNorm (folded for ONNX).
+\textbf{VerifiableCNN (96K parameters):} 4 convolutional blocks ($3 \to 20 \to 28 \to 40 \to 56$ channels), $3 \times 3$ kernels, ReLU activations, average pooling. Global average pooling $\to$ FC(56, 128) $\to$ ReLU $\to$ FC(128, $C$). No BatchNorm layers (folded into convolutional weights for ONNX export).
 
 \section{Similar Domain Experiments}
 \label{app:similar_domains}
 
-GTSRB + PTSD (both traffic signs): routing accuracy degrades to 93.17\% (vs 100\% for CIFAR-10 + MNIST), adversarial accuracy drops to 29.47\% (vs 41.59\%). The 6.83\% routing error propagates to 12.12\% system accuracy reduction.
+GTSRB + PTSD (both traffic sign datasets): routing accuracy degrades to 93.17\% (vs 100\% for CIFAR-10 + MNIST), adversarial accuracy drops to 29.47\% (vs 41.59\%). The 6.83\% routing error propagates to 12.12\% system accuracy reduction, demonstrating that compositional guarantees depend on router margin geometry.
 
-\section{Hardware}
+\section{Hardware and Software}
 \label{app:hardware}
 
-Intel i7-14700K, RTX 4060 8GB, 64GB RAM. PyTorch 2.1, $\alpha$--$\beta$-CROWN (Dec 2024), Gurobi 11.0. Timeout: 300s/sample.
+Intel i7-14700K CPU, NVIDIA RTX 4060 8GB GPU, 64GB RAM. PyTorch 2.1, $\alpha$,$\beta$-CROWN (December 2024 release), Gurobi 11.0 LP solver. Verification timeout: 300 seconds per sample.
 
 \end{document}
