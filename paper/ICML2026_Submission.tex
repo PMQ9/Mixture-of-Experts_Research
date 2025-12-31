@@ -34,25 +34,28 @@
 
 % The \icmltitle you define below is probably too long as a header.
 % Therefore, a short form for the running title is supplied here:
-\icmltitlerunning{Compositional Verification of Robust MoE Architectures}
+\icmltitlerunning{Compositional Robustness Verification of Heterogeneous MoE}
 
 \begin{document}
 
 \twocolumn[
-  \icmltitle{Compositional Verification of Robust Mixture-of-Experts Architectures}
+  \icmltitle{Compositional Robustness Verification of Heterogeneous Mixture-of-Experts Architectures}
 
   % It is OKAY to include author information, even for blind submissions:
   % the style file will automatically remove it for you unless you've provided
   % the [accepted] option to the icml2026 package.
 
   \begin{icmlauthorlist}
-    \icmlauthor{Anonymous Author(s)}{}
+    \icmlauthor{Anonymous Author(s)}{anon}
   \end{icmlauthorlist}
+
+  \icmlaffiliation{anon}{Anonymous Institution}
+  \icmlcorrespondingauthor{Anonymous Author(s)}{anon@example.com}
 
   % You may provide any keywords that you find helpful for describing your
   % paper; these are used to populate the "keywords" metadata in the PDF but
   % will not be shown in the document
-  \icmlkeywords{Neural Network Verification, Mixture-of-Experts, Adversarial Robustness, Compositional Verification}
+  \icmlkeywords{Neural Network Verification, Heterogeneous Mixture-of-Experts, Adversarial Robustness, Compositional Verification}
 
   \vskip 0.3in
 ]
@@ -65,7 +68,7 @@
 % ABSTRACT
 %==============================================================================
 \begin{abstract}
-Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet the interaction between routing stability and expert robustness in heterogeneous MoEs remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and model scale overwhelms current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction). Empirically, we show that expert robustness dominates system behavior (13.1 percentage point improvement with adversarial training) while router training has negligible impact ($<$0.1\%) for dissimilar domains. Verified routers achieve 100\% certified accuracy at practical threat models. These results establish a principled path toward scalable, formally verified modular AI.
+\textit{Heterogeneous} Mixture-of-Experts (MoE) architectures, where domain-specific experts with distinct training data or architectures are coordinated by a learned router, offer modularity and scalability, yet the interaction between routing stability and expert robustness remains underexplored. Verifying full MoE systems is intractable: dynamic routing induces combinatorial behavior, and model scale overwhelms current verifier capacity. We present a \textbf{compositional verification framework} that decomposes this problem: if the router provably maintains consistent expert selection within an adversarial perturbation region, and the selected expert is provably robust, then the entire MoE is provably robust---reducing verification from the full system to independent components (20$\times$ parameter reduction). Empirically, we show that expert robustness dominates system behavior (13.1 percentage point improvement with adversarial training) while router training has negligible impact ($<$0.1\%) for dissimilar domains. Verified routers achieve 100\% certified accuracy at practical threat models. These results establish a principled path toward scalable, formally verified modular AI.
 \end{abstract}
 
 %==============================================================================
@@ -73,7 +76,7 @@ Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet the
 %==============================================================================
 \section{Introduction}
 
-Mixture-of-Experts (MoE) models scale capacity by routing inputs to a subset of expert networks via a learned gating function, but this conditional execution yields input-dependent architectures with intertwined discrete and continuous behavior. Formal neural network verification, which provides sound guarantees over all inputs in a specified set, already faces scalability challenges for standard networks. MoE architectures further induce a combinatorial explosion from expert selection and routing boundaries. Existing verifiers either fail to scale or rely on coarse relaxations that produce vacuous guarantees. We address this challenge by exploiting the structured partitioning of the input space induced by MoE gating, enabling sound and scalable verification through explicit reasoning over routing regions and expert-level decoupling.
+\textit{Heterogeneous} Mixture-of-Experts (MoE) models combine domain-specific experts, each potentially with different architectures or training data, coordinated by a learned router. This modularity enables scalable capacity, but conditional execution yields input-dependent architectures with intertwined discrete and continuous behavior. Formal neural network verification, which provides sound guarantees over all inputs in a specified set, already faces scalability challenges for standard networks. MoE architectures further induce a combinatorial explosion from expert selection and routing boundaries. Existing verifiers either fail to scale or rely on coarse relaxations that produce vacuous guarantees. We address this challenge by exploiting the structured partitioning of the input space induced by MoE gating, enabling sound and scalable verification through explicit reasoning over routing regions and expert-level decoupling.
 
 Formal verification of neural networks provides provable robustness guarantees for safety-critical deployment. However, verifying MoE systems poses unique challenges: dynamic routing creates input-dependent computation paths, and the scale of standard MoEs exceeds the capacity of current complete verifiers like $\alpha$,$\beta$-CROWN. Complete neural network verification is NP-complete \citep{katz2017}, with complexity scaling exponentially in network size. While state-of-the-art verifiers like $\alpha$,$\beta$-CROWN can handle networks up to a few million parameters on specialized benchmarks \citep{brix2024}, typical MoE systems with hundreds of millions to billions of parameters remain fundamentally intractable. To make verification tractable, we treat routing and expert prediction as separable subproblems and show that their guarantees compose cleanly.
 
@@ -85,15 +88,15 @@ We address this challenge through a \textbf{compositional verification} approach
 
 This decomposition is the key insight: rather than verifying the intractable full system, we verify components independently and compose guarantees. The practical impact is a \textbf{20$\times$ reduction} in verification complexity (2M $\to$ 96K parameters in our experiments).
 
-A \textit{heterogeneous MoE} combines domain-specific experts (potentially with different architectures or training data) coordinated by a learned router. Unlike homogeneous MoEs where experts share structure, heterogeneous systems require the router to perform domain identification---a distinct task from within-domain classification.
+Unlike homogeneous MoEs where experts share structure and training distribution, heterogeneous systems require the router to perform \textit{domain identification}, a distinct task from within-domain classification. This separation is key to our compositional approach: domain identification typically produces large decision margins, enabling tractable router verification.
 
 \paragraph{Contributions.}
 \begin{enumerate}
-    \item \textbf{Compositional Verification Framework:} We formalize conditions under which MoE robustness decomposes into router stability and expert robustness, enabling \textbf{20$\times$ verification speedup} and incremental expert integration without re-verifying the full system.
+    \item \textbf{Compositional Verification Framework for Heterogeneous MoE:} We formalize conditions under which heterogeneous MoE robustness decomposes into router stability and expert robustness, enabling \textbf{20$\times$ verification speedup} and incremental expert integration without re-verifying the full system.
 
-    \item \textbf{Expert Dominance Finding:} Expert training determines system robustness (13.1\% adversarial accuracy difference); router adversarial training has negligible impact ($<$0.1\%) for visually dissimilar domains, enabling 4$\times$ training speedup.
+    \item \textbf{Expert Dominance Finding:} In heterogeneous MoE, expert training determines system robustness (13.1\% adversarial accuracy difference); router adversarial training has negligible impact ($<$0.1\%) for visually dissimilar domains, enabling 4$\times$ training speedup.
 
-    \item \textbf{Verification-Aware Design:} We identify architectural requirements for tractable MoE verification and demonstrate that adversarial training is a \textit{prerequisite} for formal verifiability.
+    \item \textbf{Verification-Aware Design:} We identify architectural requirements for tractable heterogeneous MoE verification and demonstrate that adversarial training is a \textit{prerequisite} for formal verifiability.
 \end{enumerate}
 
 %==============================================================================
@@ -105,9 +108,9 @@ A \textit{heterogeneous MoE} combines domain-specific experts (potentially with 
 
 \paragraph{Neural Network Verification.} Complete verifiers like $\alpha$,$\beta$-CROWN \citep{wang2021} provide sound robustness certificates via bound propagation and branch-and-bound. Certified training methods (CROWN-IBP \citep{zhang2020}, SABR \citep{mueller2023}) improve verifiability by training with formal bounds. Randomized smoothing \citep{cohen2019} offers probabilistic certificates for larger models. However, all approaches face scalability limits with multi-million parameter systems.
 
-\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \citep{henzinger1998}. For neural networks, modular verification remains nascent. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
+\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. Classical control theory provides foundations through passivity, dissipativity, and small-gain theorems for interconnected systems \citep{willems1972,zames1966}, while bisimulation relations enable behavioral abstraction in formal methods \citep{milner1989}. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \citep{henzinger1998}. For neural networks, modular verification remains nascent. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
 
-\paragraph{Research Gap.} Prior work addresses homogeneous MoE scalability or monolithic neural network verification. We provide the first compositional verification framework for heterogeneous MoE systems, bridging modular architecture design with formal robustness guarantees.
+\paragraph{Research Gap.} Prior work addresses homogeneous MoE scalability or monolithic neural network verification separately. We provide the first compositional verification framework specifically for \textit{heterogeneous} MoE systems, where domain separation enables tractable router verification and expert-level decomposition bridges modular architecture design with formal robustness guarantees.
 
 %==============================================================================
 % 3. COMPOSITIONAL VERIFICATION FRAMEWORK
@@ -124,7 +127,7 @@ A \textit{heterogeneous MoE} combines domain-specific experts (potentially with 
 \end{itemize}
 We also distinguish training regimes: \textbf{Robust Training (RT)} uses adversarial examples during training \citep{madry2018}; \textbf{Non-Robust Training (NRT)} uses standard supervised learning without adversarial augmentation.
 
-\paragraph{Notation.} Let $x \in \mathbb{R}^{d}$ be an input with label $y$. We define the \textbf{$\ell_\infty$ perturbation ball} $B_\varepsilon(x) = \{x': \|x' - x\|_\infty \leq \varepsilon\}$, where $\|z\|_\infty = \max_i |z_i|$ bounds the maximum per-pixel change. For images with pixel values in $[0,1]$, $\varepsilon = 8/255 \approx 0.031$ represents imperceptible perturbations.
+\paragraph{Notation.} Let $x \in \mathbb{R}^{d}$ be an input with class label $y \in \{1, \ldots, C\}$ where $C = \sum_{i=1}^N C_i$ is the total number of classes across all expert domains. We define the \textbf{$\ell_\infty$ perturbation ball} $B_\varepsilon(x) = \{x': \|x' - x\|_\infty \leq \varepsilon\}$, where $\|z\|_\infty = \max_i |z_i|$ bounds the maximum per-pixel change. For images with pixel values in $[0,1]$, $\varepsilon = 8/255 \approx 0.031$ represents imperceptible perturbations.
 
 A heterogeneous MoE consists of $N$ domain-specific experts $\{E_i: \mathbb{R}^d \to \mathbb{R}^{C_i}\}_{i=1}^N$ and a router $\mathcal{G}: \mathbb{R}^d \to \mathbb{R}^N$ selecting expert $m^* = \arg\max_i \mathcal{G}_i(x)$.
 
@@ -271,7 +274,7 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 %==============================================================================
 \section{Conclusion}
 
-We establish that MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness. This decomposition achieves 20$\times$ verification speedup and enables incremental expert integration.
+We establish that heterogeneous MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness. This decomposition achieves 20$\times$ verification speedup and enables incremental expert integration.
 
 Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are generally incompatible with sound verification at practical scales.
 
@@ -323,6 +326,11 @@ A.~Madry, A.~Makelov, L.~Schmidt, D.~Tsipras, and A.~Vladu.
 \newblock Towards deep learning models resistant to adversarial attacks.
 \newblock In \emph{ICLR}, 2018.
 
+\bibitem[Milner(1989)]{milner1989}
+R.~Milner.
+\newblock \emph{Communication and Concurrency}.
+\newblock Prentice Hall, 1989.
+
 \bibitem[M{\"u}ller et~al.(2023)]{mueller2023}
 M.~N. M{\"u}ller, F.~Fischer, C.~Staber, P.~Spreitzer, and M.~Vechev.
 \newblock Certified training: Small boxes are all you need.
@@ -347,6 +355,16 @@ N.~Shazeer, A.~Mirhoseini, K.~Maziarz, A.~Davis, Q.~Le, G.~Hinton, and J.~Dean.
 S.~Wang, H.~Zhang, K.~Xu, X.~Lin, S.~Jana, C.-J. Hsieh, and J.~Z. Kolter.
 \newblock Beta-CROWN: Efficient bound propagation with per-neuron split constraints for neural network robustness verification.
 \newblock In \emph{NeurIPS}, 2021.
+
+\bibitem[Willems(1972)]{willems1972}
+J.~C. Willems.
+\newblock Dissipative dynamical systems part I: General theory.
+\newblock \emph{Archive for Rational Mechanics and Analysis}, 45(5):321--351, 1972.
+
+\bibitem[Zames(1966)]{zames1966}
+G.~Zames.
+\newblock On the input-output stability of time-varying nonlinear feedback systems part one: Conditions derived using concepts of loop gain, conicity, and positivity.
+\newblock \emph{IEEE Transactions on Automatic Control}, 11(2):228--238, 1966.
 
 \bibitem[Zhang et~al.(2020)]{zhang2020}
 H.~Zhang, H.~Chen, C.~Xiao, S.~Gowal, R.~Stanforth, B.~Li, D.~Boning, and C.-J. Hsieh.
