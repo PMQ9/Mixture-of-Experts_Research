@@ -144,10 +144,12 @@ The robustness of a heterogeneous MoE system decomposes into two independently v
 $m^* = \arg\max_i \mathcal{G}_i(x)$.
 If
 \begin{equation}
+\label{eq:stability}
 \forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^* \;\text{(stability)}
 \end{equation}
 and
 \begin{equation}
+\label{eq:robustness}
 \forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y \;\text{(robustness),}
 \end{equation}
 then the MoE is $\varepsilon$-robust at $x$.
@@ -157,7 +159,7 @@ then the MoE is $\varepsilon$-robust at $x$.
 The router partitions the input space into disjoint expert regions. If these partitions are \textit{stable}---meaning the router satisfies $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$, so no adversarial perturbation can alter expert selection---and the selected expert maintains correct classification throughout $B_\varepsilon(x)$, then the composed system inherits robustness without requiring monolithic verification.
 
 \begin{proof}[Proof Sketch]
-Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation. By the stability condition~(1), the router selects expert $m^*$ for all inputs in $B_\varepsilon(x)$, hence $\mathrm{MoE}(x') = E_{m^*}(x')$. By the robustness condition~(2), expert $E_{m^*}$ correctly classifies all such perturbations: $\arg\max E_{m^*}(x') = y$. Since the MoE output is determined solely by the selected expert, we have $\arg\max \mathrm{MoE}(x') = y$ for all $x' \in B_\varepsilon(x)$, establishing $\varepsilon$-robustness. Full proof in Appendix~\ref{app:proof}.
+Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation. By the stability condition~\eqref{eq:stability}, the router selects expert $m^*$ for all inputs in $B_\varepsilon(x)$, hence $\mathrm{MoE}(x') = E_{m^*}(x')$. By the robustness condition~\eqref{eq:robustness}, expert $E_{m^*}$ correctly classifies all such perturbations: $\arg\max E_{m^*}(x') = y$. Since the MoE output is determined solely by the selected expert, we have $\arg\max \mathrm{MoE}(x') = y$ for all $x' \in B_\varepsilon(x)$, establishing $\varepsilon$-robustness. Full proof in Appendix~\ref{app:proof}.
 \end{proof}
 
 \begin{remark}[Top-1 Requirement]
@@ -168,9 +170,7 @@ Theorem~\ref{thm:compositional} requires top-1 routing. For top-$k$ routing ($k 
 
 We use $\alpha$,$\beta$-CROWN for component verification:
 
-\textbf{Router Verification:} For input $x$ with selection $m^*$, verify $\mathcal{G}_{m^*}(x') - \mathcal{G}_j(x') > 0$ for all $j \neq m^*$ and $x' \in B_\varepsilon(x)$. This reduces to $N-1$ binary properties per input.
-
-\textbf{Expert Verification:} Standard robustness verification---verify the true class logit exceeds all others within $B_\varepsilon(x)$.
+\textbf{Router Verification:} Router stability \eqref{eq:stability} requires that expert $m^*$ remains the argmax throughout $B_\varepsilon(x)$. This holds if and only if $\mathcal{G}_{m^*}(x') > \mathcal{G}_j(x')$ for all competing experts $j \neq m^*$ and all $x' \in B_\varepsilon(x)$. We verify this by checking $\mathcal{G}_{m^*}(x') - \mathcal{G}_j(x') > 0$, reducing stability to $N-1$ binary properties per input. Expert verification follows the standard formulation \eqref{eq:robustness}.
 
 \textbf{Challenges:} Router verification difficulty depends on decision margin geometry. When domains are visually dissimilar (e.g., CIFAR-10 vs MNIST), routers learn large margins ($\gg \varepsilon$), enabling easy certification. Similar domains produce smaller margins and harder verification (see Section~\ref{sec:limitations}).
 
@@ -408,7 +408,7 @@ We prove that under the stated conditions, the MoE system is $\varepsilon$-robus
 
 \textbf{Proof.} Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation satisfying $\|x' - x\|_\infty \leq \varepsilon$.
 
-\textit{Step 1 (Router Stability).} By assumption~(1):
+\textit{Step 1 (Router Stability).} By assumption~\eqref{eq:stability}:
 \[
 \forall x' \in B_\varepsilon(x): \arg\max_i \mathcal{G}_i(x') = m^*
 \]
@@ -417,7 +417,7 @@ Thus, the router selects expert $E_{m^*}$ for all perturbations in $B_\varepsilo
 \mathrm{MoE}(x') = E_{m^*}(x') \quad \forall x' \in B_\varepsilon(x)
 \]
 
-\textit{Step 2 (Expert Robustness).} By assumption~(2):
+\textit{Step 2 (Expert Robustness).} By assumption~\eqref{eq:robustness}:
 \[
 \forall x' \in B_\varepsilon(x): \arg\max E_{m^*}(x') = y
 \]
