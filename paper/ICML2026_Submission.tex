@@ -164,8 +164,6 @@ Let $x' \in B_\varepsilon(x)$ be an arbitrary perturbation. By the stability con
 Theorem~\ref{thm:compositional} requires top-1 routing. For top-$k$ routing ($k > 1$), the weighted combination of multiple experts introduces additional attack surface: adversaries could exploit the weighting mechanism even if individual experts are robust. Extending compositional guarantees to top-$k$ requires verifying both expert selection stability \textit{and} weight stability---a stronger condition we leave to future work.
 \end{remark}
 
-\paragraph{Practical Impact.} This decomposition transforms an intractable problem (verifying 2M+ parameter MoE) into manageable subproblems (verifying 96K parameter components). Verification cost scales with the \textit{largest component}, not the full system. New experts integrate without re-verifying existing components.
-
 \subsection{Verification Implementation}
 
 We use $\alpha$,$\beta$-CROWN for component verification:
@@ -268,8 +266,6 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 
 \paragraph{Architecture Scope.} Our verification-compatible CNNs (96K parameters) demonstrate the framework but limit expressiveness. Scaling to Transformers faces verifier memory constraints. Promising directions include verification-aware architecture search and combining compositional decomposition with randomized smoothing for probabilistic certificates on larger models.
 
-\paragraph{Top-$k$ Extension.} Theorem~\ref{thm:compositional} applies to top-1 routing. Top-$k$ ($k > 1$) requires verifying weight stability in addition to selection stability---a harder condition requiring future work.
-
 \paragraph{Relationship to Empirical Robustness.} Adversarial training improves certifiability by smoothing decision boundaries, reducing bound looseness in CROWN analysis. This explains why robust training simultaneously improves empirical adversarial accuracy and formal certification rates.
 
 %==============================================================================
@@ -277,13 +273,11 @@ Compositional verification achieves \textbf{20$\times$ parameter reduction} (2M 
 %==============================================================================
 \section{Conclusion}
 
-We establish that heterogeneous MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness. This decomposition achieves 20$\times$ verification speedup and enables incremental expert integration.
+We establish that heterogeneous MoE robustness composes modularly under top-1 routing: verified router stability combined with verified expert robustness yields verified system robustness.
 
-Our experiments reveal that expert robustness dominates system behavior (13.1\% impact) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is prerequisite for formal verifiability---non-robust components are generally incompatible with sound verification at practical scales.
+Our experiments reveal that expert robustness dominates system behavior (13.1\% accuracy difference) while router training is negligible for dissimilar domains ($<$0.1\%). Critically, robust training is a prerequisite for formal verifiability---non-robust components produce decision boundaries incompatible with sound verification.
 
-These results demonstrate that compositional design enables tractable formal verification of modular AI systems, advancing the path toward verifiable, safety-critical deployment.
-
-Future work includes extending compositional guarantees to top-$k$ routing and larger transformer-based MoE systems.
+These results demonstrate that compositional design enables tractable formal verification of modular AI systems. Future work includes extending guarantees to top-$k$ routing and scaling to transformer-based architectures.
 
 %==============================================================================
 % REFERENCES
