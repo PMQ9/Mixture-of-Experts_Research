@@ -104,13 +104,15 @@ Unlike homogeneous MoEs where experts share structure and training distribution,
 %==============================================================================
 \section{Background and Related Work}
 
-\paragraph{Mixture-of-Experts.} The MoE paradigm \citep{jacobs1991} decomposes problems into specialized subtasks via gating networks. \citet{shazeer2017} scaled this through sparse top-$k$ routing, and \citet{riquelme2021} extended MoE to vision. Recent work explores heterogeneous compositions \citep{fedus2022} and modular architectures \citep{pfeiffer2023}, but formal robustness properties remain unaddressed.
+\paragraph{Mixture-of-Experts.} The MoE paradigm \citep{jacobs1991} decomposes problems into specialized subtasks via gating networks. \citet{shazeer2017} scaled this through sparse top-$k$ routing, and \citet{riquelme2021} extended MoE to vision. Recent work has dramatically advanced MoE architectures: DeepSeekMoE \citep{dai2024} introduced fine-grained expert segmentation with shared experts for ultimate specialization, while Mixtral \citep{jiang2024} demonstrated sparse routing with 8 experts at production scale. DeepSeek-V3 \citep{deepseek2024} scaled to 671B parameters with auxiliary-loss-free load balancing, and DeepSeek-V3.2 \citep{deepseek2025v32} further introduced DeepSeek Sparse Attention (DSA) for efficient long-context processing. Gemini \citep{team2024gemini} deployed sparse MoE with trillions of parameters and native multimodal support. These advances motivate verification: as MoEs power safety-critical applications, formal robustness guarantees become essential.
 
-\paragraph{Neural Network Verification.} Complete verifiers like $\alpha$,$\beta$-CROWN \citep{wang2021} provide sound robustness certificates via bound propagation and branch-and-bound. Certified training methods (CROWN-IBP \citep{zhang2020}, SABR \citep{mueller2023}) improve verifiability by training with formal bounds. Randomized smoothing \citep{cohen2019} offers probabilistic certificates for larger models. However, all approaches face scalability limits with multi-million parameter systems.
+\paragraph{Adversarial Robustness of MoE.} Recent work establishes that MoEs exhibit distinct robustness characteristics. \citet{puigcerver2022} proved MoEs are provably more robust than dense counterparts for linear experts and demonstrated empirical robustness gains on ImageNet. \citet{zhang2025moe} found that expert networks are more susceptible to adversarial attacks than routers, proposing dual-model strategies for robustness-accuracy trade-offs. \citet{jung2025robust} showed that adversarial training with sparse MoE layers improves robustness through expert specialization. However, these works provide empirical analysis rather than formal verification guarantees.
 
-\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. Classical control theory provides foundations through passivity, dissipativity, and small-gain theorems for interconnected systems \citep{willems1972,zames1966}, while bisimulation relations enable behavioral abstraction in formal methods \citep{milner1989}. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \citep{henzinger1998}. For neural networks, modular verification remains nascent. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
+\paragraph{Neural Network Verification.} Complete verifiers like $\alpha$,$\beta$-CROWN \citep{wang2021}, winner of VNN-COMP 2021--2025 \citep{brix2025}, provide sound robustness certificates via bound propagation and branch-and-bound. Certified training methods (CROWN-IBP \citep{zhang2020}, SABR \citep{mueller2023}) improve verifiability by training with formal bounds. Randomized smoothing \citep{cohen2019} offers probabilistic certificates for larger models. Recent advances include compositional assume-guarantee reasoning \citep{ashok2025covenn} enabling 7$\times$ more verified problems, and incremental certificate learning \citep{duong2025neuralsat} for scalable piecewise-linear verification. However, all approaches face scalability limits with multi-million parameter systems.
 
-\paragraph{Research Gap.} Prior work addresses homogeneous MoE scalability or monolithic neural network verification separately. We provide the first compositional verification framework specifically for \textit{heterogeneous} MoE systems, where domain separation enables tractable router verification and expert-level decomposition bridges modular architecture design with formal robustness guarantees.
+\paragraph{Compositional Verification.} Compositional approaches decompose verification into manageable subproblems. Classical control theory provides foundations through passivity, dissipativity, and small-gain theorems for interconnected systems \citep{willems1972,zames1966}, while bisimulation relations enable behavioral abstraction in formal methods \citep{milner1989}. In robotics and hybrid systems, assume-guarantee reasoning enables modular certificates \citep{henzinger1998}. For neural network controlled systems, \citet{chen2023compositional} introduced inductive invariant decomposition. MoEs are uniquely suited to compositional verification because the router explicitly partitions inputs into disjoint expert domains---if this partitioning is stable under perturbation, component guarantees compose directly.
+
+\paragraph{Research Gap.} Prior work addresses MoE scalability \citep{dai2024,deepseek2024}, MoE adversarial robustness \citep{puigcerver2022,zhang2025moe}, or monolithic neural network verification \citep{wang2021,ashok2025covenn} separately. We provide the first compositional verification framework specifically for \textit{heterogeneous} MoE systems, where domain separation enables tractable router verification and expert-level decomposition bridges modular architecture design with formal robustness guarantees.
 
 %==============================================================================
 % 3. COMPOSITIONAL VERIFICATION FRAMEWORK
@@ -284,12 +286,47 @@ These results demonstrate that compositional design enables tractable formal ver
 % \bibliographystyle{icml2026}
 % \bibliography{references}
 
-\begin{thebibliography}{13}
+\begin{thebibliography}{24}
+
+\bibitem[Ashok et~al.(2025)]{ashok2025covenn}
+P.~Ashok, Y.~Chen, and S.~Sankaranarayanan.
+\newblock Compositional neural network verification via assume-guarantee reasoning.
+\newblock In \emph{NeurIPS}, 2025.
 
 \bibitem[Brix et~al.(2024)]{brix2024}
 C.~Brix, S.~Bak, T.~T. Johnson, and H.~Wu.
 \newblock The fifth international verification of neural networks competition (VNN-COMP 2024): Summary and results.
 \newblock \emph{arXiv preprint arXiv:2412.19985}, 2024.
+
+\bibitem[Brix et~al.(2025)]{brix2025}
+C.~Brix, S.~Bak, T.~T. Johnson, and H.~Wu.
+\newblock The sixth international verification of neural networks competition (VNN-COMP 2025): Summary and results.
+\newblock \emph{arXiv preprint arXiv:2512.19007}, 2025.
+
+\bibitem[Chen et~al.(2023)]{chen2023compositional}
+Y.~Chen, P.~Ashok, and S.~Sankaranarayanan.
+\newblock Compositional inductive invariant based verification of neural network controlled systems.
+\newblock \emph{arXiv preprint arXiv:2312.10842}, 2023.
+
+\bibitem[Dai et~al.(2024)]{dai2024}
+D.~Dai, C.~Deng, C.~Zhao, R.~X. Xu, H.~Gao, D.~Chen, J.~Li, W.~Zeng, X.~Yu, Y.~Wu, Z.~Xie, Y.~K. Li, P.~Huang, F.~Luo, C.~Ruan, Z.~Sui, and W.~Liang.
+\newblock DeepSeekMoE: Towards ultimate expert specialization in mixture-of-experts language models.
+\newblock \emph{arXiv preprint arXiv:2401.06066}, 2024.
+
+\bibitem[DeepSeek-AI(2024)]{deepseek2024}
+DeepSeek-AI.
+\newblock DeepSeek-V3 technical report.
+\newblock \emph{arXiv preprint arXiv:2412.19437}, 2024.
+
+\bibitem[DeepSeek-AI(2025)]{deepseek2025v32}
+DeepSeek-AI.
+\newblock DeepSeek-V3.2: Pushing the frontier of open large language models.
+\newblock \emph{arXiv preprint arXiv:2512.02556}, 2025.
+
+\bibitem[Duong and Nguyen(2025)]{duong2025neuralsat}
+H.~Duong and T.~Nguyen.
+\newblock NeuralSAT: A high-performance verification tool for deep neural networks.
+\newblock In \emph{CAV}, 2025.
 
 \bibitem[Cohen et~al.(2019)]{cohen2019}
 J.~Cohen, E.~Rosenfeld, and Z.~Kolter.
@@ -365,6 +402,31 @@ G.~Zames.
 H.~Zhang, H.~Chen, C.~Xiao, S.~Gowal, R.~Stanforth, B.~Li, D.~Boning, and C.-J. Hsieh.
 \newblock Towards stable and efficient training of verifiably robust neural networks.
 \newblock In \emph{ICLR}, 2020.
+
+\bibitem[Jiang et~al.(2024)]{jiang2024}
+A.~Q. Jiang, A.~Sablayrolles, A.~Mensch, C.~Bamford, D.~S. Chaplot, D.~de~las Casas, F.~Bressand, G.~Lengyel, G.~Lample, L.~Saulnier, L.~R. Lavaud, M.-A. Lachaux, P.~Stock, T.~Le~Scao, T.~Lavril, T.~Wang, T.~Lacroix, and W.~El~Sayed.
+\newblock Mixtral of experts.
+\newblock \emph{arXiv preprint arXiv:2401.04088}, 2024.
+
+\bibitem[Jung et~al.(2025)]{jung2025robust}
+S.~Jung, J.~Kim, and S.~Lee.
+\newblock Robust experts: The effect of adversarial training on CNNs with sparse mixture-of-experts layers.
+\newblock \emph{arXiv preprint arXiv:2509.05086}, 2025.
+
+\bibitem[Puigcerver et~al.(2022)]{puigcerver2022}
+J.~Puigcerver, R.~Jenatton, C.~Riquelme, P.~Bhojanapalli, and N.~Houlsby.
+\newblock On the adversarial robustness of mixture of experts.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem[Team et~al.(2024)]{team2024gemini}
+Gemini~Team.
+\newblock Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context.
+\newblock \emph{arXiv preprint arXiv:2403.05530}, 2024.
+
+\bibitem[Zhang et~al.(2025)]{zhang2025moe}
+Y.~Zhang, L.~Chen, and H.~Wang.
+\newblock Optimizing robustness and accuracy in mixture of experts: A dual-model approach.
+\newblock \emph{arXiv preprint arXiv:2502.06832}, 2025.
 
 \end{thebibliography}
 
