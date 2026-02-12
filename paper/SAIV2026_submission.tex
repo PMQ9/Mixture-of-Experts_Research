@@ -33,7 +33,7 @@
 \begin{abstract}
 Mixture-of-Experts (MoE) architectures offer modularity and scalability, yet their robustness and certifiability---especially in heterogeneous settings---remain poorly understood. This work presents \textbf{MetaMoE}, a heterogeneous MoE framework designed for both adversarial robustness and formal verifiability. We study how robustness propagates compositionally across experts and a routing network, and establish when system-level guarantees can be derived from component-level verification.
 
-We show that (1) adversarially trained experts dominate system robustness, while router training has negligible effect for visually dissimilar datasets; (2) empirical adversarial accuracy strongly correlates with certified robustness accuracy for verification-aware architectures; and (3) when the router maintains invariant expert selection within an adversarial perturbation region, robustness of the routed expert composes to robustness of the full MoE system, enabling scalable modular verification.
+We show that (1) adversarially trained experts dominate system robustness, while router training has negligible effect for visually dissimilar datasets; (2) within a given domain and architecture, empirical adversarial accuracy exhibits monotonic association with certified robustness accuracy, with robust training as a prerequisite for verifiability; and (3) when the router maintains invariant expert selection within an adversarial perturbation region, robustness of the routed expert composes to robustness of the full MoE system (a sufficient condition we formalize as a proposition), enabling scalable modular verification.
 
 Experiments on heterogeneous datasets demonstrate that robust experts improve adversarial accuracy by up to 13.1 percentage points and enable high formal certifiability, while verified routers achieve 100\% certified routing accuracy at practical threat models. The results provide a unified empirical--formal perspective on heterogeneous MoE robustness and outline a principled path toward scalable, verifiable modular AI systems.
 
@@ -49,8 +49,8 @@ Formal verification tools, such as $\alpha$--$\beta$-CROWN~\cite{wang2021}, now 
 This work introduces \textbf{MetaMoE}, a verification-aware heterogeneous MoE architecture that combines adversarially trained experts with a verifiable routing network. We investigate how empirical adversarial robustness (PGD accuracy) relates to certified robustness (formal bounds), and establish conditions under which robustness propagates from components to the entire system. Our contributions are:
 
 \begin{itemize}
-    \item We formalize and validate a \emph{compositional robustness property}: if the router is robust to perturbations and selects the same expert within an $\ell_\infty$ ball, and the selected expert is robust, then the entire MoE is robust.
-    \item We identify a strong empirical--formal correlation for verification-friendly architectures and quantify certification gaps for heterogeneous experts.
+    \item We formalize a \emph{compositional robustness proposition}: for hard-routed MoE, if the router maintains invariant expert selection within an $\ell_\infty$ ball and the selected expert is robust, then the full MoE is robust. We prove this sufficient condition and validate it empirically.
+    \item We identify a monotonic association between empirical adversarial accuracy and certified robustness within domain/architecture regimes, and show that robust training is a prerequisite for verifiability.
     \item We demonstrate that expert robustness dominates system behavior, while router adversarial training has negligible impact for visually dissimilar domains.
     \item We show that compositional verification dramatically reduces verification cost, enabling scalable modular certification and efficient incremental expert integration.
 \end{itemize}
@@ -91,16 +91,33 @@ Certified robustness accuracy (CRA) measures the fraction of samples verified ro
 
 \subsection{Compositional Robustness}
 
-MoE robustness decomposes as:
-\begin{equation}
-    \text{MoE robust at } x \Longleftrightarrow \text{Router robust} \land \text{Expert } E_{m^*} \text{ robust}
-\end{equation}
+We state the central compositional property for hard routing ($k=1$, argmax selection):
 
-This enables modular verification: verify router and experts independently, then compose guarantees.
+\begin{definition}[Router Invariance]
+Router $\mathcal{G}$ is \emph{invariant} at $x$ within $B_\varepsilon(x)$ if $\arg\max_i \mathcal{G}_i(x') = \arg\max_i \mathcal{G}_i(x)$ for all $x' \in B_\varepsilon(x)$.
+\end{definition}
+
+\begin{proposition}[Compositional Robustness -- Sufficient Condition]
+\label{prop:compositional}
+Consider a hard-routed MoE ($k=1$) with router $\mathcal{G}$ and experts $\{E_i\}$. Let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert for input $x$. If:
+\begin{enumerate}
+    \item[(i)] $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (router selects $m^*$ throughout), and
+    \item[(ii)] $E_{m^*}$ is robust at $x$ within $B_\varepsilon(x)$ (i.e., $\arg\max_c E_{m^*,c}(x') = y$ for all $x' \in B_\varepsilon(x)$),
+\end{enumerate}
+then the MoE system is robust at $x$ within $B_\varepsilon(x)$.
+\end{proposition}
+
+\begin{proof}
+Under hard routing, $\hat{y}_c(x') = E_{m^*(x'),c'}(x')$ for the appropriate class offset. By assumption~(i), $m^*(x') = m^*$ for all $x' \in B_\varepsilon(x)$, so the same expert is evaluated. By assumption~(ii), the selected expert preserves the correct classification. Hence $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$. \qed
+\end{proof}
+
+\textbf{Remark (Converse).} The converse does not hold in general: the MoE may be robust even if the router switches experts within $B_\varepsilon(x)$, provided all candidate experts agree on the correct class. For soft or top-$k$ routing ($k > 1$), the sufficient condition requires invariance of the full top-$k$ set and robustness of all selected experts, which we do not address here. Our experiments use $k=1$.
+
+This decomposition enables modular verification: verify router invariance and expert robustness independently, then compose guarantees via Proposition~\ref{prop:compositional}.
 
 \subsection{Empirical--Formal Gap}
 
-The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies conservatism of formal verification relative to empirical adversarial accuracy (AA) under PGD. We hypothesize $|\Delta|$ is small for verification-aware architectures, making empirical robustness predictive of certifiability.
+The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies the divergence between formal verification and empirical adversarial accuracy (AA) under PGD. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for verifiability.
 
 \subsection{Problem Statement}
 
@@ -113,13 +130,11 @@ Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adv
 
 \section{Related Work}
 
-The Mixture-of-Experts (MoE) paradigm, introduced by Jacobs et al.~\cite{jacobs1991}, decomposes complex problems into specialized subtasks coordinated via a gating network. Shazeer et al.~\cite{shazeer2017} scaled this concept through sparsely-gated MoE layers, enabling billion-parameter models with sublinear computational scaling via noisy top-k gating and load balancing. Riquelme et al.~\cite{riquelme2021} extended MoE to computer vision by integrating sparse expert activation into Vision Transformers (V-MoE), achieving sparsity-driven efficiency improvements on ImageNet.
+The MoE paradigm~\cite{jacobs1991} decomposes problems into specialized subtasks via a gating network. Shazeer et al.~\cite{shazeer2017} scaled MoE through sparse gating, and Riquelme et al.~\cite{riquelme2021} extended it to vision (V-MoE). Fedus et al.~\cite{fedus2023} showed that freezing pretrained experts reduces retraining cost---critical for lifelong learning. MoE frameworks mitigate catastrophic forgetting~\cite{ramasesh2023}, with gating evolving from unsupervised~\cite{jordan1991} to supervised~\cite{riquelme2021} approaches.
 
-Transfer learning in modular architectures enables compositional MoE designs. Fedus et al.~\cite{fedus2023} demonstrated that pretraining and freezing domain-specific experts reduces retraining costs while facilitating incremental integration---critical for lifelong learning. Heterogeneous expert compositions (e.g., CNN-ViT hybrids) benefit from architectural diversity, as shown by Dosovitskiy et al.~\cite{dosovitskiy2021} (ViTs for global context) and Liu et al.~\cite{liu2022} (ConvNeXt for efficient feature extraction). Eigen et al.~\cite{eigen2017} explored mixed architectures for continual learning, demonstrating enhanced generalization across domain shifts.
+On the verification side, $\alpha$--$\beta$-CROWN~\cite{wang2021} provides state-of-the-art provable robustness for neural networks, winning VNN-COMP 2021--2024. However, verification of modular systems remains underexplored: existing work addresses monolithic models, not compositional architectures where router invariance and expert robustness must jointly hold.
 
-MoE frameworks support lifelong learning by enabling expert addition without catastrophic forgetting~\cite{ramasesh2023}, with gating strategies evolving from unsupervised~\cite{jordan1991} to supervised approaches~\cite{riquelme2021}. Recent work integrates formal verification tools like $\alpha$--$\beta$-CROWN~\cite{wang2021} for compositional robustness certification, though empirical--formal correlations and heterogeneous verifiability remain underexplored.
-
-\textbf{Research Gap.} Existing literature focuses on homogeneous MoE scalability but underexplores heterogeneous robustness and verifiable compositions for safety-critical applications. This paper addresses these gaps by combining adversarial training with formal verification to investigate: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?}
+\textbf{Research Gap.} Existing literature focuses on homogeneous MoE scalability but does not address heterogeneous robustness or verifiable compositions for safety-critical applications. This paper fills this gap by formalizing compositional robustness for hard-routed MoE, combining adversarial training with formal verification, and empirically validating the resulting framework.
 
 \section{Hypotheses}
 
@@ -128,8 +143,8 @@ The following hypotheses guide our investigation of compositional robustness and
 \noindent\textbf{H1 (Robustness--Accuracy Trade-off).}
 Adversarial training (AT) of both experts and the router exhibits higher robustness (smaller drop in adversarial accuracy under $L_\infty$ perturbation of radius $\varepsilon$) but lower clean accuracy on unperturbed inputs, compared to non-robustly trained (NRT) counterparts.
 
-\noindent\textbf{H2 (Empirical--Formal Correlation).}
-Experts and routers demonstrating higher empirical adversarial accuracy (via PGD attacks) will achieve $\text{CRA}(\varepsilon) \geq \text{AA}(\varepsilon) - \Delta$ for some small $\Delta > 0$ when formally verified using $\alpha$--$\beta$-CROWN at equivalent perturbation bounds $\varepsilon$.
+\noindent\textbf{H2 (Empirical--Formal Monotonic Association).}
+Within a given domain and architecture, models with higher empirical adversarial accuracy (via PGD attacks) will achieve higher certified robustness accuracy when formally verified using $\alpha$--$\beta$-CROWN. Furthermore, robust training is a prerequisite: non-robustly trained models on complex domains will be unverifiable regardless of verification effort.
 
 \noindent\textbf{H3 (Compositional Robustness).}
 An MoE composed of experts and a router trained with robust methods exhibits higher overall robustness and lower clean accuracy compared to an MoE composed of non-robust components. This compositional property holds under the assumption that the router correctly selects experts even under perturbations.
@@ -198,7 +213,7 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2 experts $\approx$ 2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the problem:
 
-\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains consistent expert selection within $\varepsilon$-balls, then verify experts independently. The compositional guarantee holds:
+\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify experts independently. By Proposition~\ref{prop:compositional}:
 \begin{equation}
 \text{Verified}_{\text{Router}}(x \to i) \land \text{Verified}_{\text{Expert}_i}(x \to j) \implies \text{Verified}_{\text{MoE}}(x \to j)
 \end{equation}
@@ -225,40 +240,17 @@ Setup: VerifiableCNN with average pooling, no batch norm, raw logits. Test set: 
 
 \begin{table}[t]
 \centering
-\caption{Router verification results -- NRT (averaged over 5 runs).}
-\label{tab:router-nrt}
+\caption{Router formal verification results (40 samples per $\varepsilon$: 20 MNIST + 20 CIFAR-10, averaged over 5 runs). Zero falsifications in all configurations. ``Unknown'' = verification timeout, not property violation.}
+\label{tab:router-verification}
 \small
-\begin{tabular}{llllll}
+\begin{tabular}{llll}
 \toprule
-$\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success \\
- & & samples & samples & samples & Rate (\%) \\
+$\varepsilon$ & \textbf{NRT Router} & \textbf{RT Router} & \textbf{Key difference} \\
+ & Verified / 40 & Verified / 40 & \\
 \midrule
-2/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0\%$} \\
-(0.00784) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
-4/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0\%$} \\
-(0.01569) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
-8/255 & MNIST & $4.0 \pm 0.0$ & $0.0 \pm 0.0$ & $16.0 \pm 0.0$ & \multirow{2}{*}{$60.0\%$} \\
-(0.03137) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[t]
-\centering
-\caption{Router verification results -- RT (averaged over 5 runs).}
-\label{tab:router-rt}
-\small
-\begin{tabular}{llllll}
-\toprule
-$\varepsilon$ & Dataset & Verified & Falsified & Unknown & Success \\
- & & samples & samples & samples & Rate (\%) \\
-\midrule
-2/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0\%$} \\
-(0.00784) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
-4/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0\%$} \\
-(0.01569) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
-8/255 & MNIST & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \multirow{2}{*}{$100.0\%$} \\
-(0.03137) & CIFAR-10 & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & \\
+$2/255$ & $40/40$ (100\%) & $40/40$ (100\%) & Identical \\
+$4/255$ & $40/40$ (100\%) & $40/40$ (100\%) & Identical \\
+$8/255$ & $24/40$ (60\%) & $\mathbf{40/40}$ \textbf{(100\%)} & RT: +40 pp \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -276,7 +268,14 @@ In $\alpha$--$\beta$-CROWN, unknown and timeout are semantically equivalent, ind
     \item \textbf{Compositional Robustness Enabled:} Both NRT and RT routers achieve high formal verification success at standard threat models ($\varepsilon \leq 4/255$), enabling compositional guarantees: Verified Router $\land$ Verified Expert $\implies$ Verified MoE System.
 \end{enumerate}
 
-\textbf{AA vs CRA Discrepancy.} Router empirical adversarial accuracy (AA $\approx 35\%$) appears to contradict formal certification (CRA $\approx 100\%$ at practical threat models). This reflects geometric dataset separation: MNIST and CIFAR-10 occupy disjoint input regions, enabling formal robustness despite moderate empirical vulnerability (see Appendix~\ref{app:gap}).
+\textbf{Metric Alignment: AA vs CRA for the Router.}
+The apparent discrepancy between router AA ($\approx 35\%$) and CRA ($\approx 100\%$) requires careful clarification of what each metric measures:
+\begin{itemize}
+    \item \textbf{Router CRA} verifies the property: $\arg\max_i \mathcal{G}_i(x') = m^*$ (correct expert selection) for all $x' \in B_\varepsilon(x)$, on individual test samples drawn from CIFAR-10 and MNIST. Each sample is verified independently.
+    \item \textbf{Router AA ($\approx 35\%$)} measures meta-class classification accuracy under PGD attack on the \emph{mixed} test set (CIFAR-10 $\cup$ MNIST), evaluated as end-to-end system accuracy (including expert predictions), not router-only argmax accuracy.
+    \item \textbf{``Unknown''} in $\alpha$--$\beta$-CROWN indicates the verifier could not determine the property within the timeout (300s); it does not indicate a property violation.
+\end{itemize}
+The CRA $\gg$ AA pattern arises because CRA measures router-only invariance on well-separated samples, while AA measures end-to-end classification where expert errors dominate. The router achieves 100\% \emph{gating} accuracy under PGD (the expert selection is always correct), but the selected expert may misclassify, reducing end-to-end AA. This confirms that CRA and AA measure fundamentally different properties. See Appendix~\ref{app:gap} for detailed analysis.
 
 \subsubsection{Expert Model Verification.}
 
@@ -360,57 +359,20 @@ We tested all combinations of router training methods (RT/NRT) and expert config
 
 \begin{table}[t]
 \centering
-\caption{MetaMoE compositional robustness: end-to-end system accuracy (40 runs total: 8 configurations $\times$ 5 runs each).}
-\label{tab:metamoe-compositional}
-\small
-\begin{tabular}{llll}
-\toprule
-\textbf{Router} & \textbf{Expert Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
-\textbf{Training} & & Mean $\pm$ Std & Mean $\pm$ Std \\
-\midrule
-\multirow{4}{*}{RT Router} & CIFAR10-RT + MNIST-RT & $87.92 \pm 0.08$ & $41.63 \pm 0.54$ \\
-& CIFAR10-NRT + MNIST-NRT & $91.28 \pm 0.05$ & $29.13 \pm 0.48$ \\
-& CIFAR10-RT + MNIST-NRT & $88.12 \pm 0.05$ & $33.65 \pm 0.78$ \\
-& CIFAR10-NRT + MNIST-RT & $91.22 \pm 0.04$ & $37.55 \pm 0.95$ \\
-\midrule
-\multirow{4}{*}{NRT Router} & CIFAR10-RT + MNIST-RT & $88.05 \pm 0.04$ & $42.24 \pm 0.28$ \\
-& CIFAR10-NRT + MNIST-NRT & $91.37 \pm 0.05$ & $28.43 \pm 0.59$ \\
-& CIFAR10-RT + MNIST-NRT & $88.09 \pm 0.07$ & $33.47 \pm 1.03$ \\
-& CIFAR10-NRT + MNIST-RT & $91.30 \pm 0.06$ & $37.76 \pm 0.36$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[t]
-\centering
-\caption{Expert configuration impact (averaged across router training methods).}
+\caption{Expert configuration dominates system robustness. Rows show expert training combinations averaged across both RT and NRT router training (which differ by $< 0.1\%$). 40 total runs: 8 configurations $\times$ 5 runs. All configurations achieve 100\% gating accuracy.}
 \label{tab:expert-impact}
 \small
-\begin{tabular}{lll}
-\toprule
-\textbf{Expert Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} \\
-\midrule
-Both RT & $87.98 \pm 0.06$ & $41.93 \pm 0.41$ \\
-Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ \\
-CIFAR10-RT + MNIST-NRT & $88.10 \pm 0.06$ & $33.56 \pm 0.90$ \\
-CIFAR10-NRT + MNIST-RT & $91.26 \pm 0.05$ & $37.66 \pm 0.66$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[t]
-\centering
-\caption{Router training method comparison (averaged across expert configurations).}
-\label{tab:router-comparison}
-\small
 \begin{tabular}{llll}
 \toprule
-\textbf{Router Training} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} & \textbf{Training Time (s)} \\
+\textbf{Expert Configuration} & \textbf{Clean Acc (\%)} & \textbf{Adv Acc (\%)} & \textbf{Robustness Gap} \\
 \midrule
-RT Router & $89.64 \pm 0.06$ & $35.49 \pm 5.76$ & $4107 \pm 48$ \\
-NRT Router & $89.70 \pm 0.06$ & $35.47 \pm 5.82$ & $968 \pm 13$ \\
+Both RT & $87.98 \pm 0.06$ & $\mathbf{41.93 \pm 0.41}$ & $46.05\%$ \\
+CIFAR10-NRT + MNIST-RT & $91.26 \pm 0.05$ & $37.66 \pm 0.66$ & $53.60\%$ \\
+CIFAR10-RT + MNIST-NRT & $88.10 \pm 0.06$ & $33.56 \pm 0.90$ & $54.54\%$ \\
+Both NRT & $\mathbf{91.32 \pm 0.06}$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 \midrule
-$\Delta$ (NRT $-$ RT) & $+0.06$ & $-0.02$ & $-3139$ (4.1$\times$ faster) \\
+\multicolumn{4}{l}{\textit{Expert effect:} $\Delta_{\text{adv}} = 13.15\%$ (Both RT vs Both NRT)} \\
+\multicolumn{4}{l}{\textit{Router effect:} $\Delta_{\text{adv}} < 0.1\%$ (RT Router vs NRT Router, 4.1$\times$ slower)} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -424,7 +386,7 @@ $\Delta$ (NRT $-$ RT) & $+0.06$ & $-0.02$ & $-3139$ (4.1$\times$ faster) \\
 
     \item \textbf{Perfect Router Gating Across 40 Runs:} 100\% clean and adversarial gating accuracy across all 40 experimental runs validates the compositional verification property. \textbf{Caveat:} This holds for visually dissimilar datasets; similar domains present harder challenges (see Appendix~\ref{app:similarity}).
 
-    \item \textbf{H3 Validation (Compositional Robustness):} System robustness decomposes modularly as: Router robustness (100\% gating accuracy) $\land$ Expert robustness $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation.
+    \item \textbf{H3 Validation (Proposition~\ref{prop:compositional}):} System robustness decomposes modularly: router invariance (100\% gating accuracy) $\land$ expert robustness $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation via the sufficient condition.
 
     \item \textbf{Dataset Similarity Impact:} GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% adversarial accuracy, compared to 100\% routing accuracy and 41.59\% adversarial accuracy for CIFAR10+MNIST. The 12.12\% adversarial accuracy gap demonstrates that routing difficulty directly propagates to system robustness (see Appendix~\ref{app:similarity}).
 \end{enumerate}
@@ -457,7 +419,7 @@ Router & RT & $35.49 \pm 5.76$ & $100.0 \pm 0.0$ & $64.51$ \\
 
     \item \textbf{Non-Robust Training Eliminates Verifiability:} CIFAR-10-NRT is completely unverifiable (CRA = 0\%), demonstrating that robust training is a \textbf{prerequisite for verifiability}.
 
-    \item \textbf{H2 Validation:} Within verifiable models, higher empirical AA consistently corresponds to higher CRA. The correlation is tight for simple domains ($\rho \approx 0.98$ for MNIST) and loose for complex domains ($\rho \approx 0.85$ for CIFAR-10).
+    \item \textbf{H2 Validation (Monotonic Association):} Within each domain, higher empirical AA consistently corresponds to higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from unverifiable to CRA $= 90\%$. The association is tight for simple domains (MNIST) and weaker for complex domains (CIFAR-10), where the absolute gap $\Delta$ can be large (72.76\%) even when the rank ordering is preserved. Crucially, non-robust CIFAR-10 is completely unverifiable, confirming robust training as a prerequisite.
 \end{enumerate}
 
 \textbf{Practical Implication.} For compositional MoE systems, the path to verifiability is unambiguous: robust training of experts is mandatory. Within RT models, higher empirical robustness predicts higher formal certification, establishing robust training as the foundational requirement for any verifiable modular AI system.
@@ -491,40 +453,30 @@ Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expe
 
 \section{Discussion}
 
-Results demonstrate that robustness in heterogeneous MoE systems can be both empirically achieved and formally verified through modular design. Expert-level robustness propagates compositionally when routers maintain consistent selection under perturbation.
+\subsection{Compositional Robustness via Proposition~\ref{prop:compositional}}
 
-\subsection{Empirical--Formal Robustness Correlation}
+The invariance condition of Proposition~\ref{prop:compositional} is satisfied empirically: routers maintain 100\% gating accuracy across all 40 runs. This means system robustness is determined entirely by expert quality---the 13.15\% adversarial accuracy gap between Both-RT and Both-NRT configurations ($\Delta_{\text{router}} < 0.1\%$) confirms the router acts as a transparent switch. The weakest expert constrains system robustness, enabling predictable component-level verification without full-system retraining.
 
-Robust training (RT) consistently improves both empirical AA and certified CRA: MNIST-RT achieves 100\% CRA (vs 75\% NRT), CIFAR-10-RT achieves 90\% CRA (vs 0\% NRT). The certification gap $\Delta$ varies by domain: experts show $\Delta = 9$--$73\%$, while routers show $\Delta \approx 65\%$ due to geometric dataset separation. Adversarial training tightens CROWN bounds and reduces verification timeouts, while formal verification identifies boundary-sensitive samples for targeted retraining.
+The converse of Proposition~\ref{prop:compositional} does not hold: an MoE could be robust even with router switching, if all candidate experts agree. Our framework provides a conservative but practically useful sufficient condition.
 
-\subsection{Compositional Robustness and System Behavior}
+\subsection{Empirical--Formal Association}
 
-Verified routers maintaining 100\% gating accuracy across all 40 experimental runs enable compositional guarantees: Verified router $\land$ Verified expert $\implies$ Verified system. Expert training dominates system robustness (13.15\% adversarial accuracy difference) while router training shows negligible impact ($\Delta < 0.06\%$). This asymmetry arises from perfect routing stability: the router acts as a deterministic switch, faithfully propagating expert properties without degradation.
+Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both; CIFAR-10 NRT is unverifiable while RT achieves 90\% CRA. However, the absolute gap $\Delta$ varies dramatically ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from a metric mismatch: CRA measures router-only invariance while AA captures end-to-end classification (Section~7.1).
 
-System robustness decomposes modularly: Both RT experts yield 41.93\% AA regardless of router training; Both NRT experts yield 28.78\% AA. Mixed configurations (33.56--37.66\%) demonstrate intermediate tradeoffs. The weakest expert constrains system robustness by 13.15\%, enabling predictable component-level verification without full-system retraining.
+\subsection{Limitations and Scope}
 
-\subsection{Scalability and Practical Implications}
-
-Compositional design achieves significant training efficiency through selective adversarial training: adversarial training on experts is essential (13.15\% improvement), while router training shows negligible robustness impact ($\Delta < 0.1\%$). Inference scales linearly $O(k)$ with activated experts, enabling efficient continual deployment: new experts integrate without re-verifying the entire system.
-
-\textbf{Limitations.} Current work uses small verification-compatible CNNs; scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity; overlapping domains require adversarial router training investigation. \textbf{Future directions:} (1) probabilistic verification (conformal/randomized smoothing) for larger models; (2) adaptive gating via reinforcement learning for similar datasets; (3) hybrid training regimes balancing robustness and clean accuracy.
+Proposition~\ref{prop:compositional} applies to hard routing ($k=1$) only; soft/top-$k$ routing requires verifying invariance of the full expert set and weight stability. Current experiments use small verification-compatible CNNs (96.5K params); scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity---GTSRB+PTSD achieves only 93.17\% gating accuracy (Appendix~\ref{app:similarity}), breaking the invariance assumption. Future work includes extensions to soft routing, probabilistic verification for larger architectures, and adaptive gating for similar domains.
 
 \section{Conclusion}
 
-This paper presented a comprehensive framework for analyzing and verifying the compositional robustness of heterogeneous MoE systems through both empirical and formal perspectives. By combining adversarially trained experts with a verifiable gating network, the proposed MetaMoE architecture demonstrates that robustness propagates modularly with quantifiable guarantees.
+This paper presented a framework for compositional robustness verification of heterogeneous MoE systems. The central contribution is Proposition~\ref{prop:compositional}: for hard-routed MoE, router invariance plus expert robustness is sufficient for system robustness. This decomposition reduces verification from 2M to 96K parameters and is validated both formally and empirically.
 
-\textbf{Key Empirical Findings:}
-(1) Expert robustness dominates system behavior (13.15\% difference), while router training shows negligible impact ($\Delta < 0.1\%$).
-(2) Perfect router routing across 40 independent runs validates the compositional verification property.
-(3) NRT router training achieves 4.1$\times$ speedup with identical performance for dissimilar datasets.
+\textbf{Key findings:}
+(1) Expert robustness dominates system behavior (13.15\% adversarial accuracy difference), while router training shows negligible impact ($\Delta < 0.1\%$), enabling 4.1$\times$ training speedup for dissimilar datasets.
+(2) Router formal verification achieves 100\% success at practical threat models ($\varepsilon \leq 4/255$), satisfying the invariance condition of Proposition~\ref{prop:compositional} across all 40 experimental runs.
+(3) Within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, with robust training as a prerequisite for verifiability.
 
-\textbf{Key Formal Verification Findings:}
-(1) Router achieves 100\% formal verification success at practical threat models ($\varepsilon \leq 4/255$); RT extends to $\varepsilon = 8/255$.
-(2) Compositional verification reduces the problem from 2M to 96K parameters, enabling modular certification.
-(3) Empirical--formal divergence for routers ($\Delta \approx 65\%$) reflects geometric dataset separation, demonstrating that formal verification can certify global robustness independent of empirical attack success.
-(4) Verification speed of $\sim$4.6s per sample at practical threat models enables efficient re-verification.
-
-\textbf{Unified Robustness Framework.} Empirical robustness and formal verification are complementary facets of a unified paradigm. Adversarial training regularizes decision boundaries, improving both empirical adversarial accuracy and formal certifiability. Together, these results establish that heterogeneous MoE systems can achieve both high empirical robustness and formal certification, advancing the path toward trustworthy, compositional AI for real-world safety-critical deployment.
+\textbf{Limitations and future work.} The sufficient condition of Proposition~\ref{prop:compositional} does not extend to soft or top-$k > 1$ routing. Perfect gating relies on dataset dissimilarity; similar domains require stronger router guarantees. Future work includes probabilistic verification for larger architectures and extensions to soft routing composition.
 
 \begin{credits}
 \subsubsection{\ackname}
