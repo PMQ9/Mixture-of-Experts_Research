@@ -49,7 +49,7 @@ Formal verification tools, such as $\alpha$--$\beta$-CROWN~\cite{wang2021}, enab
 This paper introduces \textbf{MetaMoE}, a verification-aware heterogeneous MoE architecture that combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained experts and router. We investigate how empirical adversarial robustness (PGD accuracy) relates to certified robustness (formal bounds), and establish conditions under which robustness propagates from components to the entire system. Our contributions are:
 
 \begin{itemize}
-    \item Formalize a \emph{compositional robustness proposition}: for hard-routed MoE, where only one expert is activated at any given time, if the router maintains invariant expert selection within an $\ell_\infty$ ball and the selected expert is robust, then the full MoE is robust. We prove this sufficient condition and validate it empirically.
+    \item Formalize a \emph{compositional robustness proposition}: for hard-routed MoE, where only one expert is activated at any given time, if the router maintains invariant expert selection within an $\ell_\infty$ ball and the selected expert is robust, then the full MoE is robust. We prove this sufficient condition and validate it~empirically.
     \item Identify an association between empirical adversarial accuracy and certified robustness within domain/architecture regimes, and demonstrating that robust training is a prerequisite for verifiability of large and complex neural network architectures.
     \item For visually dissimilar domains, we demonstrate that expert robustness dominates system behavior, while router adversarial training has negligible impact.
     \item We show that compositional verification significantly reduces verification temporal and spatial cost, enabling scalable modular certification and efficient incremental expert integration.
@@ -66,7 +66,7 @@ Let $x \in \mathbb{R}^{C \times H \times W}$ denote an input image (normalized, 
     \item \textbf{Router:} $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ producing routing logits $g = \mathcal{G}(x)$
 \end{enumerate}
 
-The router selects expert $m^* = \arg\max_i g_i$. For top-$k$ routing, let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ be the selected expert indices with normalized weights $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$. The MoE output is $\hat{y} \in \mathbb{R}^{C_{total}}$ with class offsets $o_i = \sum_{m<i} C_m$:
+The router selects expert $m^* = \arg\max_i g_i$. For top\nobreakdash-$k$ routing, let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ be the selected expert indices with normalized weights $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$. The MoE output is $\hat{y} \in \mathbb{R}^{C_{total}}$ with class offsets $o_i = \sum_{m<i} C_m$:
 \begin{equation}
     \hat{y}_c = \begin{cases}
         w_j \cdot y_{i_j}[c - o_{i_j}], & \text{if } c \in \{o_{i_j}, \ldots, o_{i_j} + C_{i_j} - 1\} \\
@@ -99,7 +99,7 @@ Router $\mathcal{G}$ is \emph{invariant} at $x$ within $B_\varepsilon(x)$ if $\a
 
 \begin{proposition}[Compositional Robustness -- Sufficient Condition]
 \label{prop:compositional}
-Consider a hard-routed MoE ($k=1$) with router $\mathcal{G}$ and experts $\{E_i\}$. Let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert for input $x$. If:
+Consider a hard-routed MoE ($k{=}1$) with router $\mathcal{G}$ and experts $\{E_i\}$. Let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert for input~$x$. If:
 \begin{enumerate}
     \item[(i)] $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (router selects $m^*$ throughout), and
     \item[(ii)] $E_{m^*}$ is robust at $x$ within $B_\varepsilon(x)$ (i.e., $\arg\max_c E_{m^*,c}(x') = y$ for all $x' \in B_\varepsilon(x)$),
@@ -141,9 +141,9 @@ The MoE paradigm~\cite{jacobs1991} decomposes problems into specialized subtasks
 
 \textbf{Adversarial Robustness of MoE.} Despite scaling advances, the robustness of MoE systems remains understudied. Puigcerver et al.~\cite{puigcerver2022} showed that MoE models can be more robust than dense counterparts under certain conditions, while Zhang et al.~\cite{zhang2025moe} found that expert networks are more susceptible to adversarial attacks. Pavlitska et al.~\cite{pavlitska2025robust} studied the effect of adversarial training on CNNs with sparse MoE layers. However, none of these works address formal verification of MoE systems or compositional robustness guarantees.
 
-\textbf{Neural Network Verification.} Verifying neural network robustness is NP-complete in general~\cite{katz2017}. $\alpha$--$\beta$-CROWN~\cite{wang2021} provides state-of-the-art complete verification via bound propagation, winning VNN-COMP 2021--2025~\cite{brix2025}. Certified training approaches such as CROWN-IBP~\cite{zhang2020} and randomized smoothing~\cite{cohen2019} produce models with provable guarantees. PGD-based adversarial training~\cite{madry2018} provides empirical robustness that we show correlates with formal certifiability. However, existing verification work addresses monolithic models, not compositional architectures.
+\textbf{Neural Network Verification.} Verifying neural network robustness is NP-complete in general~\cite{katz2017}. $\alpha$--$\beta$-CROWN~\cite{wang2021} provides state-of-the-art complete verification via bound propagation, winning VNN-COMP 2021--2025~\cite{kaulen2025}. Certified training approaches such as CROWN-IBP~\cite{zhang2020} and randomized smoothing~\cite{cohen2019} produce models with provable guarantees. PGD-based adversarial training~\cite{madry2018} provides empirical robustness that we show correlates with formal certifiability. However, existing verification work addresses monolithic models, not compositional architectures.
 
-\textbf{Compositional Verification.} Assume-guarantee reasoning~\cite{henzinger1998} enables modular verification in classical systems. Zhou and Tripakis~\cite{zhou2023compositional} recently applied compositional inductive invariants to neural network controlled systems. Our work extends this principle to MoE architectures, where router invariance and expert robustness jointly compose to yield system-level guarantees.
+\textbf{Compositional Verification.} Assume-guarantee reasoning~\cite{henzinger1998} enables modular verification in classical systems. Zhou and Tripakis~\cite{zhou2024compositional} recently applied compositional inductive invariants to neural network controlled systems. Our work extends this principle to MoE architectures, where router invariance and expert robustness jointly compose to yield system-level~guarantees.
 
 \textbf{Research Gap.} Existing literature addresses MoE scalability~\cite{dai2024,deepseek2024}, MoE adversarial robustness~\cite{puigcerver2022,zhang2025moe}, and monolithic verification~\cite{wang2021} separately, but does not address heterogeneous robustness or verifiable compositions for safety-critical applications. This paper addresses these gaps by combining adversarial training with formal verification to investigate: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?}
 
@@ -210,21 +210,21 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 \textbf{Training.} The router is trained after freezing experts using meta-class labels. NRT minimizes $\mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT adds adversarial loss $\mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{\text{adv}}), m)]$ with PGD-generated $x^{\text{adv}}$ ($\varepsilon = 8/255$).
 
-\textbf{Verification Property.} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$ via VNNLIB counterexample search.
+\textbf{Verification Property.} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$ via VNNLIB counterexample~search.
 
 \textbf{Compositional Guarantee.} Verified router $+$ verified expert $\implies$ verified MoE, enabling modular certification.
 
 \subsection{Training Paradigms and MoE Composition}
 
-\textbf{Non-Robust Training (NRT).} Standard supervised learning with cross-entropy loss, achieving high clean accuracy but low adversarial robustness.
+\textbf{Non-Robust Training (NRT).} Standard supervised learning with cross-entropy loss, achieving high clean accuracy but low adversarial~robustness.
 
-\textbf{Robust Training (RT).} PGD adversarial training~\cite{madry2018} ($\varepsilon = 8/255$, 7 iterations) trades clean accuracy for robustness.
+\textbf{Robust Training (RT).} PGD adversarial training~\cite{madry2018,zhang2019trades} ($\varepsilon = 8/255$, 7 iterations) trades clean accuracy for robustness.
 
 \textbf{MetaMoE Loss.} Combined classification and gating objectives: $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$ where $\mathcal{L}_{\text{cls}}$ enforces correct class prediction and $\mathcal{L}_{\text{gate}}$ ensures correct expert selection.
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
-Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2 experts $\approx$ 2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the problem:
+Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2~experts $\approx$~2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the~problem:
 
 \textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify experts independently. By Proposition~\ref{prop:compositional}:
 \begin{equation}
@@ -235,7 +235,7 @@ This reduces verification from 2M to 96K parameters (20$\times$ reduction).
 
 \subsection{Critical Design Decisions for Verifiability}
 
-Five design decisions ensure router verifiability: (1) \textbf{Router-only extraction} for 20$\times$ parameter reduction, (2) \textbf{property negation} for counterexample search, (3) \textbf{unified normalization} across datasets, (4) \textbf{normalized-space perturbations} for threat model consistency, (5) \textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN analysis.
+Five design decisions ensure router verifiability: (1)~\textbf{Router-only extraction} for 20$\times$ parameter reduction, (2)~\textbf{property negation} for counterexample search, (3)~\textbf{unified normalization} across datasets, (4)~\textbf{normalized-space perturbations} for threat model consistency, (5)~\textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN~analysis.
 
 \section{Experiments and Results}
 
@@ -243,7 +243,7 @@ Five design decisions ensure router verifiability: (1) \textbf{Router-only extra
 
 \subsubsection{Overview.}
 
-Formal verification of neural networks is critical for safety-critical applications like autonomous vehicle decision-making. We employed $\alpha$--$\beta$-CROWN, the state-of-the-art neural network verifier that won VNN-COMP 2021--2025~\cite{wang2021,xu2020abcrown,brix2025}, to provide provable robustness guarantees for both individual experts and the router.
+Formal verification of neural networks is critical for safety-critical applications like autonomous vehicle decision-making. We employed $\alpha$\nobreakdash--$\beta$\nobreakdash-CROWN, the state-of-the-art neural network verifier and winner of VNN-COMP 2021--2025~\cite{wang2021,xu2020abcrown,kaulen2025}, to provide provable robustness guarantees for both individual experts and the~router.
 
 Verified Models: CIFAR-10 Expert ($E_{0\_\text{CNN}}$, RT and NRT, 10 classes), MNIST Expert ($E_{1\_\text{CNN}}$, RT and NRT, 10 classes), and GatingNet Router (VerifiableCNN, 96K parameters).
 
