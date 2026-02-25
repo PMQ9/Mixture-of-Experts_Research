@@ -282,7 +282,7 @@ In $\alpha$--$\beta$-CROWN, unknown and timeout are semantically equivalent, ind
 \end{enumerate}
 
 \textbf{Metric Alignment: AA vs CRA for the Router.}
-The apparent discrepancy between router AA ($\approx 35\%$) and CRA ($\approx 100\%$) requires careful clarification of what each metric measures: (this result is actually presented later in the paper, consider moving this)
+As will be quantified in Section~\ref{sec:gap-analysis}, router CRA ($\approx 100\%$) substantially exceeds end-to-end AA ($\approx 35\%$). This apparent discrepancy requires careful clarification of what each metric measures:
 \begin{itemize}
     \item \textbf{Router CRA} verifies the property: $\arg\max_i \mathcal{G}_i(x') = m^*$ (correct expert selection) for all $x' \in B_\varepsilon(x)$, on individual test samples drawn from CIFAR-10 and MNIST. Each sample is verified independently.
     \item \textbf{Router AA ($\approx 35\%$)} measures meta-class classification accuracy under PGD attack on the \emph{mixed} test set (CIFAR-10 $\cup$ MNIST), evaluated as end-to-end system accuracy (including expert predictions), not router-only argmax accuracy.
@@ -401,12 +401,13 @@ Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 
     \item \textbf{H3 Validation (Proposition~\ref{prop:compositional}):} System robustness decomposes modularly: router invariance (100\% gating accuracy) $\land$ expert robustness $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation via the sufficient condition.
 
-    \item \textbf{Dataset Similarity Impact:} GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% adversarial accuracy, compared to 100\% routing accuracy and 41.59\% adversarial accuracy for CIFAR10+MNIST (this is not yet presented, need to forward reference). The 12.12\% adversarial accuracy gap demonstrates that routing difficulty directly propagates to system robustness (see Appendix~\ref{app:similarity}).
+    \item \textbf{Dataset Similarity Impact:} As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% adversarial accuracy, compared to 100\% routing accuracy and 41.59\% adversarial accuracy for the CIFAR10+MNIST configuration above (Table~\ref{tab:expert-impact}, Both RT row). The 12.12\% adversarial accuracy gap demonstrates that routing difficulty directly propagates to system robustness.
 
     \item \textbf{Extremely Low Variance Indicates Reproducibility:} Clean accuracy standard deviation ranges from 0.04\% to 0.08\% (avg 0.06\%), and adversarial accuracy from 0.28\% to 1.03\% (avg 0.67\%), indicating highly reproducible and stable training outcomes across independent runs.
 \end{enumerate}
 
 \subsection{Empirical--Formal Robustness Verification Correlation Analysis}
+\label{sec:gap-analysis}
 
 Table 7 here
 
