@@ -171,7 +171,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 \section{Methodology}
 
-Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains~\cite{gtsrb}) and PTSD, BTSD, ETSD, TSRB (similar traffic sign domains for lifelong learning).
+Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains~\cite{gtsrb}) and PTSD, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
 \begin{table}[t]
 \centering
@@ -188,14 +188,14 @@ GTSRB & $E_2$ & $E_{2\_\text{CNN\_NRT}}$ & $E_{2\_\text{CNN\_RT}}$ \\
 PTSD & $E_3$ & $E_{3\_\text{CNN\_NRT}}$ & $E_{3\_\text{CNN\_RT}}$ \\
 BTSD & $E_4$ & $E_{4\_\text{CNN\_NRT}}$ & $E_{4\_\text{CNN\_RT}}$ \\
 ETSD & $E_5$ & $E_{5\_\text{CNN\_NRT}}$ & $E_{5\_\text{CNN\_RT}}$ \\
-TSRB & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
+TSRD & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Verification-Aware CNN Architecture}
 
-Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alpha$--$\beta$-CROWN compatibility: (1) average pooling instead of max pooling for linearity; (2) no BatchNorm (compensated by increased channel capacity $20 \to 28 \to 40 \to 56$); (3) minimal ONNX operators via static shapes. The architecture comprises 4 convolutional layers with gradual channel growth, global average pooling, and a 2-layer FC head (detailed specifications in Appendix~\ref{app:architecture}).
+Both experts and router use VerifiableCNN designed for $\alpha$--$\beta$-CROWN compatibility: (1) average pooling ($2{\times}2$) instead of max pooling for linearity; (2) increased channel capacity ($20 \to 28 \to 40 \to 56$) to compensate for narrow widths; (3) minimal ONNX operators via static shapes. Experts include BatchNorm (${\sim}$96K params for 43 classes); the router omits BatchNorm for deterministic verification behavior (${\sim}$38K params). The architecture comprises 4 convolutional layers with gradual channel growth, $2{\times}2$ average pooling in blocks 1--3, and a 2-layer FC head (detailed specifications in Appendix~\ref{app:architecture}).
 
 \textbf{Training.} Experts are trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\varepsilon = 8/255$, 7 steps). See Appendix~\ref{app:hyperparams} for full hyperparameters.
 
@@ -205,7 +205,7 @@ Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alph
 
 \subsection{Router (GatingNet)}
 
-The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting $N$ raw logits (one routing score $g_i$ per expert), with predicted meta-class $m^* = \arg\max_i g_i$ (the expert receiving the highest score). The architecture mirrors the expert CNN (96.5K params) but its final layer outputs $N$ logits (number of experts) instead of $C_i$ class logits.
+The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting $N$ raw logits (one routing score $g_i$ per expert), with predicted meta-class $m^* = \arg\max_i g_i$ (the expert receiving the highest score). The architecture shares the same convolutional backbone as the expert CNN but omits BatchNorm (for deterministic verification behavior), giving ${\sim}$38K parameters for $N{=}2$. Its final layer outputs $N$ logits (number of experts) instead of $C_i$ class logits.
 
 \textbf{Unified Normalization.} Since the router receives images from multiple datasets with different pixel distributions, we normalize all inputs using dataset-averaged statistics: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$ and $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$, where $\mu_i$ and $\sigma_i$ are the per-channel mean and standard deviation of dataset~$i$. This prevents distribution mismatch at the router input.
 
@@ -225,7 +225,7 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
-Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2~experts $\approx$~2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the~problem:
+Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2~experts $\approx$~231K parameters) benefits from a \textbf{compositional verification strategy} that decomposes the~problem:
 
 \textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Proposition~\ref{prop:compositional}, if both components are verified, the full system is verified:
 \begin{equation}
@@ -233,11 +233,11 @@ Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE syste
 \end{equation}
 where $\text{Verified}_{\text{Router}}(x \to i)$ means the router provably selects expert~$i$ for all $x' \in B_\varepsilon(x)$, and $\text{Verified}_{\text{Expert}_i}(x \to j)$ means expert~$i$ provably predicts class~$j$ for all $x' \in B_\varepsilon(x)$.
 
-This reduces verification from 2M to 96K parameters per component (20$\times$ reduction), since each component is verified independently rather than verifying the full composed system.
+This reduces verification from the full system (${\sim}$231K parameters for $N{=}2$ experts) to ${\sim}$96K per expert or ${\sim}$38K for the router (${\sim}$2.4$\times$ and ${\sim}$6$\times$ reduction respectively), since each component is verified independently. Importantly, the per-component verification cost is \emph{constant} regardless of system size: as more experts are added, the monolithic system grows linearly while each verification task remains ${\sim}$96K parameters. The reduction ratio thus scales as ${\sim}(N \cdot 96\text{K} + 38\text{K}) / 96\text{K} \approx N$ for large $N$, making compositional verification increasingly advantageous at scale.
 
 \subsection{Critical Design Decisions for Verifiability}
 
-Five design decisions ensure router verifiability: (1)~\textbf{Router-only extraction} for 20$\times$ parameter reduction, (2)~\textbf{property negation} for counterexample search, (3)~\textbf{unified normalization} across datasets, (4)~\textbf{normalized-space perturbations} for threat model consistency, (5)~\textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN~analysis.
+Five design decisions ensure router verifiability: (1)~\textbf{Router-only extraction} (${\sim}$38K params vs.\ ${\sim}$231K full system), (2)~\textbf{property negation} for counterexample search, (3)~\textbf{unified normalization} across datasets, (4)~\textbf{normalized-space perturbations} for threat model consistency, (5)~\textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN~analysis.
 
 \section{Experiments and Results}
 
@@ -247,7 +247,7 @@ Five design decisions ensure router verifiability: (1)~\textbf{Router-only extra
 
 Formal verification of neural networks is critical for safety-critical applications like autonomous vehicle decision-making. We used $\alpha$\nobreakdash--$\beta$\nobreakdash-CROWN, the state-of-the-art neural network verifier and winner of VNN-COMP 2021--2025~\cite{wang2021,xu2020abcrown,kaulen2025}, to provide provable robustness guarantees for both individual experts and the router.
 
-Verified Models: CIFAR-10 Expert ($E_{0\_\text{CNN}}$, RT and NRT, 10 classes), MNIST Expert ($E_{1\_\text{CNN}}$, RT and NRT, 10 classes), and GatingNet Router (VerifiableCNN, 96K parameters).
+Verified Models: CIFAR-10 Expert ($E_{0\_\text{CNN}}$, RT and NRT, 10 classes, ${\sim}$94K parameters), MNIST Expert ($E_{1\_\text{CNN}}$, RT and NRT, 10 classes, ${\sim}$94K parameters), and GatingNet Router (VerifiableCNN without BatchNorm, ${\sim}$38K parameters).
 
 \subsubsection{Router Verification Results.}
 
@@ -294,7 +294,7 @@ The CRA $\gg$ AA pattern arises because CRA measures router-only invariance on w
 
 \subsubsection{Expert Model Verification.}
 
-Expert Architecture: VerifiableCNN (96K parameters); RT/NRT with PGD ($\varepsilon = 8/255$); ONNX with folding, raw logits; $\alpha$--$\beta$-CROWN with Gurobi.
+Expert Architecture: VerifiableCNN (${\sim}$94K parameters for 10 classes); RT/NRT with PGD ($\varepsilon = 8/255$); ONNX with BatchNorm folding, raw logits; $\alpha$--$\beta$-CROWN with Gurobi.
 
 \begin{table}[t]
 \centering
@@ -387,7 +387,7 @@ CIFAR10-RT + MNIST-NRT & $88.10 \pm 0.06$ & $33.56 \pm 0.90$ & $54.54\%$ \\
 Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 \midrule
 \multicolumn{4}{l}{\textit{Expert effect:} $\Delta_{\text{adv}} = 13.15\%$ (Both RT vs Both NRT)} \\
-\multicolumn{4}{l}{\textit{Router effect:} $\Delta_{\text{adv}} < 0.1\%$ (RT Router vs NRT Router, 4.1$\times$ slower)} \\
+\multicolumn{4}{l}{\textit{Router effect:} $\Delta_{\text{adv}} < 0.1\%$ (RT Router vs NRT Router, 3.2$\times$ slower)} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -395,7 +395,7 @@ Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 \subsubsection{Analysis and Discussion.}
 
 \begin{enumerate}
-    \item \textbf{Router Training Shows Negligible Impact:} RT and NRT router training produce statistically identical results ($\Delta < 0.1\%$ for both clean and adversarial accuracy), validating that visual dissimilarity between CIFAR-10 and MNIST enables stable routing without adversarial training. NRT Router is 4.1$\times$ faster. Demonstrating computational savings when routing is inherently stable
+    \item \textbf{Router Training Shows Negligible Impact:} RT and NRT router training produce statistically identical results ($\Delta < 0.1\%$ for both clean and adversarial accuracy), validating that visual dissimilarity between CIFAR-10 and MNIST enables stable routing without adversarial training. NRT Router is 3.2$\times$ faster. Demonstrating computational savings when routing is inherently stable
 
     \item \textbf{Expert Configuration Dominates System Robustness:} The 13.15\% adversarial accuracy difference between expert configurations (Both RT vs Both NRT) far exceeds the 0.06\% router training difference, confirming expert robustness propagates compositionally.
 
@@ -487,14 +487,14 @@ Within each domain, higher AA monotonically associates with higher CRA: MNIST NR
 
 \subsection{Limitations and Scope}
 
-Proposition~\ref{prop:compositional} applies to hard routing ($k=1$) only; soft/top-$k$ routing requires verifying invariance of the full expert set and weight stability. Current experiments use small verification-compatible CNNs (96.5K params); scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity; GTSRB+PTSD achieves only 93.17\% gating accuracy (Appendix~\ref{app:similarity}), breaking the invariance assumption. Future work includes extensions to soft routing, probabilistic verification for larger architectures, and adaptive gating for similar domains.
+Proposition~\ref{prop:compositional} applies to hard routing ($k=1$) only; soft/top-$k$ routing requires verifying invariance of the full expert set and weight stability. Current experiments use small verification-compatible CNNs (${\sim}$96K params per expert, ${\sim}$38K for the router); scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity; GTSRB+PTSD achieves only 93.17\% gating accuracy (Appendix~\ref{app:similarity}), breaking the invariance assumption. Future work includes extensions to soft routing, probabilistic verification for larger architectures, and adaptive gating for similar domains.
 
 \section{Conclusion}
 
-This paper presented a framework for compositional robustness verification of heterogeneous MoE systems. The central contribution is Proposition~\ref{prop:compositional}: for hard-routed MoE, router invariance plus expert robustness is sufficient for system robustness. This decomposition reduces verification from 2M to 96K parameters and is validated both formally and empirically.
+This paper presented a framework for compositional robustness verification of heterogeneous MoE systems. The central contribution is Proposition~\ref{prop:compositional}: for hard-routed MoE, router invariance plus expert robustness is sufficient for system robustness. This decomposition reduces verification from the full system (${\sim}$231K parameters for $N{=}2$) to ${\sim}$96K per expert or ${\sim}$38K for the router, with the reduction ratio growing linearly as experts are added, and is validated both formally and empirically.
 
 \textbf{Key findings:}
-Firstly, for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference), while router training shows negligible impact ($\Delta < 0.1\%$), skipping this enables 4.1$\times$ training speedup.
+Firstly, for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference), while router training shows negligible impact ($\Delta < 0.1\%$), skipping this enables 3.2$\times$ training speedup.
 Secondly, router formal verification achieves 100\% success at practical threat models ($\varepsilon \leq 4/255$), satisfying the invariance condition of Proposition~\ref{prop:compositional} across all 40 experimental runs.
 And thirdly, within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, with robust training as a prerequisite for verifiability.
 
@@ -549,10 +549,10 @@ Verification: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ fo
 CIFAR-10 & 10 & 50,000 & 10,000 & General objects \\
 MNIST & 10 & 60,000 & 10,000 & Handwritten digits \\
 GTSRB & 43 & 39,209 & 12,630 & German traffic signs \\
-PTSD & 12 & 6,421 & 1,604 & Persian traffic signs \\
-BTSD & 8 & 3,200 & 800 & Belgian traffic signs \\
-ETSD & 15 & 7,500 & 1,875 & European traffic signs \\
-TSRB & 20 & 10,000 & 2,500 & Traffic signs benchmark \\
+PTSD & 43 & 14,405 & 2,421 & Persian traffic signs \\
+BTSD & 62 & 4,575 & 2,520 & Belgian traffic signs \\
+ETSD & 55 & 6,133 & 2,027 & European traffic signs \\
+TSRD & 58 & 4,170 & 1,994 & Chinese traffic signs \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -565,17 +565,19 @@ Training/Inference: Intel Core i7-14700K (20 cores), NVIDIA GeForce RTX 4060 (8G
 \section{Detailed Architecture Specifications}
 \label{app:architecture}
 
-The VerifiableCNN architecture (96.5K parameters) used for both experts and router:
+The VerifiableCNN architecture used for experts (${\sim}$96K parameters with BatchNorm, 43 classes; ${\sim}$94K for 10 classes) and router (${\sim}$38K parameters without BatchNorm):
 
 \textbf{Convolutional Feature Extraction:}
-Conv Block 1: Conv2d($3 \to 20$, $3 \times 3$), ReLU, AvgPool($2 \times 2$) $\to 20 \times 16 \times 16$.
-Conv Block 2: Conv2d($20 \to 28$, $3 \times 3$), ReLU, AvgPool($2 \times 2$) $\to 28 \times 8 \times 8$.
-Conv Block 3: Conv2d($28 \to 40$, $3 \times 3$), ReLU, AvgPool($2 \times 2$) $\to 40 \times 4 \times 4$.
-Conv Block 4: Conv2d($40 \to 56$, $3 \times 3$), ReLU, Global AvgPool $\to 56$.
+Conv Block 1: Conv2d($3 \to 20$, $3 \times 3$, padding=1), ReLU, AvgPool($2 \times 2$) $\to 20 \times 16 \times 16$.
+Conv Block 2: Conv2d($20 \to 28$, $3 \times 3$, padding=1), ReLU, AvgPool($2 \times 2$) $\to 28 \times 8 \times 8$.
+Conv Block 3: Conv2d($28 \to 40$, $3 \times 3$, padding=1), ReLU, AvgPool($2 \times 2$) $\to 40 \times 4 \times 4$.
+Conv Block 4: Conv2d($40 \to 56$, $3 \times 3$, padding=1), ReLU $\to 56 \times 4 \times 4$.
 
-\textbf{Classification Head:} Linear($56 \to 128$), ReLU, Linear($128 \to C$) where $C = C_i$ for experts or $C = N$ for router. Output: raw logits (no softmax).
+\textbf{Classification Head:} Flatten($56 \times 4 \times 4 = 896$), Linear($896 \to 64$), ReLU, Dropout($0.3$), Linear($64 \to C$) where $C = C_i$ for experts or $C = N$ for router. Output: raw logits (no softmax).
 
-\textbf{Design Rationale:} Gradual channel growth ($3 \to 20 \to 28 \to 40 \to 56$) compensates for absence of BatchNorm. Average pooling (linear operation) facilitates LP-based verification. No BatchNorm eliminates train/eval discrepancies. All $3 \times 3$ convolutions enable uniform bound propagation.
+\textbf{Expert vs.\ Router:} Experts include BatchNorm after each convolution (${\sim}$96K params for 43 classes); the router omits BatchNorm for deterministic verification behavior (${\sim}$38K params for $N{=}2$).
+
+\textbf{Design Rationale:} Gradual channel growth ($3 \to 20 \to 28 \to 40 \to 56$) compensates for narrow channels. Average pooling (linear operation) facilitates LP-based verification. Router omits BatchNorm to eliminate train/eval discrepancies. All $3 \times 3$ convolutions enable uniform bound propagation.
 
 \section{Empirical--Formal Robustness Gap Analysis}
 \label{app:gap}
