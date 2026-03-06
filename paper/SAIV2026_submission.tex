@@ -68,35 +68,39 @@ These three lines of work -- MoE scalability, adversarial robustness, and formal
 
 \section{Problem Formulation}
 
-Let $x \in \mathbb{R}^{C \times H \times W}$ denote an input image (normalized, $H = W = 32$) with target class $y \in \{1, \ldots, C_{total}\}$ where $C_{total} = \sum_{i=1}^{N} C_i$, and $C_i$ is the number of classes in dataset $i$. A heterogeneous MoE consists of:
+We define the following notation used throughout this paper. Let $x \in \mathbb{R}^{C \times H \times W}$ denote a normalized input image, where $C = 3$ is the number of color channels (RGB), $H$ is the image height, and $W$ is the image width (in our experiments, $H = W = 32$ pixels). Let $N$ denote the total number of domain-specific experts in the system, and let $C_i$ denote the number of classes in dataset~$i$ (e.g., $C_i = 10$ for CIFAR-10, $C_i = 43$ for GTSRB). The total number of classes across all datasets is $C_{\text{total}} = \sum_{i=1}^{N} C_i$, and the target class label is $y \in \{1, \ldots, C_{\text{total}}\}$.
+
+A heterogeneous MoE system consists of two types of components:
 
 \begin{enumerate}
-    \item \textbf{Experts:} $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ producing logits $y_i = E_i(x)$ for domain $i$
-    \item \textbf{Router:} $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ producing routing logits $g = \mathcal{G}(x)$
+    \item \textbf{Experts:} Each expert $E_i$ is a neural network specialized for dataset~$i$. It maps an input image to a vector of class logits (unnormalized scores) for its domain: $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$, producing $y_i = E_i(x)$ where $y_i \in \mathbb{R}^{C_i}$ is the logit vector for domain~$i$.
+    \item \textbf{Router:} The router (also called gating network) $\mathcal{G}$ determines which expert should handle a given input. It maps the input image to $N$ routing logits: $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$, producing $g = \mathcal{G}(x)$ where $g_i$ is the routing score for expert~$i$.
 \end{enumerate}
 
-The router selects expert $m^* = \arg\max_i g_i$. For top\nobreakdash-$k$ routing, let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ be the selected expert indices with normalized weights $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$. The MoE output is $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ with class offsets $o_i = \sum_{m<i} C_m$:
+Under hard routing (top-1 selection), the router selects a single expert $m^* = \arg\max_i g_i$, i.e., the expert with the highest routing score. For top\nobreakdash-$k$ routing (where $k$ experts are activated simultaneously), let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ denote the indices of the $k$ experts with the highest routing scores. Each selected expert~$i_j$ receives a normalized weight $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$, representing its contribution to the final output. The MoE produces a unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ by placing each expert's weighted logits at the appropriate position using class offsets $o_i = \sum_{m<i} C_m$ (i.e., $o_i$ is the starting index for expert~$i$'s classes in the unified output):
 \begin{equation}
     \hat{y}_c = \begin{cases}
-        w_j \cdot y_{i_j}[c - o_{i_j}], & \text{if } c \in \{o_{i_j}, \ldots, o_{i_j} + C_{i_j} - 1\} \\
-        0, & \text{otherwise}
+        w_j \cdot y_{i_j}[c - o_{i_j}], & \text{if } c \in \{o_{i_j}, \ldots, o_{i_j} + C_{i_j} - 1\} \text{ for some selected expert } i_j \\
+        0, & \text{otherwise (classes belonging to non-selected experts)}
     \end{cases}
 \end{equation}
+Here, $\hat{y}_c$ is the $c$-th element of the unified output, $y_{i_j}[c - o_{i_j}]$ retrieves the logit from expert~$i_j$ at the local class index $c - o_{i_j}$, and $w_j$ is the routing weight for that expert.
 
 \subsection{Adversarial Threat Model and Robustness}
 
-We consider $L_\infty$-bounded perturbations $\delta$ with $\|\delta\|_\infty \leq \varepsilon$, producing adversarial examples $x' = x + \delta$ in the $\varepsilon$-ball $B_\varepsilon(x)$. Robustness requires:
+We consider an adversary that applies a small perturbation $\delta \in \mathbb{R}^{C \times H \times W}$ to the input, bounded under the $\ell_\infty$ norm: $\|\delta\|_\infty \leq \varepsilon$, where $\varepsilon > 0$ is the perturbation budget (e.g., $\varepsilon = 8/255 \approx 0.031$ in pixel intensity). This produces adversarial examples $x' = x + \delta$ lying within the $\varepsilon$-ball $B_\varepsilon(x) = \{x' : \|x' - x\|_\infty \leq \varepsilon\}$, i.e., the set of all images within $\varepsilon$ of the original input in every pixel channel. Robustness requires that the model's prediction remains correct for \emph{all} perturbations within this ball:
 
 \begin{itemize}
-    \item \textbf{Expert $E_i$:} $\arg\max y_i(x') = y \quad \forall x' \in B_\varepsilon(x)$
-    \item \textbf{Router $\mathcal{G}$:} $m^*(x') = m^*(x) \quad \forall x' \in B_\varepsilon(x)$, or equivalently $g_{m^*}(x') - g_j(x') > 0$ for all $j \neq m^*$
-    \item \textbf{MoE:} $\arg\max_c \hat{y}_c(x') = y \quad \forall x' \in B_\varepsilon(x)$
+    \item \textbf{Expert $E_i$ robustness:} The expert's predicted class is unchanged: $\arg\max_c\, y_i(x')[c] = y$ for all $x' \in B_\varepsilon(x)$, where $y_i(x') = E_i(x')$ is the logit vector of expert~$i$ on the perturbed input.
+    \item \textbf{Router $\mathcal{G}$ robustness (invariance):} The router selects the same expert under perturbation: $m^*(x') = m^*(x)$ for all $x' \in B_\varepsilon(x)$, or equivalently, the selected expert's routing logit remains dominant: $g_{m^*}(x') - g_j(x') > 0$ for all $j \neq m^*$ and all $x' \in B_\varepsilon(x)$.
+    \item \textbf{MoE system robustness:} The final classification is preserved: $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$, where $\hat{y}(x')$ is the unified MoE output (Eq.~1).
 \end{itemize}
 
-Certified robustness accuracy (CRA) measures the fraction of samples verified robust:
+We quantify verifiability using \emph{certified robustness accuracy} (CRA), which measures the fraction of test samples for which a formal verifier can prove robustness within the $\varepsilon$-ball:
 \begin{equation}
     \text{CRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbbm{1}[\text{Verify}(f, x, \varepsilon)]
 \end{equation}
+where $D$ is the test dataset, $f$ denotes the model being verified (expert, router, or full MoE), and $\mathbbm{1}[\text{Verify}(f, x, \varepsilon)]$ is an indicator function that equals~1 if the verifier proves $f$ is robust at input~$x$ within radius~$\varepsilon$, and~0 otherwise (including timeouts).
 
 \subsection{Compositional Robustness}
 
@@ -133,7 +137,7 @@ This decomposition enables modular verification: verify router invariance and ex
 
 \subsection{Empirical--Formal Gap}
 
-The certification gap $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$ quantifies the divergence between formal verification and empirical adversarial accuracy (AA) under PGD. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
+We define the \emph{certification gap} $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$, which quantifies the divergence between formal verification and empirical adversarial evaluation. Here, $\text{AA}(\varepsilon)$ denotes the \emph{adversarial accuracy} -- the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$ -- and $\text{CRA}(\varepsilon)$ is the certified robustness accuracy defined in Eq.~2. A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
 
 \subsection{Problem Statement}
 
@@ -167,7 +171,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 \section{Methodology}
 
-Given input $x \in \mathbb{R}^{3 \times 32 \times 32}$ and $N$ datasets with $C_i$ classes each, we train $N$ frozen experts $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ and a router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ to select appropriate experts. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains~\cite{gtsrb}) and PTSD, BTSD, ETSD, TSRB (similar traffic sign domains for lifelong learning).
+Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains~\cite{gtsrb}) and PTSD, BTSD, ETSD, TSRB (similar traffic sign domains for lifelong learning).
 
 \begin{table}[t]
 \centering
@@ -201,11 +205,11 @@ Both experts and router use VerifiableCNN (96.5K parameters) designed for $\alph
 
 \subsection{Router (GatingNet)}
 
-The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting raw logits $g_i$ for each expert, with predicted meta-class $m^* = \arg\max_i g_i$. Architecture mirrors expert CNN (96.5K params) but outputs $N$ logits instead of class predictions.
+The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting $N$ raw logits (one routing score $g_i$ per expert), with predicted meta-class $m^* = \arg\max_i g_i$ (the expert receiving the highest score). The architecture mirrors the expert CNN (96.5K params) but its final layer outputs $N$ logits (number of experts) instead of $C_i$ class logits.
 
-\textbf{Unified Normalization.} To prevent distribution mismatch, the router uses dataset-averaged normalization: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$, $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$.
+\textbf{Unified Normalization.} Since the router receives images from multiple datasets with different pixel distributions, we normalize all inputs using dataset-averaged statistics: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$ and $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$, where $\mu_i$ and $\sigma_i$ are the per-channel mean and standard deviation of dataset~$i$. This prevents distribution mismatch at the router input.
 
-\textbf{Training.} The router is trained after freezing experts using meta-class labels. NRT minimizes $\mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT adds adversarial loss $\mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{\text{adv}}), m)]$ with PGD-generated $x^{\text{adv}}$ ($\varepsilon = 8/255$).
+\textbf{Training.} The router is trained after freezing all experts, using meta-class labels $m \in \{0, \ldots, N{-}1\}$ that identify which dataset each sample belongs to. NRT minimizes the cross-entropy between router predictions and true meta-class: $\mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT additionally includes the loss on adversarial examples: $\mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{\text{adv}}), m)]$, where $x^{\text{adv}}$ is generated by PGD attack ($\varepsilon = 8/255$).
 
 \textbf{Verification Property.} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$ via VNNLIB counterexample search.
 
@@ -223,12 +227,13 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2~experts $\approx$~2M parameters) is intractable to verify as a whole due to scale and dynamic routing logic. We adopt a \textbf{compositional verification strategy} that decomposes the~problem:
 
-\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify experts independently. By Proposition~\ref{prop:compositional}:
+\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Proposition~\ref{prop:compositional}, if both components are verified, the full system is verified:
 \begin{equation}
 \text{Verified}_{\text{Router}}(x \to i) \land \text{Verified}_{\text{Expert}_i}(x \to j) \implies \text{Verified}_{\text{MoE}}(x \to j)
 \end{equation}
+where $\text{Verified}_{\text{Router}}(x \to i)$ means the router provably selects expert~$i$ for all $x' \in B_\varepsilon(x)$, and $\text{Verified}_{\text{Expert}_i}(x \to j)$ means expert~$i$ provably predicts class~$j$ for all $x' \in B_\varepsilon(x)$.
 
-This reduces verification from 2M to 96K parameters (20$\times$ reduction).
+This reduces verification from 2M to 96K parameters per component (20$\times$ reduction), since each component is verified independently rather than verifying the full composed system.
 
 \subsection{Critical Design Decisions for Verifiability}
 
@@ -521,11 +526,12 @@ Adam optimizer, learning rate $1 \times 10^{-3}$, weight decay $5 \times 10^{-4}
 
 \subsection{BatchNorm Folding}
 
-For a convolutional layer with weights $W \in \mathbb{R}^{C_{\text{out}} \times C_{\text{in}} \times k \times k}$ and bias $b \in \mathbb{R}^{C_{\text{out}}}$, followed by BatchNorm with running mean $\mu$, running variance $\sigma^2$, learnable scale $\gamma$, shift $\beta$, and $\varepsilon_{\text{bn}} = 10^{-5}$, the folded parameters are:
+For a convolutional layer with weights $W \in \mathbb{R}^{C_{\text{out}} \times C_{\text{in}} \times k \times k}$ (where $C_{\text{out}}$ is the number of output channels, $C_{\text{in}}$ the number of input channels, and $k \times k$ the kernel size) and bias $b \in \mathbb{R}^{C_{\text{out}}}$, followed by a BatchNorm layer with running mean $\mu_i$, running variance $\sigma^2_i$, learnable scale $\gamma_i$, and shift $\beta_i$ (all per output channel~$i$), with numerical stability constant $\varepsilon_{\text{bn}} = 10^{-5}$, the folded (merged) parameters are:
 \begin{align}
 W'_{i,j,m,n} &= \gamma_i \cdot \frac{W_{i,j,m,n}}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \quad \forall i,j,m,n \\
 b'_i &= \frac{\gamma_i}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \cdot (b_i - \mu_i) + \beta_i \quad \forall i
 \end{align}
+Here, the index $i$ ranges over output channels ($1 \leq i \leq C_{\text{out}}$), $j$ over input channels, and $m, n$ over spatial kernel dimensions. The folded layer $\text{Conv}(W', b')$ is mathematically equivalent to $\text{BatchNorm}(\text{Conv}(W, b))$, eliminating the BatchNorm operator from the ONNX graph.
 
 Verification: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ for random inputs. All models exported with PyTorch 2.0+, ONNX opset 13, static input shape $(1, 3, 32, 32)$, raw logits output.
 
