@@ -437,7 +437,11 @@ The practical implication is clear: robust training of experts is mandatory for 
 \subsection{Scalability}
 \label{sec:eval-scalability}
 
-MetaMoE compositional training is 16.7\% faster than monolithic single-model training for 3 datasets; incremental fine-tuning (30 vs.\ 151 mins) further highlights efficiency (H4). Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$, where $L_{\text{router}}$ is constant and each expert contributes $\sim$40--50ms, validating $O(k)$ scaling where $k < N$ (H5). Table~\ref{tab:inference} confirms latency grows linearly with $k$ and is independent of the total number of experts $N$ at fixed $k$.
+\textbf{Training time.}
+We compared MetaMoE against monolithic training when incrementally adding a third dataset (MNIST) to an existing 2-dataset system (GTSRB + CIFAR-10). The monolithic approach must retrain on all three datasets from scratch (151 mins), while MetaMoE only trains a new expert (72.5 mins) and fine-tunes the frozen router (30 mins), yielding a 16.7\% end-to-end speedup (202 vs.\ 242.5 total mins). This gap widens as more experts are added, since per-expert cost is fixed while monolithic retraining grows with dataset count (H4). See Appendix~\ref{app:training-time} for the full breakdown.
+
+\textbf{Inference scaling.}
+Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$, where $L_{\text{router}}$ is constant and each expert contributes $\sim$40--50ms. Table~\ref{tab:inference} confirms $O(k)$ scaling: at fixed $k{=}1$, latency remains $\sim$0.07s regardless of whether the system contains 2 or 5 total experts (H5).
 
 \begin{table}[t]
 \centering
@@ -456,7 +460,8 @@ MetaMoE compositional training is 16.7\% faster than monolithic single-model tra
 \end{tabular}
 \end{table}
 
-The compositional verification advantage also scales: our $N{=}2$ setting yields a modest ${\sim}$2.4$\times$ verification cost reduction, but this grows linearly with $N$ -- for $N{=}7$ datasets (Table~\ref{tab:notation}) the reduction reaches ${\sim}$7$\times$, since monolithic cost scales with total system size while per-component cost remains fixed. The converse of Theorem~\ref{thm:compositional} does not hold: an MoE could be robust even with router switching if all candidate experts agree. Our framework provides a conservative but practically useful sufficient condition.
+\textbf{Verification scaling.}
+The compositional verification advantage grows linearly with $N$: our $N{=}2$ setting yields a ${\sim}$2.4$\times$ verification cost reduction, scaling to ${\sim}$7$\times$ at $N{=}7$ datasets (Table~\ref{tab:notation}), since monolithic cost scales with total system size while per-component cost remains fixed.
 
 \subsection{Limitations}
 \label{sec:limitations}
@@ -560,6 +565,45 @@ CRA from formal verification often exceeds AA from PGD attacks. CRA measures the
 The gap $\Delta = \text{CRA} - \text{AA}$ varies: simple domains (MNIST-RT: $\Delta = 9.23\%$) achieve tight correspondence; complex domains (CIFAR-10-RT: $\Delta = 72.76\%$) exhibit loose correspondence; routers ($\Delta \approx 65\%$) reflect geometric dataset separation creating decision boundary margins $\gg \varepsilon$.
 
 \textbf{Critical finding:} CIFAR-10-NRT exhibits CRA $= 0\%$ (complete verification failure), demonstrating robust training is a prerequisite for verifiability. Non-robust models produce excessively loose CROWN bounds due to chaotic decision boundaries.
+
+\section{Training Time Breakdown}
+\label{app:training-time}
+
+Tables~\ref{tab:train-2ds} and~\ref{tab:train-3ds} show the full training time comparison between monolithic and MetaMoE compositional training.
+
+\begin{table}[t]
+\centering
+\caption{Training time comparison (2 datasets: GTSRB + CIFAR-10).}
+\label{tab:train-2ds}
+\small
+\begin{tabular}{@{}llp{4.2cm}@{}}
+\toprule
+ & \textbf{Monolithic} & \textbf{MetaMoE (2 experts)} \\
+\midrule
+Training time & 91.5 mins & 99.5 mins \\
+Clean accuracy & 93.15\% & 92.80\% \\
+Details & Combined training & GTSRB: 33.5 mins \newline CIFAR-10: 54 mins \newline Router: 15 mins \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Training time comparison (3 datasets: + MNIST, incremental addition).}
+\label{tab:train-3ds}
+\small
+\begin{tabular}{@{}lp{3.8cm}p{3.8cm}@{}}
+\toprule
+ & \textbf{Monolithic} & \textbf{MetaMoE (3 experts)} \\
+\midrule
+Training time & 242.5 mins & 202.0 mins \\
+Clean accuracy & 94.97\% & 93.61\% \\
+Details & Initial 2-dataset: 91.5 mins \newline Retrain to add MNIST: 151 mins & Initial 2-expert MoE: 99.5 mins \newline Add MNIST expert: 72.5 mins \newline Fine-tune router: 30 mins \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key insight is the incremental cost: adding a new dataset requires 151 mins of full retraining for the monolithic model vs.\ 102.5 mins (72.5 + 30) for MetaMoE. Of the MetaMoE cost, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable.
 
 \section{Dataset Similarity Analysis: GTSRB+PTSD vs.\ CIFAR10+MNIST}
 \label{app:similarity}
