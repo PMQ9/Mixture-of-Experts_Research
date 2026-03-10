@@ -45,14 +45,15 @@ In a heterogeneous vision MoE, a lightweight convolutional \emph{router} inspect
 
 This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE architecture in which each input carries two labels: a fine-grained \emph{class} (e.g., speed-limit sign) and a coarse \emph{meta-class} identifying the domain (e.g., German traffic signs vs.\ handwritten digits). The router learns to predict the meta-class and dispatches the input to the corresponding domain expert, which then predicts the fine-grained class. This two-level classification motivates the name \emph{Meta}MoE. The framework combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained components. We investigate how empirical adversarial robustness, measured by accuracy under Projected Gradient Descent (PGD) attacks~\cite{madry2018}, where higher accuracy indicates greater resilience to worst-case perturbations, relates to certified robustness (formal bounds), and establish conditions under which these guarantees propagate from individual components to the entire system. Our contributions are:
 
-\begin{itemize}
-    \item Prove a \emph{Compositional Robustness Theorem}: for hard-routed MoE with disjoint expert class spaces, the system is robust if and only if (i) the router maintains invariant expert selection within an $\ell_\infty$ ball and (ii) the selected expert is robust. We decompose this into two lemmas -- one for router invariance, one for expert robustness -- and validate the theorem~empirically.
-    \item Identify an association between empirical adversarial accuracy and certified robustness within domain/architecture regimes, and demonstrating that robust training is a prerequisite for verifiability of large and complex neural network architectures.
-    \item For visually dissimilar domains, we demonstrate that expert robustness dominates system behavior, while router adversarial training has negligible impact.
-    \item We show that compositional verification significantly reduces verification temporal and spatial cost, enabling scalable modular certification and efficient incremental expert integration.
-\end{itemize}
+The central challenge is that verifying an MoE system monolithically is expensive: the verifier must reason about the router, all experts, and their interactions simultaneously. Our key insight is that under hard routing, exactly one expert processes each input, so the system decomposes naturally into two independent verification tasks -- does the router select the right expert, and does that expert classify correctly? If both hold, the system is correct. This insight leads to three contributions, each building on the previous:
 
-Together, these findings establish a unified empirical and formal understanding of robustness in heterogeneous MoE systems and provide a foundation for scalable, verifiable modular AI.
+\begin{enumerate}
+    \item \textbf{Formal result (Theorem~\ref{thm:compositional}).} We prove a \emph{Compositional Robustness Theorem}: for hard-routed MoE with disjoint expert class spaces, the system is robust at an input if and only if (i) the router maintains invariant expert selection within the $\ell_\infty$ perturbation ball and (ii) the selected expert is robust within that same ball. This biconditional reduces system-level verification to independent component-level tasks, where each task's cost is fixed regardless of how many experts the system contains.
+
+    \item \textbf{Verification methodology.} We operationalize the theorem into a practical compositional verification pipeline using $\alpha$--$\beta$-CROWN, the state-of-the-art neural network verifier. Because the theorem guarantees soundness of independent component verification, we extract the router as a standalone network and verify it separately from the experts. We describe the architecture and export decisions -- BatchNorm elimination, raw logit output, property negation for counterexample search -- that make each component amenable to bound propagation. This reduces the verification target from the full system (${\sim}$231K parameters) to the largest single component (${\sim}$96K), with the reduction ratio scaling linearly with the number of experts.
+
+    \item \textbf{Empirical case study.} We validate the theorem and methodology across 8 MoE configurations (40 training runs), 3 perturbation budgets ($\varepsilon = 2/255, 4/255, 8/255$), and 4 expert/router training combinations on CIFAR-10, MNIST, GTSRB, and PTSD. The case study reveals three practical findings: (a) for visually dissimilar domains, expert robustness dominates system behavior while router adversarial training has negligible impact ($\Delta < 0.1\%$), meaning the router can be trained without costly adversarial augmentation; (b) within each domain and architecture, higher empirical adversarial accuracy monotonically associates with higher certified robustness, providing a cheap proxy for formal verifiability; and (c) robust training is a prerequisite for verifiability -- non-robustly trained models on complex domains are completely unverifiable.
+\end{enumerate}
 
 \section{Related Work}
 
@@ -276,7 +277,17 @@ This reduces verification from the full system (${\sim}$231K parameters for $N{=
 
 \subsection{Critical Design Decisions for Verifiability}
 
-Five design decisions ensure router verifiability: (1)~\textbf{Router-only extraction} (${\sim}$38K params vs.\ ${\sim}$231K full system), (2)~\textbf{property negation} for counterexample search, (3)~\textbf{unified normalization} across datasets, (4)~\textbf{normalized-space perturbations} for threat model consistency, (5)~\textbf{BatchNorm elimination} for deterministic behavior. These preserve verification semantics while enabling $\alpha$--$\beta$-CROWN~analysis.
+Five design decisions ensure router verifiability while preserving verification semantics for $\alpha$--$\beta$-CROWN analysis.
+
+\textbf{Router-only extraction.} We export only the router as a standalone ONNX model (${\sim}$38K params vs.\ ${\sim}$231K full system), reducing verification complexity by ${\sim}$6$\times$. This is sound under Theorem~\ref{thm:compositional}, which allows independent component verification.
+
+\textbf{Property negation.} $\alpha$--$\beta$-CROWN searches for counterexamples, so we negate the desired property: we assert the non-selected expert's logit exceeds the selected one. If no counterexample is found, the routing property holds.
+
+\textbf{Unified normalization.} The router processes images from multiple datasets, so we compute unified normalization statistics across all training data rather than per-dataset values, preventing distribution mismatch during verification.
+
+\textbf{Normalized-space perturbations.} Perturbation bounds in our VNNLIB specifications are applied in normalized pixel space, matching the space in which adversarial training generates attacks. This ensures verified $\varepsilon$ bounds faithfully reflect the trained threat model.
+
+\textbf{BatchNorm elimination.} The router uses no BatchNorm layers, with increased channel capacity (20$\to$28$\to$40$\to$56) to compensate. This eliminates train/eval mode discrepancies that cause verification inconsistencies, yielding deterministic forward passes while maintaining 99.97\% routing accuracy.
 
 \section{Experiments and Results}
 
@@ -450,8 +461,6 @@ Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 \subsection{Empirical--Formal Robustness Verification Correlation Analysis}
 \label{sec:gap-analysis}
 
-Table 7 here
-
 \begin{table}[t]
 \centering
 \caption{Empirical--formal robustness gap analysis ($\varepsilon = 2/255$, mean $\pm$ std over independent runs).}
@@ -492,8 +501,6 @@ We compared MetaMoE compositional training against monolithic single-model train
 \subsubsection{Inference Scaling.}
 
 Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$, where $L_{\text{router}}$ is constant and each expert contributes $\sim$40--50ms. This validates H5: inference scales as $O(k)$ where $k < N$.
-
-Table 8 here
 
 \begin{table}[t]
 \centering
