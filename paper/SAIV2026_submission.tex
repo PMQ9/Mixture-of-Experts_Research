@@ -77,23 +77,27 @@ A heterogeneous MoE system consists of two types of components:
     \item \textbf{Router:} The router (also called gating network) $\mathcal{G}$ determines which expert should handle a given input. It maps the input image to $N$ routing logits: $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$, producing $g = \mathcal{G}(x)$ where $g_i$ is the routing score for expert~$i$.
 \end{enumerate}
 
-Under hard routing (top-1 selection), the router selects a single expert $m^* = \arg\max_i g_i$, i.e., the expert with the highest routing score. For top\nobreakdash-$k$ routing (where $k$ experts are activated simultaneously), let $\mathcal{I}_k(g) = \{i_1, \ldots, i_k\}$ denote the indices of the $k$ experts with the highest routing scores. Each selected expert~$i_j$ receives a normalized weight $w_j = g_{i_j} / \sum_{\ell=1}^k g_{i_\ell}$, representing its contribution to the final output. The MoE produces a unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ by placing each expert's weighted logits at the appropriate position using class offsets $o_i = \sum_{m<i} C_m$ (i.e., $o_i$ is the starting index for expert~$i$'s classes in the unified output):
+Under hard routing (top-1 selection), the router selects a single expert $m^* = \arg\max_i g_i$, i.e., the expert with the highest routing score. For top\nobreakdash-$k$ routing (where $k$ experts are activated simultaneously), let $\mathcal{S} = \{s_1, \ldots, s_k\} \subset \{1, \ldots, N\}$ denote the indices of the $k$ experts with the highest routing scores. Each selected expert~$s_j$ receives a normalized weight:
+\begin{equation*}
+    w_j = \frac{g_{s_j}}{\sum_{\ell=1}^{k} g_{s_\ell}}, \quad j = 1, \ldots, k
+\end{equation*}
+representing its contribution to the final output. To combine outputs from experts with different class spaces, we define \emph{class offsets} $o_i = \sum_{m<i} C_m$ so that expert~$i$'s classes occupy positions $o_i$ through $o_i + C_i - 1$ in a unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$. Recall that $y_i = E_i(x) \in \mathbb{R}^{C_i}$ is expert~$i$'s logit vector (defined above). The unified MoE output $\hat{y}$ (distinct from the target label~$y$) is:
 \begin{equation}
     \hat{y}_c = \begin{cases}
-        w_j \cdot y_{i_j}[c - o_{i_j}], & \text{if } c \in \{o_{i_j}, \ldots, o_{i_j} + C_{i_j} - 1\} \text{ for some selected expert } i_j \\
-        0, & \text{otherwise (classes belonging to non-selected experts)}
+        w_j \cdot y_{s_j}[c - o_{s_j}], & \text{if } c \in \{o_{s_j}, \ldots, o_{s_j} + C_{s_j} - 1\} \text{ for some } j \in \{1, \ldots, k\} \\
+        0, & \text{otherwise}
     \end{cases}
 \end{equation}
-Here, $\hat{y}_c$ is the $c$-th element of the unified output, $y_{i_j}[c - o_{i_j}]$ retrieves the logit from expert~$i_j$ at the local class index $c - o_{i_j}$, and $w_j$ is the routing weight for that expert.
+where $\hat{y}_c$ is the $c$-th element of the unified output and $y_{s_j}[c - o_{s_j}]$ retrieves the logit from expert~$s_j$ at local class index $c - o_{s_j}$.
 
 \subsection{Adversarial Threat Model and Robustness}
 
 We consider an adversary that applies a small perturbation $\delta \in \mathbb{R}^{C \times H \times W}$ to the input, bounded under the $\ell_\infty$ norm: $\|\delta\|_\infty \leq \varepsilon$, where $\varepsilon > 0$ is the perturbation budget (e.g., $\varepsilon = 8/255 \approx 0.031$ in pixel intensity). This produces adversarial examples $x' = x + \delta$ lying within the $\varepsilon$-ball $B_\varepsilon(x) = \{x' : \|x' - x\|_\infty \leq \varepsilon\}$, i.e., the set of all images within $\varepsilon$ of the original input in every pixel channel. Robustness requires that the model's prediction remains correct for \emph{all} perturbations within this ball:
 
 \begin{itemize}
-    \item \textbf{Expert $E_i$ robustness:} The expert's predicted class is unchanged: $\arg\max_c\, y_i(x')[c] = y$ for all $x' \in B_\varepsilon(x)$, where $y_i(x') = E_i(x')$ is the logit vector of expert~$i$ on the perturbed input.
-    \item \textbf{Router $\mathcal{G}$ robustness (invariance):} The router selects the same expert under perturbation: $m^*(x') = m^*(x)$ for all $x' \in B_\varepsilon(x)$, or equivalently, the selected expert's routing logit remains dominant: $g_{m^*}(x') - g_j(x') > 0$ for all $j \neq m^*$ and all $x' \in B_\varepsilon(x)$.
-    \item \textbf{MoE system robustness:} The final classification is preserved: $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$, where $\hat{y}(x')$ is the unified MoE output (Eq.~1).
+    \item \textbf{Expert $E_i$ robustness:} Given that the router has already selected expert~$i$, the expert itself must still predict the correct class even when the input is slightly perturbed. Formally, the expert's predicted class is unchanged: $\arg\max_c\, y_i(x')[c] = y$ for all $x' \in B_\varepsilon(x)$, where $y_i(x') = E_i(x')$ is the logit vector of expert~$i$ on the perturbed input. In other words, no small perturbation can cause the expert to misclassify the input within its own task domain.
+    \item \textbf{Router $\mathcal{G}$ robustness (invariance):} The router must consistently delegate the input to the same expert regardless of small perturbations, ensuring that an adversary cannot trick the system into activating the wrong expert. Formally, $m^*(x') = m^*(x)$ for all $x' \in B_\varepsilon(x)$, meaning the router's expert selection is invariant within the $\varepsilon$-ball. Equivalently, the selected expert's routing logit remains strictly dominant over all alternatives: $g_{m^*}(x') - g_j(x') > 0$ for all $j \neq m^*$ and all $x' \in B_\varepsilon(x)$.
+    \item \textbf{MoE system robustness:} The end-to-end system -- comprising both the router and the selected expert -- must produce the correct final classification under perturbation. This is the strongest requirement, as it demands that neither the routing decision nor the expert's prediction is corrupted. Formally, $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$, where $\hat{y}(x')$ is the unified MoE output (Eq.~1).
 \end{itemize}
 
 We quantify verifiability using \emph{certified robustness accuracy} (CRA), which measures the fraction of test samples for which a formal verifier can prove robustness within the $\varepsilon$-ball:
