@@ -182,7 +182,7 @@ Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\tex
 \begin{equation}
     \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
 \end{equation}
-A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
+A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set, so large gaps between them do not indicate inconsistency. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
 
 \section{Hypotheses}
 
@@ -207,7 +207,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 \section{Methodology}
 
-Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
+Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
 \begin{table}[t]
 \centering
@@ -233,7 +233,7 @@ TSRD & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
 
 Both experts and router use VerifiableCNN designed for $\alpha$--$\beta$-CROWN compatibility: (1) average pooling ($2{\times}2$) instead of max pooling for linearity; (2) increased channel capacity ($20 \to 28 \to 40 \to 56$) to compensate for narrow widths; (3) minimal ONNX operators via static shapes. Experts include BatchNorm (${\sim}$96K params for 43 classes); the router omits BatchNorm for deterministic verification behavior (${\sim}$38K params). The architecture comprises 4 convolutional layers with gradual channel growth, $2{\times}2$ average pooling in blocks 1--3, and a 2-layer FC head (detailed specifications in Appendix~\ref{app:architecture}).
 
-\textbf{Training.} Experts are trained independently with Adam optimizer and label smoothing. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\varepsilon = 8/255$, 7 steps). See Appendix~\ref{app:hyperparams} for full hyperparameters.
+\textbf{Training.} Experts are trained independently with Adam optimizer~\cite{kingma2015adam} and label smoothing~\cite{szegedy2016labelsmoothing}. Non-Robust Training (NRT) uses standard cross-entropy; Robust Training (RT) employs PGD adversarial training ($\varepsilon = 8/255$, 7 steps). See Appendix~\ref{app:hyperparams} for full hyperparameters.
 
 \textbf{Metrics.} Clean Accuracy (CA), Adversarial Accuracy (AA), Robustness Gap (ERP $=$ CA $-$ AA).
 
@@ -241,23 +241,26 @@ Both experts and router use VerifiableCNN designed for $\alpha$--$\beta$-CROWN c
 
 \subsection{Router (GatingNet)}
 
-The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by outputting $N$ raw logits (one routing score $g_i$ per expert), with predicted meta-class $m^* = \arg\max_i g_i$ (the expert receiving the highest score). The architecture shares the same convolutional backbone as the expert CNN but omits BatchNorm (for deterministic verification behavior), giving ${\sim}$38K parameters for $N{=}2$. Its final layer outputs $N$ logits (number of experts) instead of $C_i$ class logits.
+The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selection by producing $N$ raw logits, one routing score $g_i$ per expert, and assigns each input to expert $m^* = \arg\max_i g_i$. Architecturally, the router shares the same convolutional backbone as the expert CNN but omits BatchNorm to ensure deterministic behavior during verification, resulting in ${\sim}$38K parameters for $N{=}2$. Its final fully-connected layer outputs $N$ logits (one per expert) rather than the $C_i$ class logits used by experts.
 
-\textbf{Unified Normalization.} Since the router receives images from multiple datasets with different pixel distributions, we normalize all inputs using dataset-averaged statistics: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$ and $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$, where $\mu_i$ and $\sigma_i$ are the per-channel mean and standard deviation of dataset~$i$. This prevents distribution mismatch at the router input.
+Because the router receives images from multiple datasets whose pixel distributions differ substantially, all inputs are first normalized using dataset-averaged statistics: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$ and $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$, where $\mu_i$ and $\sigma_i$ are the per-channel mean and standard deviation of dataset~$i$. This unified normalization prevents distribution mismatch at the router input and ensures that no single dataset dominates the learned routing features.
 
-\textbf{Training.} The router is trained after freezing all experts, using meta-class labels $m \in \{0, \ldots, N{-}1\}$ that identify which dataset each sample belongs to. NRT minimizes the cross-entropy between router predictions and true meta-class: $\mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}[\text{CE}(\mathcal{G}(x), m)]$; RT additionally includes the loss on adversarial examples: $\mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}[\text{CE}(\mathcal{G}(x^{\text{adv}}), m)]$, where $x^{\text{adv}}$ is generated by PGD attack ($\varepsilon = 8/255$).
+Once all experts are frozen, the router is trained on meta-class labels $m \in \{0, \ldots, N{-}1\}$ that identify which dataset each sample belongs to. Under Non-Robust Training (NRT), the objective is simply the cross-entropy between router predictions and the true meta-class:
+\begin{equation}
+\mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x),\, m\bigr)\bigr].
+\end{equation}
+Robust Training (RT) augments this with an adversarial term, adding the loss on PGD-generated perturbations ($\varepsilon = 8/255$):
+\begin{equation}
+\mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x^{\text{adv}}),\, m\bigr)\bigr].
+\end{equation}
 
-\textbf{Verification Property.} For input $x$ with true meta-class $m^*$, verify $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$ via VNNLIB counterexample search.
-
-\textbf{Compositional Guarantee.} Verified router $+$ verified expert $\implies$ verified MoE, enabling modular certification.
+The central verification property for the router asks whether, for an input $x$ with true meta-class $m^*$, the routing decision is invariant under bounded perturbations: $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$. We encode this as a VNNLIB counterexample search, where the verifier attempts to find a perturbation that flips the router's selection. If no such counterexample exists, the router is provably robust at that input. Combined with independent expert verification, this yields a compositional guarantee: a verified router paired with a verified expert implies a verified MoE system, enabling fully modular certification (formalized in Section~\ref{sec:compositional}).
 
 \subsection{Training Paradigms and MoE Composition}
 
-\textbf{Non-Robust Training (NRT).} Standard supervised learning with cross-entropy loss, achieving high clean accuracy but low adversarial~robustness.
+We evaluate two training paradigms that represent opposite ends of the robustness spectrum. Non-Robust Training (NRT) uses standard supervised learning with cross-entropy loss, yielding high clean accuracy but leaving the model vulnerable to adversarial perturbations. Robust Training (RT), by contrast, applies PGD adversarial training~\cite{madry2018,zhang2019trades} with $\varepsilon = 8/255$ and 7 attack iterations, deliberately trading clean accuracy for improved robustness against bounded perturbations.
 
-\textbf{Robust Training (RT).} PGD adversarial training~\cite{madry2018,zhang2019trades} ($\varepsilon = 8/255$, 7 iterations) trades clean accuracy for robustness.
-
-\textbf{MetaMoE Loss.} Combined classification and gating objectives: $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$ where $\mathcal{L}_{\text{cls}}$ enforces correct class prediction and $\mathcal{L}_{\text{gate}}$ ensures correct expert selection.
+When composing the full MetaMoE system, training optimizes a combined objective $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$ that balances two goals: $\mathcal{L}_{\text{cls}}$ enforces correct class prediction through the selected expert, while $\mathcal{L}_{\text{gate}}$ ensures the router assigns each input to the correct expert. This dual loss structure allows the router to learn accurate dataset-level routing while the frozen experts maintain their classification performance.
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
@@ -320,7 +323,7 @@ In $\alpha$--$\beta$-CROWN, unknown and timeout are semantically equivalent, ind
 \end{enumerate}
 
 \textbf{Metric Alignment: AA vs CRA for the Router.}
-As will be quantified in Section~\ref{sec:gap-analysis}, router CRA ($\approx 100\%$) substantially exceeds end-to-end AA ($\approx 35\%$). This apparent discrepancy requires careful clarification of what each metric measures:
+Router CRA ($\approx 100\%$) substantially exceeds end-to-end AA ($\approx 35\%$). This apparent discrepancy requires careful clarification of what each metric measures:
 \begin{itemize}
     \item \textbf{Router CRA} verifies the property: $\arg\max_i \mathcal{G}_i(x') = m^*$ (correct expert selection) for all $x' \in B_\varepsilon(x)$, on individual test samples drawn from CIFAR-10 and MNIST. Each sample is verified independently.
     \item \textbf{Router AA ($\approx 35\%$)} measures meta-class classification accuracy under PGD attack on the \emph{mixed} test set (CIFAR-10 $\cup$ MNIST), evaluated as end-to-end system accuracy (including expert predictions), not router-only argmax accuracy.
