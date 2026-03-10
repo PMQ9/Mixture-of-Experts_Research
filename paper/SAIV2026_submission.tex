@@ -46,7 +46,7 @@ In a heterogeneous vision MoE, a lightweight convolutional \emph{router} inspect
 This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE architecture in which each input carries two labels: a fine-grained \emph{class} (e.g., speed-limit sign) and a coarse \emph{meta-class} identifying the domain (e.g., German traffic signs vs.\ handwritten digits). The router learns to predict the meta-class and dispatches the input to the corresponding domain expert, which then predicts the fine-grained class. This two-level classification motivates the name \emph{Meta}MoE. The framework combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained components. We investigate how empirical adversarial robustness, measured by accuracy under Projected Gradient Descent (PGD) attacks~\cite{madry2018}, where higher accuracy indicates greater resilience to worst-case perturbations, relates to certified robustness (formal bounds), and establish conditions under which these guarantees propagate from individual components to the entire system. Our contributions are:
 
 \begin{itemize}
-    \item Formalize a \emph{compositional robustness proposition}: for hard-routed MoE, where only one expert is activated at any given time, if the router maintains invariant expert selection within an $\ell_\infty$ ball and the selected expert is robust, then the full MoE is robust. We prove this sufficient condition and validate it~empirically.
+    \item Prove a \emph{Compositional Robustness Theorem}: for hard-routed MoE with disjoint expert class spaces, the system is robust if and only if (i) the router maintains invariant expert selection within an $\ell_\infty$ ball and (ii) the selected expert is robust. We decompose this into two lemmas -- one for router invariance, one for expert robustness -- and validate the theorem~empirically.
     \item Identify an association between empirical adversarial accuracy and certified robustness within domain/architecture regimes, and demonstrating that robust training is a prerequisite for verifiability of large and complex neural network architectures.
     \item For visually dissimilar domains, we demonstrate that expert robustness dominates system behavior, while router adversarial training has negligible impact.
     \item We show that compositional verification significantly reduces verification temporal and spatial cost, enabling scalable modular certification and efficient incremental expert integration.
@@ -106,43 +106,6 @@ We quantify verifiability using \emph{certified robustness accuracy} (CRA), whic
 \end{equation}
 where $D$ is the test dataset, $f$ denotes the model being verified (expert, router, or full MoE), and $\mathbbm{1}[\text{Verify}(f, x, \varepsilon)]$ is an indicator function that equals~1 if the verifier proves $f$ is robust at input~$x$ within radius~$\varepsilon$, and~0 otherwise (including timeouts).
 
-\subsection{Compositional Robustness}
-
-We state the central compositional property for hard routing ($k=1$, argmax selection) for experts with different classes:
-
-\begin{definition}[Router Invariance]
-Router $\mathcal{G}$ is \emph{invariant} at $x$ within $B_\varepsilon(x)$ if $\arg\max_i \mathcal{G}_i(x') = \arg\max_i \mathcal{G}_i(x)$ for all $x' \in B_\varepsilon(x)$.
-\end{definition}
-
-\begin{proposition}[Compositional Robustness -- Sufficient Condition]
-\label{prop:compositional}
-Consider a hard-routed MoE ($k{=}1$) with router $\mathcal{G}$ and experts $\{E_i\}$. Let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert for input~$x$. If:
-\begin{enumerate}
-    \item[(i)] $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (router selects $m^*$ throughout), and
-    \item[(ii)] $E_{m^*}$ is robust at $x$ within $B_\varepsilon(x)$ (i.e., $\arg\max_c E_{m^*,c}(x') = y$ for all $x' \in B_\varepsilon(x)$),
-\end{enumerate}
-then the MoE system is robust at $x$ within $B_\varepsilon(x)$.
-\end{proposition}
-
-\begin{proof}
-Under hard routing, $\hat{y}_c(x') = E_{m^*(x'),c'}(x')$ for the appropriate class offset. By assumption~(i), $m^*(x') = m^*$ for all $x' \in B_\varepsilon(x)$, so the same expert is evaluated. By assumption~(ii), the selected expert preserves the correct classification. Hence $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$. \qed
-\end{proof}
-
-\textbf{Converse:} The converse does not hold in general: if multiple candidate experts share overlapping classes and agree on the same output, the MoE may produce the correct output even if the router switches between experts within $B_\varepsilon(x)$. However, when each expert covers a \emph{disjoint} set of classes, as in our setting, the converse does hold. Under hard routing, only the selected expert produces output; if the router switches to expert $m' \neq m^*$, the output lies in $m'$'s class range, which does not contain the true label $y$, so the MoE necessarily mis-routed or mis-classified. Therefore, with disjoint expert classes, Proposition~\ref{prop:compositional} provides a necessary and sufficient condition: the MoE is robust at $x$ within $B_\varepsilon(x)$ if and only if both router invariance and expert robustness hold. For soft or top-$k$ routing ($k > 1$), the sufficient condition requires invariance of the full top-$k$ set and robustness of all selected experts, which we do not address here. Our experiments use $k=1$.
-
-MoE's robustness, in our setting, decomposes as:
-\begin{equation}
-    \text{MoE robust at } x \Longleftrightarrow \text{Router robust} \land \text{Expert } E_{m^*} \text{ robust}
-\end{equation}
-
-We also examine the case where experts handle visually similar datasets: specifically, GTSRB and PTSD (both traffic sign recognition tasks with 43 classes each), where the disjoint-class assumption still holds but the router faces a harder discrimination problem. We report these results in Appendix~\ref{app:similarity}.
-
-This decomposition enables modular verification: verify router invariance and expert robustness independently, then compose guarantees via Proposition~\ref{prop:compositional}.
-
-\subsection{Empirical--Formal Gap}
-
-We define the \emph{certification gap} $\Delta = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)$, which quantifies the divergence between formal verification and empirical adversarial evaluation. Here, $\text{AA}(\varepsilon)$ denotes the \emph{adversarial accuracy} -- the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$ -- and $\text{CRA}(\varepsilon)$ is the certified robustness accuracy defined in Eq.~2. A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
-
 \subsection{Problem Statement}
 
 Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adversary with radius $\varepsilon$, we investigate:
@@ -151,6 +114,75 @@ Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adv
     \item \textbf{Empirical--Formal Correlation:} Does PGD adversarial accuracy predict certified robustness accuracy?
     \item \textbf{Scalability:} Can modular robustness achieve reduced retraining time, linear inference $O(k)$, and stable verification?
 \end{enumerate}
+
+\subsection{Compositional Robustness Theorem}
+\label{sec:compositional}
+
+The central question of this paper is whether a modular MoE system can be verified \emph{component-by-component} rather than as a monolithic whole. The key intuition is straightforward: in a hard-routed MoE, exactly one expert processes each input. If an adversary cannot change \emph{which} expert is selected (router invariance), and the selected expert itself classifies correctly under perturbation (expert robustness), then the overall system must also be robust. We now formalize this intuition in three steps: a definition, two lemmas establishing each component's role, and a theorem composing them.
+
+\begin{definition}[Router Invariance]
+\label{def:router_invariance}
+Router $\mathcal{G}$ is \emph{invariant} at input $x$ within perturbation ball $B_\varepsilon(x)$ if, for every perturbed input $x' \in B_\varepsilon(x)$,
+\[
+    \arg\max_i \mathcal{G}_i(x') = \arg\max_i \mathcal{G}_i(x).
+\]
+That is, no perturbation within the $\varepsilon$-ball can cause the router to select a different expert.
+\end{definition}
+
+\begin{lemma}[Router Invariance Preserves Expert Selection]
+\label{lem:router}
+Let $m^* = \arg\max_i \mathcal{G}_i(x)$ be the expert selected for clean input~$x$. If $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (Definition~\ref{def:router_invariance}), then $m^*(x') = m^*$ for all $x' \in B_\varepsilon(x)$, and the MoE output reduces to a fixed expert's output: $\hat{y}(x') = E_{m^*}(x')$ (up to class offsets) for all $x' \in B_\varepsilon(x)$.
+\end{lemma}
+
+\begin{proof}
+By Definition~\ref{def:router_invariance}, $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$. Under hard routing ($k{=}1$), only expert~$m^*$ is activated, so $\hat{y}_c(x') = E_{m^*}(x')[c - o_{m^*}]$ for $c \in \{o_{m^*}, \ldots, o_{m^*} + C_{m^*} - 1\}$ and $\hat{y}_c(x') = 0$ otherwise. The MoE output is therefore fully determined by $E_{m^*}$. \qed
+\end{proof}
+
+\begin{lemma}[Expert Robustness Preserves Classification]
+\label{lem:expert}
+If expert $E_{m^*}$ is robust at $x$ within $B_\varepsilon(x)$, i.e.,
+\[
+    \arg\max_c\, E_{m^*,c}(x') = y \quad \text{for all } x' \in B_\varepsilon(x),
+\]
+and the MoE output is determined solely by $E_{m^*}$ (as guaranteed by Lemma~\ref{lem:router}), then $\arg\max_c \hat{y}_c(x') = y$ for all $x' \in B_\varepsilon(x)$.
+\end{lemma}
+
+\begin{proof}
+Since the MoE output vector $\hat{y}(x')$ is zero outside the class range of $E_{m^*}$ and equals $E_{m^*}(x')$ within that range (by Lemma~\ref{lem:router}), the argmax of $\hat{y}(x')$ coincides with the argmax of $E_{m^*}(x')$ (shifted by offset $o_{m^*}$). By assumption, this argmax equals $y$ for all $x' \in B_\varepsilon(x)$. \qed
+\end{proof}
+
+\begin{theorem}[Compositional Robustness]
+\label{thm:compositional}
+Consider a hard-routed MoE ($k{=}1$) with router $\mathcal{G}$ and experts $\{E_i\}$ having disjoint class spaces. Let $m^* = \arg\max_i \mathcal{G}_i(x)$ denote the selected expert for input~$x$. The MoE system is robust at $x$ within $B_\varepsilon(x)$ if and only if:
+\begin{enumerate}
+    \item[(i)] $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (Lemma~\ref{lem:router}), and
+    \item[(ii)] $E_{m^*}$ is robust at $x$ within $B_\varepsilon(x)$ (Lemma~\ref{lem:expert}).
+\end{enumerate}
+That is, for disjoint expert class spaces, where $m^*$ is the router-selected expert:
+\begin{equation}
+    \text{MoE robust at } x \;\Longleftrightarrow\; \underbrace{\text{Router invariant at } x}_{\text{same expert } m^* \text{ selected}} \;\land\; \underbrace{\text{Expert } E_{m^*} \text{ robust at } x}_{\text{correct class predicted}}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+\textbf{(Sufficiency.)} Follows directly by composing Lemmas~\ref{lem:router} and~\ref{lem:expert}: router invariance ensures the same expert~$m^*$ is selected for all $x' \in B_\varepsilon(x)$, and expert robustness ensures that expert produces the correct output throughout.
+
+\textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. The true label $y$ lies in $m^*$'s class range, so $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
+\end{proof}
+
+\textbf{Scope and implications.} Theorem~\ref{thm:compositional} establishes a biconditional for MoE systems with disjoint expert class spaces under hard routing. In the general case (overlapping classes), only the sufficient direction holds, since multiple experts could agree on the correct output even when the router switches between them. For soft or top-$k$ routing ($k > 1$), the sufficient condition would require invariance of the full top-$k$ set and robustness of all selected experts, which we do not address here. Our experiments use $k=1$.
+
+The practical consequence of this decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification when new experts are added.
+
+We also examine the case where experts handle visually similar datasets: specifically, GTSRB~\cite{gtsrb} and PTSD~\cite{ptsd} (both traffic sign recognition tasks with 43 classes each), where the disjoint-class assumption still holds but the router faces a harder discrimination problem. We report these results in Appendix~\ref{app:similarity}.
+
+\subsection{Empirical--Formal Gap}
+
+Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\text{AA}(\varepsilon)$, the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$, and \emph{certified robustness accuracy} $\text{CRA}(\varepsilon)$ (Eq.~2), the fraction for which a formal verifier proves robustness within the $\varepsilon$-ball. We define the \emph{certification gap} as the difference between these two quantities:
+\begin{equation}
+    \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
+\end{equation}
+A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties (e.g., router invariance vs.\ end-to-end classification); see the Metric Alignment discussion in Section~7.1. We hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability.
 
 \section{Hypotheses}
 
@@ -175,7 +207,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 \section{Methodology}
 
-Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB (diverse domains~\cite{gtsrb}) and PTSD, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
+Given an RGB input image $x \in \mathbb{R}^{3 \times 32 \times 32}$ (3 color channels, $32 \times 32$ pixels) and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{3 \times 32 \times 32} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
 \begin{table}[t]
 \centering
@@ -231,7 +263,7 @@ The router $\mathcal{G}(x) \in \mathbb{R}^N$ performs dataset-level expert selec
 
 Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our MetaMoE system (router + 2~experts $\approx$~231K parameters) benefits from a \textbf{compositional verification strategy} that decomposes the~problem:
 
-\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Proposition~\ref{prop:compositional}, if both components are verified, the full system is verified:
+\textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Theorem~\ref{thm:compositional}, if both components are verified, the full system is verified:
 \begin{equation}
 \text{Verified}_{\text{Router}}(x \to i) \land \text{Verified}_{\text{Expert}_i}(x \to j) \implies \text{Verified}_{\text{MoE}}(x \to j)
 \end{equation}
@@ -405,7 +437,7 @@ Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 
     \item \textbf{Perfect Router Gating Across 40 Runs:} 100\% clean and adversarial gating accuracy across all 40 experimental runs validates the compositional verification property. \textbf{Caveat:} This holds for visually dissimilar datasets; similar domains present harder challenges (see Appendix~\ref{app:similarity}).
 
-    \item \textbf{H3 Validation (Proposition~\ref{prop:compositional}):} System robustness decomposes modularly: router invariance (100\% gating accuracy) $\land$ expert robustness $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation via the sufficient condition.
+    \item \textbf{H3 Validation (Theorem~\ref{thm:compositional}):} System robustness decomposes modularly: router invariance (100\% gating accuracy) $\land$ expert robustness $\implies$ MoE robustness. The expert bottleneck effect (weakest expert limits system by 13.15\% in adversarial accuracy) confirms modular robustness propagation via the sufficient condition.
 
     \item \textbf{Dataset Similarity Impact:} As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% adversarial accuracy, compared to 100\% routing accuracy and 41.59\% adversarial accuracy for the CIFAR10+MNIST configuration above (Table~\ref{tab:expert-impact}, Both RT row). The 12.12\% adversarial accuracy gap demonstrates that routing difficulty directly propagates to system robustness.
 
@@ -479,11 +511,11 @@ Table 8 here
 
 \section{Discussion}
 
-\subsection{Compositional Robustness via Proposition~\ref{prop:compositional}}
+\subsection{Compositional Robustness via Theorem~\ref{thm:compositional}}
 
-The invariance condition of Proposition~\ref{prop:compositional} is satisfied empirically: routers maintain 100\% gating accuracy across all 40 runs. This means system robustness is determined entirely by expert quality: the 13.15\% adversarial accuracy gap between Both-RT and Both-NRT configurations ($\Delta_{\text{router}} < 0.1\%$) confirms the router acts as a transparent switch. The weakest expert constrains system robustness, enabling predictable component-level verification without full-system retraining. Notably, our $N{=}2$ experiments yield a modest ${\sim}$2.4$\times$ verification reduction, but this advantage grows linearly with $N$: with 7 datasets (Table~\ref{tab:notation}) the reduction reaches ${\sim}$7$\times$, since monolithic cost scales with the total system while per-component cost remains fixed.
+The invariance condition of Theorem~\ref{thm:compositional} is satisfied empirically: routers maintain 100\% gating accuracy across all 40 runs. This means system robustness is determined entirely by expert quality: the 13.15\% adversarial accuracy gap between Both-RT and Both-NRT configurations ($\Delta_{\text{router}} < 0.1\%$) confirms the router acts as a transparent switch. The weakest expert constrains system robustness, enabling predictable component-level verification without full-system retraining. Notably, our $N{=}2$ experiments yield a modest ${\sim}$2.4$\times$ verification reduction, but this advantage grows linearly with $N$: with 7 datasets (Table~\ref{tab:notation}) the reduction reaches ${\sim}$7$\times$, since monolithic cost scales with the total system while per-component cost remains fixed.
 
-The converse of Proposition~\ref{prop:compositional} does not hold: an MoE could be robust even with router switching, if all candidate experts agree. Our framework provides a conservative but practically useful sufficient condition.
+The converse of Theorem~\ref{thm:compositional} does not hold: an MoE could be robust even with router switching, if all candidate experts agree. Our framework provides a conservative but practically useful sufficient condition.
 
 \subsection{Empirical--Formal Association}
 
@@ -491,18 +523,18 @@ Within each domain, higher AA monotonically associates with higher CRA: MNIST NR
 
 \subsection{Limitations and Scope}
 
-Proposition~\ref{prop:compositional} applies to hard routing ($k=1$) only; soft/top-$k$ routing requires verifying invariance of the full expert set and weight stability. Current experiments use small verification-compatible CNNs (${\sim}$96K params per expert, ${\sim}$38K for the router); scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity; GTSRB+PTSD achieves only 93.17\% gating accuracy (Appendix~\ref{app:similarity}), breaking the invariance assumption. Future work includes extensions to soft routing, probabilistic verification for larger architectures, and adaptive gating for similar domains.
+Theorem~\ref{thm:compositional} applies to hard routing ($k=1$) only; soft/top-$k$ routing requires verifying invariance of the full expert set and weight stability. Current experiments use small verification-compatible CNNs (${\sim}$96K params per expert, ${\sim}$38K for the router); scaling to transformers faces memory constraints. Perfect gating relies on dataset dissimilarity; GTSRB+PTSD achieves only 93.17\% gating accuracy (Appendix~\ref{app:similarity}), breaking the invariance assumption. Future work includes extensions to soft routing, probabilistic verification for larger architectures, and adaptive gating for similar domains.
 
 \section{Conclusion}
 
-This paper presented a framework for compositional robustness verification of heterogeneous MoE systems. The central contribution is Proposition~\ref{prop:compositional}: for hard-routed MoE, router invariance plus expert robustness is sufficient for system robustness. This decomposition reduces verification from the full system to the largest single component, with the reduction ratio scaling linearly with the number of experts (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$, ${\sim}N$ asymptotically), and is validated both formally and empirically.
+This paper presented a framework for compositional robustness verification of heterogeneous MoE systems. The central contribution is Theorem~\ref{thm:compositional}: for hard-routed MoE, router invariance plus expert robustness is sufficient for system robustness. This decomposition reduces verification from the full system to the largest single component, with the reduction ratio scaling linearly with the number of experts (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$, ${\sim}N$ asymptotically), and is validated both formally and empirically.
 
 \textbf{Key findings:}
 Firstly, for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference), while router training shows negligible impact ($\Delta < 0.1\%$), skipping this enables 3.2$\times$ training speedup.
-Secondly, router formal verification achieves 100\% success at practical threat models ($\varepsilon \leq 4/255$), satisfying the invariance condition of Proposition~\ref{prop:compositional} across all 40 experimental runs.
+Secondly, router formal verification achieves 100\% success at practical threat models ($\varepsilon \leq 4/255$), satisfying the invariance condition of Theorem~\ref{thm:compositional} across all 40 experimental runs.
 And thirdly, within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, with robust training as a prerequisite for verifiability.
 
-\textbf{Limitations and future work.} The sufficient condition of Proposition~\ref{prop:compositional} does not extend to soft or top-$k > 1$ routing. Perfect gating relies on dataset dissimilarity; similar domains require stronger router guarantees. Future work includes probabilistic verification for larger architectures and extensions to soft routing composition.
+\textbf{Limitations and future work.} The sufficient condition of Theorem~\ref{thm:compositional} does not extend to soft or top-$k > 1$ routing. Perfect gating relies on dataset dissimilarity; similar domains require stronger router guarantees. Future work includes probabilistic verification for larger architectures and extensions to soft routing composition.
 
 \begin{credits}
 \subsubsection{\ackname}
