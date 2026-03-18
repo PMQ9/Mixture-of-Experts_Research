@@ -18,7 +18,9 @@
 \usepackage{algpseudocode}
 \usepackage{microtype}
 \usepackage{pgfplots}
+\usepackage{pgfplotstable}
 \pgfplotsset{compat=1.18}
+\usetikzlibrary{patterns}
 
 
 %%%%% FOR STRIKETHROUGH %%%%%
@@ -40,7 +42,7 @@
 \maketitle
 
 \begin{abstract}
-Mixture-of-experts (MoE) architectures offer modularity and scalability, yet their robustness, and the practicality of certifying that robustness, in heterogeneous settings are not well understood. This work presents \textsf{MetaMoE}, a heterogeneous MoE framework designed for compositional formal verifiability. In \textsf{MetaMoE}, a lightweight neural network, called router, takes an input image, classifies its domain, and routes it to the corresponding domain expert neural network for fine-grained classification; we study how robustness propagates compositionally across these router and domain experts and establish when system-level verification can be derived from component-level verification. In homogeneous MoE, all experts share the same task, so a misroute may still yield a correct prediction if the receiving expert classifies the input correctly; in heterogeneous MoE, experts operate on disjoint class spaces across distinct domains, making any misroute catastrophic. We prove that when the router maintains expert selection within a perturbation limit, and the selected expert also maintains its classification within that perturbation limit, the end-to-end system robustness is composable, enabling modular and scalable verification (the computational power needed for verification and re-verification does not snowball as the system expands). We further show that formal certified robustness accuracy (higher computational cost) correlates with empirical accuracy (lower computational cost) which shows the number of perturbed inputs correctly classified. Experiments on heterogeneous datasets demonstrate that robust experts improve adversarial accuracy by up to $13.1\%$ and enable higher formal certifiability, while verified routers achieve $100\%$ certified routing accuracy at practical perturbation for dissimilar datasets. Together, these results show empirical robustness testing and formal certification reinforce each other in heterogeneous MoE systems, and outline a principled path toward scalable, verifiable modular AI. 
+Mixture-of-experts (MoE) architectures offer modularity and scalability, yet their robustness, and the practicality of certifying that robustness, in heterogeneous settings are not well understood. This work presents \textsf{MetaMoE}, a heterogeneous MoE framework designed for compositional formal verifiability. In \textsf{MetaMoE}, a neural network, called a router, classifies an input image's domain and routes it to the corresponding domain expert neural network for fine-grained classification; we study how robustness propagates compositionally across these router and experts and establish when system-levelregardless verification can be derived from component-level verification. In homogeneous MoE, all experts share the same task, so a misroute may still preserve correctness if the receiving expert classifies the input correctly; in heterogeneous MoE, experts operate on disjoint class spaces, making any misroute catastrophic. We prove that when the router maintains expert selection within a perturbation limit, and the selected expert also maintains its classification within that perturbation limit, the end-to-end system robustness is compositional. This enables scalability as the computational power needed for verification and re-verification does not snowball as the system expands. We further validate the formal certified robustness results with empirical adversarial testing. Experiments on heterogeneous datasets demonstrate that robust experts improve adversarial accuracy by up to $13.1\%$ and enable higher formal certifiability, while verified routers achieve $100\%$ certified routing accuracy at practical perturbation bounds for dissimilar datasets. These results outline a principled path toward scalable, verifiable modular AI. 
 
 \keywords{Mixture-of-experts \and Adversarial Robustness \and Formal Verification \and Compositional Verification \and Neural Network Verification \and Safety-Critical AI}
 \end{abstract}
@@ -58,7 +60,7 @@ The central challenge is that verifying an MoE system monolithically is expensiv
 \begin{enumerate}
     \item \textbf{Compositional Robustness Theorem (Theorem~\ref{thm:compositional}).} We prove that for hard-routed MoE with disjoint expert class spaces, the system is robust at an input if and only if (i) the router maintains invariant expert selection within the $\ell_\infty$ perturbation ball and (ii) the selected expert is robust within that same ball. This bicondition reduces system-level verification to independent component-level tasks, where each task's cost is fixed regardless of how many experts the system contains.
 
-    \item \textbf{Verification methodology.} We \redsout{operationalize} \BW{leverage} the theorem in\redsout{to} a practical compositional verification pipeline using $\alpha$--$\beta$-CROWN, \redsout{the} \BW{a} state-of-the-art neural network verifier \BW{they might be the best, but you don't want to anger any reviewers who have tools and don't believe this one is the best..., easier to just say one of the state-of-the-art}. Because the theorem guarantees soundness of independent component verification, we extract the router as a standalone network and verify it separately from the experts. We describe the architecture and export decisions (BatchNorm elimination, raw logit output, and property negation for counterexample search) that make each component amenable to bound propagation. This reduces the verification target from the full system (${\sim}$231K parameters) to the largest single component (${\sim}$96K), with the reduction ratio scaling linearly with the number of experts.
+    \item \textbf{Verification methodology.} We leverage the theorem in\redsout{to} a practical compositional verification pipeline using $\alpha$--$\beta$-CROWN, a state-of-the-art neural network verifier. Because the theorem guarantees soundness of independent component verification, we extract the router as a standalone network and verify it separately from the experts. We describe the architecture and export decisions (BatchNorm elimination, raw logit output, and property negation for counterregardlessexample search) that make each component amenable to bound propagation. This reduces the verification target from the full system (${\sim}$231K parameters) to the largest single component (${\sim}$96K), with the reduction ratio scaling linearly with the number of experts.
 
     \item \textbf{Empirical case study.} We validate the theorem and methodology across 8 MoE configurations (40 training runs), 3 perturbation budgets ($\varepsilon = 2/255, 4/255, 8/255$), and 4 expert/router training combinations on CIFAR-10~\cite{cifar10}, MNIST~\cite{mnist1998}, GTSRB~\cite{gtsrb}, and PTSD~\cite{ptsd}. The case study reveals three practical findings: (i) for visually dissimilar domains, expert robustness dominates system behavior while router adversarial training has negligible impact ($< 0.1\%$ accuracy difference), meaning the router can be trained without costly adversarial augmentation; (ii) within each domain and architecture, higher empirical adversarial accuracy monotonically associates with higher certified robustness, providing a cheap proxy for formal verifiability; and (iii) robust training is a prerequisite for verifiability; non-robustly trained models on complex domains are completely unverifiable.
 \end{enumerate}
@@ -187,7 +189,7 @@ We also examine the case where experts handle visually similar datasets: specifi
 
 \subsection{Empirical--Formal Gap}
 
-Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\text{AA}(\varepsilon)$, the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$, and \emph{certified robustness accuracy} $\text{CRA}(\varepsilon)$, the fraction for which a formal verifier proves robustness within the $\varepsilon$-ball. We define the \emph{certification gap} as the difference between these two quantities~\eqref{eq:certification_gap}:
+Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\text{AA}(\varepsilon)$, the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$, and \emph{certified robustness accuracy} $\text{CRA}(\varepsilon)$~\eqref{eq:certification_gap}, the fraction for which a formal verifier proves robustness within the $\varepsilon$-ball. We define the \emph{certification gap} as the difference between these two quantities:
 \begin{equation}
 \label{eq:certification_gap}
     \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
@@ -221,25 +223,7 @@ These hypotheses collectively address the core challenges of robustness and effi
 
 Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
-\begin{table}[t]
-\centering
-\caption{Dataset and expert notation.}
-\label{tab:notation}
-\begin{tabular}{llll}
-\toprule
-\textbf{Dataset} & \textbf{Meta-class} & \multicolumn{2}{c}{\textbf{Notation}} \\
- & & \textbf{NRT} & \textbf{RT} \\
-\midrule
-CIFAR-10 & $E_0$ & $E_{0\_\text{CNN\_NRT}}$ & $E_{0\_\text{CNN\_RT}}$ \\
-MNIST & $E_1$ & $E_{1\_\text{CNN\_NRT}}$ & $E_{1\_\text{CNN\_RT}}$ \\
-GTSRB & $E_2$ & $E_{2\_\text{CNN\_NRT}}$ & $E_{2\_\text{CNN\_RT}}$ \\
-PTSD & $E_3$ & $E_{3\_\text{CNN\_NRT}}$ & $E_{3\_\text{CNN\_RT}}$ \\
-BTSD & $E_4$ & $E_{4\_\text{CNN\_NRT}}$ & $E_{4\_\text{CNN\_RT}}$ \\
-ETSD & $E_5$ & $E_{5\_\text{CNN\_NRT}}$ & $E_{5\_\text{CNN\_RT}}$ \\
-TSRD & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+Each expert $E_i$ is denoted $E_{i\_\text{CNN\_NRT}}$ (non-robust) or $E_{i\_\text{CNN\_RT}}$ (robust), where the index $i$ corresponds to: CIFAR-10 ($E_0$), MNIST ($E_1$), GTSRB ($E_2$), PTSD ($E_3$), BTSD ($E_4$), ETSD ($E_5$), TSRD ($E_6$). Full notation is provided in Appendix~\ref{app:notation}.
 
 \subsection{Verification-Aware CNN Architecture}
 
@@ -312,24 +296,38 @@ All experiments use VerifiableCNN experts (${\sim}$94K parameters, 10 classes) a
 We used $\alpha$\nobreakdash--$\beta$\nobreakdash-CROWN, the state-of-the-art verifier and VNN-COMP 2021--2025 winner~\cite{wang2021,xu2020abcrown,kaulen2025}, to certify provable robustness. In $\alpha$--$\beta$-CROWN, ``unknown'' indicates the verifier could not determine the property within the timeout (300s); it does not indicate a property violation.
 
 \textbf{Router verification.}
-We verified 40 samples (20 CIFAR-10, 20 MNIST) at $\varepsilon = 2/255, 4/255, 8/255$ using VNNLIB negation for counterexample search. Table~\ref{tab:router-verification} shows that both NRT and RT routers achieve 100\% certified routing accuracy (CRA) at practical threat models ($\varepsilon \leq 4/255$). At $\varepsilon = 8/255$, RT achieves 100\% while NRT drops to 60\% due to verification timeouts. Zero falsifications occurred in any configuration -- all failures are timeouts, not property violations. Both routers satisfy the invariance condition of Theorem~\ref{thm:compositional} at standard perturbation budgets, enabling compositional guarantees.
+We verified 40 samples (20 CIFAR-10, 20 MNIST) at $\varepsilon = 2/255, 4/255, 8/255$ using VNNLIB negation for counterexample search. Figure~\ref{tab:router-verification} shows that both NRT and RT routers achieve 100\% certified routing accuracy (CRA) at practical threat models ($\varepsilon \leq 4/255$). At $\varepsilon = 8/255$, RT achieves 100\% while NRT drops to 60\% due to verification timeouts. Zero falsifications occurred in any configuration -- all failures are timeouts, not property violations. Both routers satisfy the invariance condition of Theorem~\ref{thm:compositional} at standard perturbation budgets, enabling compositional guarantees.
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{Router formal verification results (40 samples per $\varepsilon$: 20 MNIST + 20 CIFAR-10, averaged over 5 runs). Zero falsifications in all configurations. ``Unknown'' = verification timeout, not property violation.}
+\begin{tikzpicture}
+\begin{axis}[
+    ybar stacked,
+    width=0.9\columnwidth,
+    height=5.5cm,
+    bar width=14pt,
+    ymin=0, ymax=49,
+    ylabel={Samples (out of 40)},
+    symbolic x coords={NRT $2/255$, RT $2/255$, NRT $4/255$, RT $4/255$, NRT $8/255$, RT $8/255$},
+    xtick=data,
+    x tick label style={font=\small, rotate=45, anchor=east, yshift=-2.5pt},
+    legend style={at={(0.5,-0.355)}, anchor=north, font=\small, legend columns=2},
+    grid=major,
+    grid style={dashed, gray!20},
+    ytick={0,10,20,30,40},
+    enlarge x limits=0.12,
+    every axis plot/.append style={fill opacity=0.85},
+]
+\addplot[fill=green!60!black, draw=green!40!black] coordinates
+    {(NRT $2/255$,40) (RT $2/255$,40) (NRT $4/255$,40) (RT $4/255$,40) (NRT $8/255$,24) (RT $8/255$,40)};
+\addplot[fill=gray!50, draw=gray!70, postaction={pattern=north east lines, pattern color=gray!70}] coordinates
+    {(NRT $2/255$,0) (RT $2/255$,0) (NRT $4/255$,0) (RT $4/255$,0) (NRT $8/255$,16) (RT $8/255$,0)};
+\legend{Verified, Timeout (not falsified)}
+\end{axis}
+\end{tikzpicture}
+\caption{Router formal verification (40 samples per configuration: 20 MNIST + 20 CIFAR-10, averaged over 5 runs). Both routers achieve 100\% certified routing accuracy at practical $\varepsilon \leq 4/255$. At $\varepsilon = 8/255$, only NRT degrades -- and exclusively due to verification timeouts, not falsifications. Zero counterexamples were found in any configuration.}
 \label{tab:router-verification}
-\small
-\begin{tabular}{llll}
-\toprule
-$\varepsilon$ & \textbf{NRT Router} & \textbf{RT Router} & \textbf{Key difference} \\
- & Verified / 40 & Verified / 40 & \\
-\midrule
-$2/255$ & $40/40$ (100\%) & $40/40$ (100\%) & Identical \\
-$4/255$ & $40/40$ (100\%) & $40/40$ (100\%) & Identical \\
-$8/255$ & $24/40$ (60\%) & $\mathbf{40/40}$ \textbf{(100\%)} & RT: +40 pp \\
-\bottomrule
-\end{tabular}
-\end{table}
+\end{figure}
 
 Router CRA ($\approx 100\%$) substantially exceeds end-to-end adversarial accuracy (AA $\approx 35\%$). This is expected: CRA verifies only the property $\arg\max_i \mathcal{G}_i(x') = m^*$ (correct expert selection) on individual samples, while AA measures end-to-end classification on the mixed test set where expert misclassifications dominate. The router achieves 100\% gating accuracy under PGD, but the selected expert may misclassify, reducing end-to-end AA. See Appendix~\ref{app:gap} for detailed analysis.
 
@@ -555,6 +553,29 @@ PTSD & 43 & 14,405 & 2,421 & Persian traffic signs \\
 BTSD & 62 & 4,575 & 2,520 & Belgian traffic signs \\
 ETSD & 55 & 6,133 & 2,027 & European traffic signs \\
 TSRD & 58 & 4,170 & 1,994 & Chinese traffic signs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Dataset and Expert Notation}
+\label{app:notation}
+
+\begin{table}[t]
+\centering
+\caption{Dataset and expert notation. Each expert is trained in two paradigms: Non-Robust Training (NRT) and Robust Training (RT).}
+\label{tab:notation}
+\begin{tabular}{llll}
+\toprule
+\textbf{Dataset} & \textbf{Meta-class} & \multicolumn{2}{c}{\textbf{Notation}} \\
+ & & \textbf{NRT} & \textbf{RT} \\
+\midrule
+CIFAR-10 & $E_0$ & $E_{0\_\text{CNN\_NRT}}$ & $E_{0\_\text{CNN\_RT}}$ \\
+MNIST & $E_1$ & $E_{1\_\text{CNN\_NRT}}$ & $E_{1\_\text{CNN\_RT}}$ \\
+GTSRB & $E_2$ & $E_{2\_\text{CNN\_NRT}}$ & $E_{2\_\text{CNN\_RT}}$ \\
+PTSD & $E_3$ & $E_{3\_\text{CNN\_NRT}}$ & $E_{3\_\text{CNN\_RT}}$ \\
+BTSD & $E_4$ & $E_{4\_\text{CNN\_NRT}}$ & $E_{4\_\text{CNN\_RT}}$ \\
+ETSD & $E_5$ & $E_{5\_\text{CNN\_NRT}}$ & $E_{5\_\text{CNN\_RT}}$ \\
+TSRD & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
