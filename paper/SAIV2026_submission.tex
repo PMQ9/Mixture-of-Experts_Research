@@ -353,41 +353,74 @@ We verified 40 samples (20 CIFAR-10, 20 MNIST) at $\varepsilon = 2/255, 4/255, 8
 Router CRA ($\approx 100\%$) substantially exceeds end-to-end adversarial accuracy (AA $\approx 35\%$). This is expected: CRA verifies only the property $\arg\max_i \mathcal{G}_i(x') = m^*$ (correct expert selection) on individual samples, while AA measures end-to-end classification on the mixed test set where expert misclassifications dominate. The router achieves 100\% gating accuracy under PGD, but the selected expert may misclassify, reducing end-to-end AA. See Appendix~\ref{app:gap} for detailed analysis.
 
 \textbf{Expert verification.}
-We verified CIFAR-10 and MNIST experts using ONNX models with BatchNorm folding and $\alpha$--$\beta$-CROWN with Gurobi. Tables~\ref{tab:cifar-expert} and~\ref{tab:mnist-expert} reveal two key patterns. First, domain complexity dominates verifiability: MNIST-RT achieves 100\%/99\%/95\% CRA at $\varepsilon = 2/4/8 \div 255$, while CIFAR-10-NRT is completely unverifiable at all epsilon levels. Second, robust training is a prerequisite for verification: CIFAR-10-RT achieves 90\% CRA at $\varepsilon = 2/255$ compared to 0\% for NRT, confirming that adversarial training smooths decision boundaries and tightens CROWN bounds. No falsifications occurred -- all failures are timeouts, not property violations.
+We verified CIFAR-10 and MNIST experts (20 samples each, averaged over 5 runs) using ONNX models with BatchNorm folding and $\alpha$--$\beta$-CROWN with Gurobi. Figure~\ref{fig:expert-heatmap} summarizes the certified robustness accuracy (CRA) across both datasets, training paradigms, and perturbation budgets, revealing two key patterns. First, domain complexity dominates verifiability: MNIST-RT achieves 100\%/99\%/95\% CRA at $\varepsilon = 2/4/8 \div 255$, while CIFAR-10-NRT is completely unverifiable (CRA $= 0\%$) at all $\varepsilon$ levels. Second, robust training is a prerequisite for verification: CIFAR-10-RT achieves 90\% CRA at $\varepsilon = 2/255$ compared to 0\% for NRT, confirming that adversarial training smooths decision boundaries and tightens CROWN bounds. No falsifications occurred -- all failures are timeouts, not property violations.
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{CIFAR-10 expert verification results (NRT: all timeout; RT: shown below).}
-\label{tab:cifar-expert}
-\begin{tabular}{lllll}
-\toprule
-$\varepsilon$ & Verified & Falsified & Unknown & Success Rate \\
-\midrule
-2/255 (0.00784) & $18.0 \pm 0.0$ & $0.0 \pm 0.0$ & $2.0 \pm 0.0$ & $90.0\%$ \\
-4/255 (0.01569) & $10.8 \pm 0.4$ & $0.0 \pm 0.0$ & $9.2 \pm 0.4$ & $54.0\%$ \\
-8/255 (0.03137) & Timeout & - & - & 0.0\% \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{tikzpicture}[
+    cell/.style={minimum width=2.15cm, minimum height=0.9cm, align=center,
+                 font=\small, inner sep=0pt, outer sep=0pt},
+]
+% Column headers
+\node[font=\footnotesize\bfseries] at (2.15*0.5, 0.45) {$\varepsilon{=}2/255$};
+\node[font=\footnotesize\bfseries] at (2.15*1.5, 0.45) {$\varepsilon{=}4/255$};
+\node[font=\footnotesize\bfseries] at (2.15*2.5, 0.45) {$\varepsilon{=}8/255$};
 
-\begin{table}[t]
-\centering
-\caption{MNIST expert verification results.}
-\label{tab:mnist-expert}
-\small
-\begin{tabular}{llllll}
-\toprule
-$\varepsilon$ & Training & Verified & Falsified & Unknown & Success \\
-\midrule
-2/255 & NRT & $15.0 \pm 0.0$ & $0.0 \pm 0.0$ & $5.0 \pm 0.0$ & $75.0\%$ \\
-2/255 & RT & $20.0 \pm 0.0$ & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & $100.0\%$ \\
-4/255 & NRT & Timeout & - & - & 0.0\% \\
-4/255 & RT & $19.8 \pm 0.4$ & $0.0 \pm 0.0$ & $0.2 \pm 0.4$ & $99.0\%$ \\
-8/255 & NRT & Timeout & - & - & 0.0\% \\
-8/255 & RT & $19.0 \pm 0.0$ & $0.0 \pm 0.0$ & $1.0 \pm 0.0$ & $95.0\%$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+% Row headers
+\node[font=\footnotesize, anchor=east] at (-0.15, -0.45) {CIFAR-10 NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -1.35) {CIFAR-10 RT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -2.25) {MNIST NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -3.15) {MNIST RT};
+
+% --- Row 1: CIFAR-10 NRT (all 0%) ---
+\fill[red!30] (0,0) rectangle (2.15,-0.9);
+\fill[red!30] (2.15,0) rectangle (4.3,-0.9);
+\fill[red!30] (4.3,0) rectangle (6.45,-0.9);
+\node[cell] at (2.15*0.5, -0.45) {0\%};
+\node[cell] at (2.15*1.5, -0.45) {0\%};
+\node[cell] at (2.15*2.5, -0.45) {0\%};
+
+% --- Row 2: CIFAR-10 RT ---
+\fill[green!45] (0,-0.9) rectangle (2.15,-1.8);
+\fill[yellow!55] (2.15,-0.9) rectangle (4.3,-1.8);
+\fill[red!30] (4.3,-0.9) rectangle (6.45,-1.8);
+\node[cell] at (2.15*0.5, -1.35) {90\%};
+\node[cell] at (2.15*1.5, -1.35) {54\%};
+\node[cell] at (2.15*2.5, -1.35) {0\%};
+
+% --- Row 3: MNIST NRT ---
+\fill[green!30!yellow!20] (0,-1.8) rectangle (2.15,-2.7);
+\fill[red!30] (2.15,-1.8) rectangle (4.3,-2.7);
+\fill[red!30] (4.3,-1.8) rectangle (6.45,-2.7);
+\node[cell] at (2.15*0.5, -2.25) {75\%};
+\node[cell] at (2.15*1.5, -2.25) {0\%};
+\node[cell] at (2.15*2.5, -2.25) {0\%};
+
+% --- Row 4: MNIST RT ---
+\fill[green!65] (0,-2.7) rectangle (2.15,-3.6);
+\fill[green!60] (2.15,-2.7) rectangle (4.3,-3.6);
+\fill[green!50] (4.3,-2.7) rectangle (6.45,-3.6);
+\node[cell] at (2.15*0.5, -3.15) {\textbf{100\%}};
+\node[cell] at (2.15*1.5, -3.15) {\textbf{99\%}};
+\node[cell] at (2.15*2.5, -3.15) {\textbf{95\%}};
+
+% Grid lines
+\draw[thin, gray!60] (0,0) grid[xstep=2.15, ystep=0.9] (6.45,-3.6);
+\draw[semithick] (0,0) rectangle (6.45,-3.6);
+% Horizontal separator between CIFAR-10 and MNIST blocks
+\draw[semithick] (0,-1.8) -- (6.45,-1.8);
+
+% Colorbar
+\shade[left color=red!30, right color=green!65] (0,-4.3) rectangle (6.45,-4.6);
+\draw[thin] (0,-4.3) rectangle (6.45,-4.6);
+\node[font=\scriptsize, anchor=north] at (0,-4.65) {0\%};
+\node[font=\scriptsize, anchor=north] at (3.225,-4.65) {50\%};
+\node[font=\scriptsize, anchor=north] at (6.45,-4.65) {100\%};
+\node[font=\scriptsize, anchor=north] at (3.225,-4.95) {Certified Robustness Accuracy (CRA)};
+\end{tikzpicture}
+\caption{Expert certified robustness accuracy (CRA) across domains, training paradigms, and perturbation budgets (20 samples per configuration, mean over 5 runs). Green indicates high CRA; red indicates verification failure (timeout). Robust training (RT) is a prerequisite for verifiability: CIFAR-10 NRT is completely unverifiable at all $\varepsilon$, while MNIST RT maintains $\geq$95\% CRA even at $\varepsilon = 8/255$. Zero falsifications occurred in any configuration.}
+\label{fig:expert-heatmap}
+\end{figure}
 
 \subsection{Empirical Adversarial Robustness}
 \label{sec:eval-empirical}
