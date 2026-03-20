@@ -20,7 +20,7 @@
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{patterns}
+\usetikzlibrary{patterns,positioning,arrows.meta,calc}
 
 
 %%%%% FOR STRIKETHROUGH %%%%%
@@ -53,7 +53,7 @@ Deep neural networks (DNNs) achieve high accuracy on image classification tasks 
 
 Formal verification tools such as $\alpha$--$\beta$-CROWN~\cite{wang2021} can certify provable robustness for individual neural networks, yet verifying a full MoE system remains challenging because the verifier must reason jointly about the router, every expert, and their interactions. This raises a natural question: can the verified robustness of individual experts and the router be combined to certify the full system? An affirmative answer would allow heterogeneous MoE systems to be trained, extended with new experts, and certified modularly, avoiding the need to re-verify the entire system whenever a single component changes.
 
-This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE architecture in which each input carries two labels: a fine-grained \emph{class} (\emph{e.g.}, speed-limit sign) and a coarse \emph{meta-class} identifying the domain (\emph{e.g.}, German traffic signs vs.\ handwritten digits). The router learns to predict the meta-class and dispatches the input to the corresponding domain expert, which then predicts the fine-grained class. This two-level classification motivates the name \emph{Meta}MoE. The framework combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained components. We investigate how empirical adversarial robustness, measured by accuracy under Projected Gradient Descent (PGD) attacks~\cite{madry2018}, where higher accuracy indicates greater resilience to worst-case perturbations, relates to certified robustness (formal bounds), and establish conditions under which these guarantees propagate from individual components to the entire system.
+This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE architecture in which each input carries two labels: a fine-grained \emph{class} (\emph{e.g.}, speed-limit sign) and a coarse \emph{meta-class} identifying the domain (\emph{e.g.}, German traffic signs vs.\ handwritten digits). The router learns to predict the meta-class and dispatches the input to the corresponding domain expert, which then predicts the fine-grained class. This two-level classification motivates the name \emph{Meta}MoE (Figure~\ref{fig:metamoe-arch}). The framework combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained components. We investigate how empirical adversarial robustness, measured by accuracy under Projected Gradient Descent (PGD) attacks~\cite{madry2018}, where higher accuracy indicates greater resilience to worst-case perturbations, relates to certified robustness (formal bounds), and establish conditions under which these guarantees propagate from individual components to the entire system.
 
 The central challenge is that verifying an MoE system monolithically is expensive: the verifier must reason about the router, all experts, and their interactions simultaneously. Our key insight is that under hard routing, exactly one expert processes each input, so the system decomposes naturally into two independent verification tasks: does the router select the right expert?, and does that expert classify correctly? If both hold, the system is correct. This insight leads to three contributions, each building on the previous:
 
@@ -224,6 +224,58 @@ These hypotheses collectively address the core challenges of robustness and effi
 Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
 Each expert $E_i$ is denoted $E_{i\_\text{CNN\_NRT}}$ (non-robust) or $E_{i\_\text{CNN\_RT}}$ (robust), where the index $i$ corresponds to: CIFAR-10 ($E_0$), MNIST ($E_1$), GTSRB ($E_2$), PTSD ($E_3$), BTSD ($E_4$), ETSD ($E_5$), TSRD ($E_6$). Full notation is provided in Appendix~\ref{app:notation}.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=0.4cm and 0.5cm,
+    box/.style={draw, rectangle, minimum width=1.8cm, minimum height=0.55cm, align=center, font=\footnotesize, inner sep=2pt},
+    routerbox/.style={box, fill=blue!15, rounded corners=3pt},
+    expertbox/.style={box, fill=green!20},
+    segbox/.style={box, fill=yellow!25},
+    outbox/.style={box, fill=orange!15, minimum width=2.4cm},
+    arr/.style={-{Stealth[length=4pt]}, semithick},
+]
+% Input
+\node[box] (input) {Input Image};
+
+% Router
+\node[routerbox, below=of input] (router) {Meta Gating\\[-2pt]Network $\mathcal{G}$};
+
+% Expert Probabilities
+\node[box, below=of router] (probs) {Expert Probabilities};
+
+% Experts row
+\node[expertbox, below left=0.5cm and 1.6cm of probs] (e0) {Expert $E_0$};
+\node[expertbox, below=0.5cm of probs] (e1) {Expert $E_1$};
+\node[expertbox, below right=0.5cm and 1.6cm of probs] (en) {Expert $E_N$};
+\node[font=\small] at ($(e1)!0.5!(en)$) {$\cdots$};
+
+% Segment row
+\node[segbox, below=0.35cm of e0] (s0) {Segment 0};
+\node[segbox, below=0.35cm of e1] (s1) {Segment 1};
+\node[segbox, below=0.35cm of en] (sn) {Segment $N$};
+\node[font=\small] at ($(s1)!0.5!(sn)$) {$\cdots$};
+
+% Combined Output
+\node[outbox, below=0.45cm of s1] (output) {Combined Output $\hat{y}$};
+
+% Arrows
+\draw[arr] (input) -- (router);
+\draw[arr] (router) -- (probs);
+\draw[arr] (probs) -- (e0);
+\draw[arr] (probs) -- (e1);
+\draw[arr] (probs) -- (en);
+\draw[arr] (e0) -- (s0);
+\draw[arr] (e1) -- (s1);
+\draw[arr] (en) -- (sn);
+\draw[arr] (s0) -- (output);
+\draw[arr] (s1) -- (output);
+\draw[arr] (sn) -- (output);
+\end{tikzpicture}
+\caption{\textsf{MetaMoE} architecture. The meta gating network $\mathcal{G}$ receives the input image and produces routing probabilities over $N$ experts. Under hard routing ($k{=}1$), the top-scoring expert $E_{m^*}$ is activated; its output populates the corresponding segment of the unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ (Eq.~1), with all other segments zeroed. Experts are frozen after independent training; only $\mathcal{G}$ is trained during MoE composition.}
+\label{fig:metamoe-arch}
+\end{figure}
 
 \subsection{Verification-Aware CNN Architecture}
 
