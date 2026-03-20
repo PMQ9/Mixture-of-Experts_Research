@@ -194,28 +194,7 @@ Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\tex
 \label{eq:certification_gap}
     \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
 \end{equation}
-A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set, so large gaps between them do not indicate inconsistency. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we formalize the relationship as a quantitative metric and hypothesize that within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability. Our experiments validate this hypothesis and further reveal that the gap is domain-dependent ($\Delta = 9\%$ for MNIST-RT vs.\ $\Delta = 73\%$ for CIFAR-10-RT) and that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
-
-\section{Hypotheses}
-
-\BW{Check if other SAIV papers use hypotheses, this isn't a science experiment so I have not commonly seen them used. You could pose them as research questions instead to motivate the results but I don't think you write hypotheses. If found in SAIV papers you can leave it but its a little odd.} The following hypotheses are posited regarding the compositional robustness and scalability of a multi-dataset heterogeneous MoE architecture.
-
-\noindent\textbf{H1 (Adversarial Robustness--Accuracy Trade-off).}
-Adversarial training (AT) of both experts and the router exhibits higher robustness (smaller drop in adversarial accuracy under $L_\infty$ perturbation of radius $\varepsilon$) but lower clean accuracy on unperturbed inputs, compared to non-robustly trained (NRT) counterparts. This trade-off arises from the regularization effect of AT, which prioritizes decision boundary smoothness over fitting to clean data.
-
-\noindent\textbf{H2 (Empirical Verification Translates to Formal Verification).}
-Within a given domain and architecture, models with higher empirical adversarial accuracy (via PGD attacks) will achieve higher certified robustness accuracy when formally verified using $\alpha$--$\beta$-CROWN. Furthermore, robust training is a prerequisite: non-robustly trained models on complex domains will be significantly more expensive to verify, temporally and spatially. This creates a bridge between empirical-based verification and theoretical-based verification.
-
-\noindent\textbf{H3 (Compositional Robustness).}
-An MoE composed of experts and a router trained with robust methods exhibits higher overall robustness and lower clean accuracy compared to an MoE composed of non-robust components. This compositional property holds under the assumption that the router correctly selects experts even under perturbations.
-
-\noindent\textbf{H4 (Training Time Scalability).}
-Freezing pretrained experts and training only the router enables efficient incremental learning. As the number of experts grows, this compositional strategy reduces retraining cost relative to monolithic models.
-
-\noindent\textbf{H5 (Linear Inference Scaling).}
-The MoE inference cost scales linearly with the number of activated experts $k < N$, i.e., $O(k)$, since only routed experts are evaluated.
-
-These hypotheses collectively address the core challenges of robustness and efficiency in heterogeneous MoE systems, guiding experiment setup decisions.
+A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set, so large gaps between them do not indicate inconsistency. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we formalize the relationship as a quantitative metric and investigate whether, within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability. Our experiments confirm this and further reveal that the gap is domain-dependent ($\Delta = 9\%$ for MNIST-RT vs.\ $\Delta = 73\%$ for CIFAR-10-RT) and that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
 
 \section{Methodology}
 
@@ -426,7 +405,7 @@ $\varepsilon$ & Training & Verified & Falsified & Unknown & Success \\
 We employed the Adversarial Robustness Toolbox (ART) with PGD attacks ($\varepsilon{=}8/255$, 7 iterations, step $2/255$) on $32{\times}32$ images from CIFAR-10 and MNIST.
 
 \textbf{Individual expert robustness.}
-Table~\ref{tab:expert-robustness} confirms the robustness--accuracy tradeoff (H1): CIFAR-10 incurs a 6.21\% clean accuracy cost for a 17.23\% adversarial accuracy gain; MNIST incurs only 0.02\% clean cost for a 44.71\% adversarial gain.
+Table~\ref{tab:expert-robustness} confirms the expected robustness--accuracy tradeoff: CIFAR-10 incurs a 6.21\% clean accuracy cost for a 17.23\% adversarial accuracy gain; MNIST incurs only 0.02\% clean cost for a 44.71\% adversarial gain.
 
 \begin{table}[t]
 \centering
@@ -446,7 +425,7 @@ $E_1$ & MNIST & RT & $99.17 \pm 0.03$ & $90.77 \pm 5.44$ & $8.39$ \\
 \end{table}
 
 \textbf{\textsf{MetaMoE} compositional robustness.}
-We tested all 8 combinations of router training (RT/NRT) and expert configurations (4 combinations), each trained 5 times (40 total runs, 50 epochs router training). Table~\ref{tab:expert-impact} reveals that expert configuration dominates system robustness: the 13.15\% adversarial accuracy difference between Both-RT and Both-NRT far exceeds the $< 0.1\%$ router training effect. All 40 runs achieve 100\% gating accuracy under both clean and adversarial conditions, validating the invariance condition of Theorem~\ref{thm:compositional} and confirming that the router acts as a transparent switch (H3). The weakest expert constrains system robustness, confirming modular robustness propagation. NRT router training is 3.2$\times$ faster with identical accuracy, yielding computational savings when routing is inherently stable.
+We tested all 8 combinations of router training (RT/NRT) and expert configurations (4 combinations), each trained 5 times (40 total runs, 50 epochs router training). Table~\ref{tab:expert-impact} reveals that expert configuration dominates system robustness: the 13.15\% adversarial accuracy difference between Both-RT and Both-NRT far exceeds the $< 0.1\%$ router training effect. All 40 runs achieve 100\% gating accuracy under both clean and adversarial conditions, validating the invariance condition of Theorem~\ref{thm:compositional} and confirming that the router acts as a transparent switch. The weakest expert constrains system robustness, confirming modular robustness propagation. NRT router training is 3.2$\times$ faster with identical accuracy, yielding computational savings when routing is inherently stable.
 
 \begin{table}[t]
 \centering
@@ -473,7 +452,7 @@ As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD (visually similar traff
 \subsection{Empirical--Formal Correlation}
 \label{sec:eval-correlation}
 
-Table~\ref{tab:gap-analysis} relates empirical AA to formal CRA at $\varepsilon = 2/255$. Within each domain, higher AA monotonically associates with higher CRA (H2): MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. However, the absolute gap $\Delta$ varies by domain ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from the metric mismatch discussed in Section~\ref{sec:eval-formal}: CRA measures router-only invariance while AA captures end-to-end classification.
+Table~\ref{tab:gap-analysis} relates empirical AA to formal CRA at $\varepsilon = 2/255$. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. However, the absolute gap $\Delta$ varies by domain ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from the metric mismatch discussed in Section~\ref{sec:eval-formal}: CRA measures router-only invariance while AA captures end-to-end classification.
 
 \begin{table}[t]
 \centering
@@ -499,10 +478,10 @@ The practical implication is clear: robust training of experts is mandatory for 
 \label{sec:eval-scalability}
 
 \textbf{Training time.}
-We compared \textsf{MetaMoE} against monolithic training when incrementally adding a third dataset (MNIST) to an existing 2-dataset system (GTSRB + CIFAR-10). The monolithic approach must retrain on all three datasets from scratch (151 mins), while \textsf{MetaMoE} only trains a new expert (72.5 mins) and fine-tunes the frozen router (30 mins), yielding a 16.7\% end-to-end speedup (202 vs.\ 242.5 total mins). This gap widens as more experts are added, since per-expert cost is fixed while monolithic retraining grows with dataset count (H4). See Appendix~\ref{app:training-time} for the full breakdown.
+We compared \textsf{MetaMoE} against monolithic training when incrementally adding a third dataset (MNIST) to an existing 2-dataset system (GTSRB + CIFAR-10). The monolithic approach must retrain on all three datasets from scratch (151 mins), while \textsf{MetaMoE} only trains a new expert (72.5 mins) and fine-tunes the frozen router (30 mins), yielding a 16.7\% end-to-end speedup (202 vs.\ 242.5 total mins). This gap widens as more experts are added, since per-expert cost is fixed while monolithic retraining grows with dataset count. See Appendix~\ref{app:training-time} for the full breakdown.
 
 \textbf{Inference scaling.}
-Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$, where $L_{\text{router}}$ is constant and each expert contributes $\sim$40--50ms. Figure~\ref{tab:inference} confirms $O(k)$ scaling: at fixed $k{=}1$, latency remains $\sim$71ms regardless of whether the system contains 2 or 5 total experts (H5).
+Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$, where $L_{\text{router}}$ is constant and each expert contributes $\sim$40--50ms. Figure~\ref{tab:inference} confirms $O(k)$ scaling: at fixed $k{=}1$, latency remains $\sim$71ms regardless of whether the system contains 2 or 5 total experts.
 
 \begin{figure}[t]
 \centering
