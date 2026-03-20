@@ -444,7 +444,7 @@ Figure~\ref{fig:expert-robustness} confirms the expected robustness--accuracy tr
     xtick=data,
     x tick label style={font=\footnotesize, rotate=25, anchor=east},
     legend style={at={(0.5,-0.35)}, anchor=north, font=\footnotesize, legend columns=2},
-    legend image code/.code={\fill[##1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
+    legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
     grid style={dashed, gray!20},
     ytick={0,20,40,60,80,100},
@@ -512,60 +512,61 @@ Figure~\ref{fig:gap-analysis} relates empirical AA to formal CRA at $\varepsilon
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=0.92\columnwidth,
+    width=\columnwidth,
     height=5.8cm,
-    bar width=9pt,
+    bar width=8pt,
     ymin=0, ymax=118,
     ylabel={(\%)},
-    symbolic x coords={C10 NRT, C10 RT, MNIST NRT, MNIST RT, Rtr NRT, Rtr RT},
-    xtick=data,
+    xtick={1,2, 4,5, 7,8},
+    xticklabels={NRT, RT, NRT, RT, NRT, RT},
     x tick label style={font=\footnotesize},
-    legend style={at={(0.5,-0.22)}, anchor=north, font=\footnotesize, legend columns=2},
+    xmin=0, xmax=9,
+    legend style={at={(0.5,-0.28)}, anchor=north, font=\footnotesize, legend columns=2},
+    legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
     grid style={dashed, gray!20},
     ytick={0,20,40,60,80,100},
-    enlarge x limits=0.12,
     every axis plot/.append style={fill opacity=0.85},
     clip=false,
-    % Separator between experts and router
-    extra x ticks={},
 ]
 % Adversarial Accuracy (AA)
 \addplot[fill=red!45, draw=red!65,
     error bars/.cd, y dir=both, y explicit, error bar style={thin}
 ] coordinates {
-    (C10 NRT, 0.01) +- (0,0.01)
-    (C10 RT, 17.24) +- (0,0.27)
-    (MNIST NRT, 46.06) +- (0,7.58)
-    (MNIST RT, 90.77) +- (0,5.44)
-    (Rtr NRT, 35.47) +- (0,5.82)
-    (Rtr RT, 35.49) +- (0,5.76)
+    (1, 0.01) +- (0,0.01)
+    (2, 17.24) +- (0,0.27)
+    (4, 46.06) +- (0,7.58)
+    (5, 90.77) +- (0,5.44)
+    (7, 35.47) +- (0,5.82)
+    (8, 35.49) +- (0,5.76)
 };
 % Certified Robustness Accuracy (CRA)
 \addplot[fill=green!50, draw=green!70,
     error bars/.cd, y dir=both, y explicit, error bar style={thin}
 ] coordinates {
-    (C10 NRT, 0.0) +- (0,0.0)
-    (C10 RT, 90.0) +- (0,0.0)
-    (MNIST NRT, 75.0) +- (0,0.0)
-    (MNIST RT, 100.0) +- (0,0.0)
-    (Rtr NRT, 97.5) +- (0,0.0)
-    (Rtr RT, 100.0) +- (0,0.0)
+    (1, 0.0) +- (0,0.0)
+    (2, 90.0) +- (0,0.0)
+    (4, 75.0) +- (0,0.0)
+    (5, 100.0) +- (0,0.0)
+    (7, 97.5) +- (0,0.0)
+    (8, 100.0) +- (0,0.0)
 };
 % Gap annotations (Delta) above bar pairs
-\node[font=\scriptsize, text=black!70] at (axis cs:C10 NRT, 8) {--};
-\node[font=\scriptsize, text=black!70] at (axis cs:C10 RT, 98) {$\Delta{=}73$};
-\node[font=\scriptsize, text=black!70] at (axis cs:MNIST NRT, 83) {$\Delta{=}29$};
-\node[font=\scriptsize, text=black!70] at (axis cs:MNIST RT, 108) {$\Delta{=}9$};
-\node[font=\scriptsize, text=black!70] at (axis cs:Rtr NRT, 106) {$\Delta{=}62$};
-\node[font=\scriptsize, text=black!70] at (axis cs:Rtr RT, 108) {$\Delta{=}65$};
-% Separator line between experts and router
-\draw[thin, dashed, gray!60] (axis cs:MNIST RT, 0) ++(0.55cm,0) -- ++(0,5.6cm);
+\node[font=\scriptsize, text=black!70] at (axis cs:1, 8) {--};
+\node[font=\scriptsize, text=black!70] at (axis cs:2, 98) {$\Delta{=}73$};
+\node[font=\scriptsize, text=black!70] at (axis cs:4, 83) {$\Delta{=}29$};
+\node[font=\scriptsize, text=black!70] at (axis cs:5, 108) {$\Delta{=}9$};
+\node[font=\scriptsize, text=black!70] at (axis cs:7, 106) {$\Delta{=}62$};
+\node[font=\scriptsize, text=black!70] at (axis cs:8, 108) {$\Delta{=}65$};
+% Separator lines between groups
+\draw[thin, dashed, gray!50] (axis cs:3, 0) -- (axis cs:3, 115);
+\draw[thin, dashed, gray!50] (axis cs:6, 0) -- (axis cs:6, 115);
+% Group labels below tick labels
+\node[font=\footnotesize, text=black] at (axis cs:1.5, -21) {CIFAR-10};
+\node[font=\footnotesize, text=black] at (axis cs:4.5, -21) {MNIST};
+\node[font=\footnotesize, text=black] at (axis cs:7.5, -21) {Router};
 \legend{Adversarial Accuracy (AA), Certified Robustness (CRA)}
 \end{axis}
-% Component group labels
-\node[font=\scriptsize, text=gray] at (2.6,-0.55) {Experts};
-\node[font=\scriptsize, text=gray] at (5.85,-0.55) {Router};
 \end{tikzpicture}
 \caption{Empirical--formal robustness gap at $\varepsilon = 2/255$ (mean $\pm$ std over 5 runs). The gap $\Delta = \text{CRA} - \text{AA}$ (annotated above each pair) varies by domain: MNIST-RT achieves tight correspondence ($\Delta = 9\%$), while CIFAR-10-RT shows a large gap ($\Delta = 73\%$) reflecting looser CROWN bounds on complex domains. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router gaps ($\Delta \approx 63\%$) reflect a metric mismatch: CRA measures routing invariance while AA captures end-to-end classification.}
 \label{fig:gap-analysis}
