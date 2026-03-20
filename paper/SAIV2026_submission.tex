@@ -428,24 +428,54 @@ We verified CIFAR-10 and MNIST experts (20 samples each, averaged over 5 runs) u
 We employed the Adversarial Robustness Toolbox (ART) with PGD attacks ($\varepsilon{=}8/255$, 7 iterations, step $2/255$) on $32{\times}32$ images from CIFAR-10 and MNIST.
 
 \textbf{Individual expert robustness.}
-Table~\ref{tab:expert-robustness} confirms the expected robustness--accuracy tradeoff: CIFAR-10 incurs a 6.21\% clean accuracy cost for a 17.23\% adversarial accuracy gain; MNIST incurs only 0.02\% clean cost for a 44.71\% adversarial gain.
+Figure~\ref{fig:expert-robustness} confirms the expected robustness--accuracy tradeoff: CIFAR-10 incurs a 6.21\% clean accuracy cost for a 17.23\% adversarial accuracy gain; MNIST incurs only 0.02\% clean cost for a 44.71\% adversarial gain.
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{Expert robustness (VerifiableCNN, clean vs.\ adversarial accuracy).}
-\label{tab:expert-robustness}
-\small
-\begin{tabular}{llllll}
-\toprule
-Expert & Dataset & Training & Clean Acc (\%) & Adv Acc (\%) & Gap (\%) \\
-\midrule
-$E_0$ & CIFAR-10 & NRT & $83.75 \pm 0.21$ & $0.01 \pm 0.01$ & $83.74$ \\
-$E_0$ & CIFAR-10 & RT & $77.54 \pm 0.26$ & $17.24 \pm 0.27$ & $60.30$ \\
-$E_1$ & MNIST & NRT & $99.19 \pm 0.06$ & $46.06 \pm 7.58$ & $53.13$ \\
-$E_1$ & MNIST & RT & $99.17 \pm 0.03$ & $90.77 \pm 5.44$ & $8.39$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=0.88\columnwidth,
+    height=5.5cm,
+    bar width=11pt,
+    ymin=0, ymax=115,
+    ylabel={Accuracy (\%)},
+    symbolic x coords={CIFAR-10 NRT, CIFAR-10 RT, MNIST NRT, MNIST RT},
+    xtick=data,
+    x tick label style={font=\footnotesize, rotate=25, anchor=east},
+    legend style={at={(0.5,-0.35)}, anchor=north, font=\footnotesize, legend columns=2},
+    legend image code/.code={\fill[##1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
+    grid=major,
+    grid style={dashed, gray!20},
+    ytick={0,20,40,60,80,100},
+    enlarge x limits=0.18,
+    every axis plot/.append style={fill opacity=0.85},
+    clip=false,
+]
+% Clean Accuracy
+\addplot[fill=blue!45, draw=blue!65,
+    error bars/.cd, y dir=both, y explicit, error bar style={thin}
+] coordinates {
+    (CIFAR-10 NRT, 83.75) +- (0,0.21)
+    (CIFAR-10 RT, 77.54) +- (0,0.26)
+    (MNIST NRT, 99.19) +- (0,0.06)
+    (MNIST RT, 99.17) +- (0,0.03)
+};
+% Adversarial Accuracy
+\addplot[fill=red!45, draw=red!65,
+    error bars/.cd, y dir=both, y explicit, error bar style={thin}
+] coordinates {
+    (CIFAR-10 NRT, 0.01) +- (0,0.01)
+    (CIFAR-10 RT, 17.24) +- (0,0.27)
+    (MNIST NRT, 46.06) +- (0,7.58)
+    (MNIST RT, 90.77) +- (0,5.44)
+};
+\legend{Clean Accuracy, Adversarial Accuracy (PGD $\varepsilon{=}8/255$)}
+\end{axis}
+\end{tikzpicture}
+\caption{Expert robustness--accuracy tradeoff (VerifiableCNN, mean $\pm$ std over 5 runs). The gap between blue (clean) and red (adversarial) bars represents the robustness gap. RT narrows the gap substantially for both domains, with MNIST achieving near-parity ($8.39\%$ gap) while CIFAR-10 retains a large gap ($60.30\%$), reflecting domain complexity.}
+\label{fig:expert-robustness}
+\end{figure}
 
 \textbf{\textsf{MetaMoE} compositional robustness.}
 We tested all 8 combinations of router training (RT/NRT) and expert configurations (4 combinations), each trained 5 times (40 total runs, 50 epochs router training). Table~\ref{tab:expert-impact} reveals that expert configuration dominates system robustness: the 13.15\% adversarial accuracy difference between Both-RT and Both-NRT far exceeds the $< 0.1\%$ router training effect. All 40 runs achieve 100\% gating accuracy under both clean and adversarial conditions, validating the invariance condition of Theorem~\ref{thm:compositional} and confirming that the router acts as a transparent switch. The weakest expert constrains system robustness, confirming modular robustness propagation. NRT router training is 3.2$\times$ faster with identical accuracy, yielding computational savings when routing is inherently stable.
@@ -475,25 +505,71 @@ As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD (visually similar traff
 \subsection{Empirical--Formal Correlation}
 \label{sec:eval-correlation}
 
-Table~\ref{tab:gap-analysis} relates empirical AA to formal CRA at $\varepsilon = 2/255$. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. However, the absolute gap $\Delta$ varies by domain ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from the metric mismatch discussed in Section~\ref{sec:eval-formal}: CRA measures router-only invariance while AA captures end-to-end classification.
+Figure~\ref{fig:gap-analysis} relates empirical AA to formal CRA at $\varepsilon = 2/255$. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. However, the absolute gap $\Delta$ varies by domain ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from the metric mismatch discussed in Section~\ref{sec:eval-formal}: CRA measures router-only invariance while AA captures end-to-end classification.
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{Empirical--formal robustness gap analysis ($\varepsilon = 2/255$, mean $\pm$ std over independent runs).}
-\label{tab:gap-analysis}
-\begin{tabular}{lllll}
-\toprule
-\textbf{Model} & \textbf{Type} & \textbf{AA(\%)} & \textbf{CRA(\%)} & $\boldsymbol{\Delta}$\textbf{(\%)} \\
-\midrule
-CIFAR-10 Expert & NRT & $0.01 \pm 0.01$ & $0.0 \pm 0.0$ & Undefined \\
-CIFAR-10 Expert & RT & $17.24 \pm 0.27$ & $90.0 \pm 0.0$ & $72.76$ \\
-MNIST Expert & NRT & $46.06 \pm 7.58$ & $75.0 \pm 0.0$ & $28.94$ \\
-MNIST Expert & RT & $90.77 \pm 5.44$ & $100.0 \pm 0.0$ & $9.23$ \\
-Router & NRT & $35.47 \pm 5.82$ & $97.5 \pm 0.0$ & $62.03$ \\
-Router & RT & $35.49 \pm 5.76$ & $100.0 \pm 0.0$ & $64.51$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=0.92\columnwidth,
+    height=5.8cm,
+    bar width=9pt,
+    ymin=0, ymax=118,
+    ylabel={(\%)},
+    symbolic x coords={C10 NRT, C10 RT, MNIST NRT, MNIST RT, Rtr NRT, Rtr RT},
+    xtick=data,
+    x tick label style={font=\footnotesize},
+    legend style={at={(0.5,-0.22)}, anchor=north, font=\footnotesize, legend columns=2},
+    grid=major,
+    grid style={dashed, gray!20},
+    ytick={0,20,40,60,80,100},
+    enlarge x limits=0.12,
+    every axis plot/.append style={fill opacity=0.85},
+    clip=false,
+    % Separator between experts and router
+    extra x ticks={},
+]
+% Adversarial Accuracy (AA)
+\addplot[fill=red!45, draw=red!65,
+    error bars/.cd, y dir=both, y explicit, error bar style={thin}
+] coordinates {
+    (C10 NRT, 0.01) +- (0,0.01)
+    (C10 RT, 17.24) +- (0,0.27)
+    (MNIST NRT, 46.06) +- (0,7.58)
+    (MNIST RT, 90.77) +- (0,5.44)
+    (Rtr NRT, 35.47) +- (0,5.82)
+    (Rtr RT, 35.49) +- (0,5.76)
+};
+% Certified Robustness Accuracy (CRA)
+\addplot[fill=green!50, draw=green!70,
+    error bars/.cd, y dir=both, y explicit, error bar style={thin}
+] coordinates {
+    (C10 NRT, 0.0) +- (0,0.0)
+    (C10 RT, 90.0) +- (0,0.0)
+    (MNIST NRT, 75.0) +- (0,0.0)
+    (MNIST RT, 100.0) +- (0,0.0)
+    (Rtr NRT, 97.5) +- (0,0.0)
+    (Rtr RT, 100.0) +- (0,0.0)
+};
+% Gap annotations (Delta) above bar pairs
+\node[font=\scriptsize, text=black!70] at (axis cs:C10 NRT, 8) {--};
+\node[font=\scriptsize, text=black!70] at (axis cs:C10 RT, 98) {$\Delta{=}73$};
+\node[font=\scriptsize, text=black!70] at (axis cs:MNIST NRT, 83) {$\Delta{=}29$};
+\node[font=\scriptsize, text=black!70] at (axis cs:MNIST RT, 108) {$\Delta{=}9$};
+\node[font=\scriptsize, text=black!70] at (axis cs:Rtr NRT, 106) {$\Delta{=}62$};
+\node[font=\scriptsize, text=black!70] at (axis cs:Rtr RT, 108) {$\Delta{=}65$};
+% Separator line between experts and router
+\draw[thin, dashed, gray!60] (axis cs:MNIST RT, 0) ++(0.55cm,0) -- ++(0,5.6cm);
+\legend{Adversarial Accuracy (AA), Certified Robustness (CRA)}
+\end{axis}
+% Component group labels
+\node[font=\scriptsize, text=gray] at (2.6,-0.55) {Experts};
+\node[font=\scriptsize, text=gray] at (5.85,-0.55) {Router};
+\end{tikzpicture}
+\caption{Empirical--formal robustness gap at $\varepsilon = 2/255$ (mean $\pm$ std over 5 runs). The gap $\Delta = \text{CRA} - \text{AA}$ (annotated above each pair) varies by domain: MNIST-RT achieves tight correspondence ($\Delta = 9\%$), while CIFAR-10-RT shows a large gap ($\Delta = 73\%$) reflecting looser CROWN bounds on complex domains. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router gaps ($\Delta \approx 63\%$) reflect a metric mismatch: CRA measures routing invariance while AA captures end-to-end classification.}
+\label{fig:gap-analysis}
+\end{figure}
 
 The practical implication is clear: robust training of experts is mandatory for verifiability. CIFAR-10-NRT is completely unverifiable (CRA $= 0\%$), while within RT models, higher empirical robustness predicts higher formal certification.
 
