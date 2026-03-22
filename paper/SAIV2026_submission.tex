@@ -58,7 +58,7 @@ This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE a
 The central challenge is that verifying an MoE system monolithically is expensive: the verifier must reason about the router, all experts, and their interactions simultaneously. Our key insight is that under hard routing, exactly one expert processes each input, so the system decomposes naturally into two independent verification tasks: does the router select the right expert?, and does that expert classify correctly? If both hold, the system is correct. This insight leads to three contributions, each building on the previous:
 
 \begin{enumerate}
-    \item \textbf{Compositional Robustness Theorem (Theorem~\ref{thm:compositional}).} We prove that for hard-routed MoE with disjoint expert class spaces, the system is robust at an input if and only if (i) the router maintains invariant expert selection within the $\ell_\infty$ perturbation ball and (ii) the selected expert is robust within that same ball. This bicondition reduces system-level verification to independent component-level tasks, where each task's cost is fixed regardless of how many experts the system contains.
+    \item \textbf{Compositional Robustness Theorem (Theorem~\ref{thm:compositional}).} We prove an exact assume-guarantee rule for hard-routed MoE with disjoint expert class spaces: the system is robust at an input if and only if (i) the router maintains invariant expert selection within the $\ell_\infty$ perturbation ball and (ii) the selected expert is robust within that same ball. The biconditional guarantees that no interaction effects between router and expert can invalidate component-level certificates, reducing system-level verification to independent tasks whose cost is fixed regardless of how many experts the system contains.
 
     \item \textbf{Verification methodology.} We leverage the theorem in a practical compositional verification pipeline using $\alpha$--$\beta$-CROWN, a state-of-the-art neural network verifier. Because the theorem guarantees soundness of independent component verification, we extract the router as a standalone network and verify it separately from the experts. We describe the architecture and export decisions (BatchNorm elimination, raw logit output, and property negation for counterexample search) that make each component amenable to bound propagation. This reduces the verification target from the full system (${\sim}$231K parameters) to the largest single component (${\sim}$96K), with the reduction ratio scaling linearly with the number of experts.
 
@@ -75,7 +75,7 @@ Meanwhile, neural network verification has matured as an independent line of res
 
 One promising solution is compositional verification, long established in classical systems through assume-guarantee reasoning~\cite{henzinger1998}. Zhou and Tripakis~\cite{zhou2024compositional} recently adapted compositional inductive invariants to neural network controlled systems, demonstrating that modular proofs can scale where monolithic analysis cannot. Watson et al.~\cite{watson2025scenario} proposed scenario-based compositional verification for autonomous systems with neural perception, decomposing verification into environment-specific scenarios and composing probabilistic guarantees across them. However, both frameworks address feedback control loops or perception pipelines, not the conditional-activation structure of MoE, where a router's decision determines which expert's guarantees apply.
 
-These three lines of work (MoE scalability, adversarial robustness, and formal verification) have developed largely in isolation. MoE research scales models without certifying them; robustness studies attack or defend MoE empirically without formal guarantees; and verification certifies monolithic networks without addressing compositional, dynamically-routed architectures. This paper bridges all three by asking: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?} We answer affirmatively by proving that router invariance and expert robustness compose to yield system-level guarantees, and by showing that empirical adversarial accuracy is a reliable predictor of formal certifiability.
+These three lines of work (MoE scalability, adversarial robustness, and formal verification) have developed largely in isolation. MoE research scales models without certifying them; robustness studies attack or defend MoE empirically without formal guarantees; and verification certifies monolithic networks without addressing compositional, dynamically-routed architectures. This paper bridges all three by asking: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?} We answer affirmatively by proving that router invariance and expert robustness compose to yield system-level guarantees, and by showing that empirical adversarial accuracy correlates with formal certifiability in our study.
 
 \section{Problem Formulation}
 
@@ -129,7 +129,7 @@ Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adv
 \subsection{Compositional Robustness Theorem}
 \label{sec:compositional}
 
-The central question of this paper is whether a modular MoE system can be verified \emph{component-by-component} rather than as a monolithic whole. The key intuition is straightforward: in a hard-routed MoE, exactly one expert processes each input. If an adversary cannot change \emph{which} expert is selected (router invariance), and the selected expert itself classifies correctly under perturbation (expert robustness), then the overall system must also be robust. We formalize this intuition below with a definition, two lemmas establishing each component's role, and a theorem composing them.
+The central question of this paper is whether a modular MoE system can be verified \emph{component-by-component} rather than as a monolithic whole. In assume-guarantee reasoning~\cite{henzinger1998}, a system property is decomposed into obligations on individual components: each component \emph{assumes} that its environment satisfies certain conditions and \emph{guarantees} a local property, and the composition of these local guarantees implies the system-level property. We apply this principle to hard-routed MoE: the router assumes a well-formed input and guarantees stable expert selection; each expert assumes it receives inputs from its own domain and guarantees correct classification. The theorem below formalizes this decomposition, proving that these two component-level guarantees are individually necessary and jointly sufficient for system robustness -- that is, no interaction effects between router and expert can invalidate component-level certificates. We proceed with a definition, two lemmas, and the composing theorem.
 
 \begin{definition}[Router Invariance]
 \label{def:router_invariance}
@@ -178,12 +178,12 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 \begin{proof}
 \textbf{(Sufficiency.)} Follows directly by composing Lemmas~\ref{lem:router} and~\ref{lem:expert}: router invariance ensures the same expert~$m^*$ is selected for all $x' \in B_\varepsilon(x)$, and expert robustness ensures that expert produces the correct output throughout.
 
-\textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. The true label $y$ lies in $m^*$'s class range, so $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
+\textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. Because robustness requires correct classification on all inputs in $B_\varepsilon(x)$, including the clean input~$x$ itself, and the clean system correctly classifies $x$, the true label $y$ must lie in $m^*$'s class range. Therefore $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
 \end{proof}
 
 \textbf{Scope and implications.} Theorem~\ref{thm:compositional} establishes a biconditional for MoE systems with disjoint expert class spaces under hard routing. In the general case (overlapping classes), only the sufficient direction holds, since multiple experts could agree on the correct output even when the router switches between them. For soft or top-$k$ routing ($k > 1$), the sufficient condition would require invariance of the full top-$k$ set and robustness of all selected experts, which we leave to future work (Section~\ref{sec:limitations}). Our experiments use $k=1$.
 
-The practical consequence of this decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification when new experts are added.
+The practical consequence of this assume-guarantee decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid.
 
 We also examine the case where experts handle visually similar datasets: specifically, GTSRB~\cite{gtsrb} and PTSD~\cite{ptsd} (both traffic sign recognition tasks with 43 classes each), where the disjoint-class assumption still holds but the router faces a harder discrimination problem. We report these results in Appendix~\ref{app:similarity}.
 
@@ -194,7 +194,7 @@ Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\tex
 \label{eq:certification_gap}
     \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
 \end{equation}
-A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set, so large gaps between them do not indicate inconsistency. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we formalize the relationship as a quantitative metric and investigate whether, within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for and predictive of verifiability. Our experiments confirm this and further reveal that the gap is domain-dependent ($\Delta = 9\%$ for MNIST-RT vs.\ $\Delta = 73\%$ for CIFAR-10-RT) and that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
+A positive gap ($\Delta > 0$) indicates that formal verification certifies more samples than empirical attacks can defeat, reflecting conservatism of the attack rather than looseness of the verifier. Note that CRA and AA may measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set, so large gaps between them do not indicate inconsistency. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we investigate whether, within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for verifiability. Our experiments confirm this monotonic association and further reveal that the gap is domain-dependent ($\Delta = 9\%$ for MNIST-RT vs.\ $\Delta = 73\%$ for CIFAR-10-RT) and that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
 
 \section{Methodology}
 
@@ -503,22 +503,22 @@ As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD (visually similar traff
 \subsection{Empirical--Formal Correlation}
 \label{sec:eval-correlation}
 
-Figure~\ref{fig:gap-analysis} relates empirical AA to formal CRA at $\varepsilon = 2/255$. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. However, the absolute gap $\Delta$ varies by domain ($9\%$ for MNIST-RT vs.\ $73\%$ for CIFAR-10-RT), reflecting domain-dependent bound tightness rather than a universal correlation. For routers, the gap ($\sim$65\%) arises from the metric mismatch discussed in Section~\ref{sec:eval-formal}: CRA measures router-only invariance while AA captures end-to-end classification.
+Figure~\ref{fig:gap-analysis} compares expert AA and CRA at $\varepsilon = 2/255$, where both metrics measure classification correctness on the same samples. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. CRA can exceed AA because the verifier proves correctness under \emph{all} perturbations in the $\varepsilon$-ball, whereas PGD (7 iterations) may not find the worst-case example. The resulting gap $\Delta = \text{CRA} - \text{AA}$ is domain-dependent: $\Delta = 9\%$ for MNIST-RT (PGD nearly exhausts the perturbation space) vs.\ $\Delta = 73\%$ for CIFAR-10-RT (looser CROWN bounds and weaker PGD convergence on complex decision boundaries). We treat $\Delta$ as a diagnostic of bound tightness relative to attack strength, not as a universal robustness surplus. Routers are excluded from this comparison because router CRA verifies routing invariance (a per-sample argmax property) while router AA measures end-to-end classification, making their difference uninformative (see Section~\ref{sec:eval-formal}).
 
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=\columnwidth,
+    width=0.85\columnwidth,
     height=5.8cm,
-    bar width=8pt,
+    bar width=10pt,
     ymin=0, ymax=118,
     ylabel={(\%)},
-    xtick={1,2, 4,5, 7,8},
-    xticklabels={NRT, RT, NRT, RT, NRT, RT},
+    xtick={1,2, 4,5},
+    xticklabels={NRT, RT, NRT, RT},
     x tick label style={font=\footnotesize},
-    xmin=0, xmax=9,
+    xmin=0, xmax=6,
     legend style={at={(0.5,-0.28)}, anchor=north, font=\footnotesize, legend columns=2},
     legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
@@ -535,8 +535,6 @@ Figure~\ref{fig:gap-analysis} relates empirical AA to formal CRA at $\varepsilon
     (2, 17.24) +- (0,0.27)
     (4, 46.06) +- (0,7.58)
     (5, 90.77) +- (0,5.44)
-    (7, 35.47) +- (0,5.82)
-    (8, 35.49) +- (0,5.76)
 };
 % Certified Robustness Accuracy (CRA)
 \addplot[fill=green!50, draw=green!70,
@@ -546,31 +544,25 @@ Figure~\ref{fig:gap-analysis} relates empirical AA to formal CRA at $\varepsilon
     (2, 90.0) +- (0,0.0)
     (4, 75.0) +- (0,0.0)
     (5, 100.0) +- (0,0.0)
-    (7, 97.5) +- (0,0.0)
-    (8, 100.0) +- (0,0.0)
 };
 % Gap annotations (Delta) above bar pairs
 \node[font=\scriptsize, text=black!70] at (axis cs:1, 8) {--};
 \node[font=\scriptsize, text=black!70] at (axis cs:2, 98) {$\Delta{=}73$};
 \node[font=\scriptsize, text=black!70] at (axis cs:4, 83) {$\Delta{=}29$};
 \node[font=\scriptsize, text=black!70] at (axis cs:5, 108) {$\Delta{=}9$};
-\node[font=\scriptsize, text=black!70] at (axis cs:7, 106) {$\Delta{=}62$};
-\node[font=\scriptsize, text=black!70] at (axis cs:8, 108) {$\Delta{=}65$};
-% Separator lines between groups
+% Separator line between groups
 \draw[thin, dashed, gray!50] (axis cs:3, 0) -- (axis cs:3, 115);
-\draw[thin, dashed, gray!50] (axis cs:6, 0) -- (axis cs:6, 115);
 % Group labels below tick labels
 \node[font=\footnotesize, text=black] at (axis cs:1.5, -21) {CIFAR-10};
 \node[font=\footnotesize, text=black] at (axis cs:4.5, -21) {MNIST};
-\node[font=\footnotesize, text=black] at (axis cs:7.5, -21) {Router};
 \legend{Adversarial Accuracy (AA), Certified Robustness (CRA)}
 \end{axis}
 \end{tikzpicture}
-\caption{Empirical--formal robustness gap at $\varepsilon = 2/255$ (mean $\pm$ std over 5 runs). The gap $\Delta = \text{CRA} - \text{AA}$ (annotated above each pair) varies by domain: MNIST-RT achieves tight correspondence ($\Delta = 9\%$), while CIFAR-10-RT shows a large gap ($\Delta = 73\%$) reflecting looser CROWN bounds on complex domains. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router gaps ($\Delta \approx 63\%$) reflect a metric mismatch: CRA measures routing invariance while AA captures end-to-end classification.}
+\caption{Expert empirical--formal robustness comparison at $\varepsilon = 2/255$ (mean $\pm$ std over 5 runs). $\Delta = \text{CRA} - \text{AA}$ annotated above each pair. Within each domain, higher AA associates with higher CRA, but the absolute gap is domain-dependent: MNIST-RT achieves tight correspondence ($\Delta = 9\%$), while CIFAR-10-RT shows a large gap ($\Delta = 73\%$) reflecting looser CROWN bounds on complex domains. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router results are omitted because router CRA (routing invariance) and router AA (end-to-end classification) measure different properties; see Section~\ref{sec:eval-formal}.}
 \label{fig:gap-analysis}
 \end{figure}
 
-The practical implication is clear: robust training of experts is mandatory for verifiability. CIFAR-10-NRT is completely unverifiable (CRA $= 0\%$), while within RT models, higher empirical robustness predicts higher formal certification.
+The practical implication is clear: robust training of experts is mandatory for verifiability. CIFAR-10-NRT is completely unverifiable (CRA $= 0\%$), while within RT models, higher empirical robustness correlates with higher formal certification in our study.
 
 \subsection{Scalability}
 \label{sec:eval-scalability}
