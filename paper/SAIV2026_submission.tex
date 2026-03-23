@@ -285,7 +285,7 @@ When composing the full \textsf{MetaMoE} system, training optimizes a combined o
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
-Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Our \textsf{MetaMoE} system (router + 2~experts $\approx$~231K parameters) benefits from a \textbf{compositional verification strategy} that decomposes the~problem:
+Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Verifying our \textsf{MetaMoE} system (router + 2~experts $\approx$~231K parameters) monolithically is not merely expensive -- it is \emph{structurally infeasible} with current tools: MoE forward passes contain input-dependent control flow (\texttt{argmax}/\texttt{top\_k} expert selection) that cannot be faithfully captured by trace-based ONNX export~\cite{pytorchonnx,onnxir}, and no existing verifier propagates bounds through conditional execution paths~\cite{xu2020abcrown,katz2022marabou} (we detail these limitations in Section~\ref{sec:eval-scalability}). This motivates a \textbf{compositional verification strategy} that decomposes the~problem:
 
 \textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Theorem~\ref{thm:compositional}, if both components are verified, the full system is verified:
 \begin{equation}
@@ -605,6 +605,17 @@ Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expe
 
 \textbf{Verification scaling.}
 The compositional verification advantage grows linearly with $N$: our $N{=}2$ setting yields a ${\sim}$2.4$\times$ verification cost reduction, scaling to ${\sim}$7$\times$ at $N{=}7$ datasets (Table~\ref{tab:notation}), since monolithic cost scales with total system size while per-component cost remains fixed.
+
+\textbf{Why monolithic MoE verification is infeasible.}
+Compositional verification is not merely more efficient than monolithic MoE verification -- it is currently the \emph{only} viable approach due to two independent tool limitations in the verification pipeline.
+
+\emph{Limitation 1: ONNX cannot faithfully represent dynamic MoE routing.}
+Standard model export via \texttt{torch.onnx.export} is trace-based: the exporter executes the model once on a dummy input and records the single execution path as a static computational graph~\cite{pytorchonnx}. In MoE forward passes, the router's \texttt{argmax} or \texttt{top\_k} output determines which experts are activated -- a data-dependent control flow decision. The tracer evaluates this decision for the specific dummy input and \emph{hard-codes} the resulting expert selection into the exported graph~\cite{pytorchcontrolflow}. For example, if the dummy input routes to expert~0, the exported ONNX model always routes to expert~0, regardless of future inputs. The ONNX intermediate representation is fundamentally a static, topologically ordered, side-effect-free computation graph~\cite{onnxir} and cannot natively represent input-dependent conditional execution. While ONNX defines an \texttt{If} operator, using it requires rewriting the model to use \texttt{torch.cond()} and both branches must produce identically shaped outputs~\cite{pytorchcontrolflow} -- constraints incompatible with MoE routing, where different experts may have different class space dimensions.
+
+\emph{Limitation 2: Neural network verifiers cannot reason about conditional execution.}
+Even if ONNX could represent dynamic routing, current verifiers cannot verify such models. Bound propagation methods (CROWN~\cite{xu2020abcrown}, $\alpha$--$\beta$-CROWN~\cite{wang2021}) compute linear relaxations layer by layer through a \emph{fixed} computational graph; if the graph topology varies per input, bound propagation is undefined. Concretely, auto\_LiRPA -- the bound propagation engine underlying $\alpha$--$\beta$-CROWN -- captures the model via \texttt{torch.jit.trace}, which eliminates all control flow, and its operator registry implements no control-flow operators (\texttt{If}, \texttt{Loop}, etc.); unrecognized operators raise \texttt{NotImplementedError}~\cite{xu2020abcrown}. This is not specific to $\alpha$--$\beta$-CROWN: SMT-based verifiers such as Marabou~\cite{katz2022marabou} and abstract-interpretation verifiers such as ERAN~\cite{singh2019eran} likewise operate on fixed network topologies. No VNN-COMP benchmark (2021--2025) has included models with input-dependent routing or conditional execution~\cite{kaulen2025}, reflecting a community-wide gap.
+
+These two limitations make monolithic MoE verification structurally infeasible with current tools. Compositional verification sidesteps both by decomposing the system into static components -- a standalone router and independent experts -- each of which is a standard feedforward CNN amenable to existing export and verification pipelines. This architectural decomposition, justified by Theorem~\ref{thm:compositional}, transforms a structurally unsupported problem into multiple standard problems, yielding not only the $O(1)$ per-component verification cost but also compatibility with all existing and future monolithic verifiers.
 
 \subsection{Limitations}
 \label{sec:limitations}
