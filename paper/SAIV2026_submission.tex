@@ -58,9 +58,9 @@ This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE a
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[
-    node distance=0.4cm and 0.5cm,
-    box/.style={draw, rectangle, minimum width=1.8cm, minimum height=0.55cm, align=center, font=\footnotesize, inner sep=2pt},
+\begin{tikzpicture}[scale=0.9, every node/.style={scale=0.9},
+    node distance=0.35cm and 0.45cm,
+    box/.style={draw, rectangle, minimum width=1.6cm, minimum height=0.5cm, align=center, font=\footnotesize, inner sep=2pt},
     routerbox/.style={box, fill=blue!15, rounded corners=3pt},
     expertbox/.style={box, fill=green!20},
     segbox/.style={box, fill=yellow!25},
@@ -120,13 +120,13 @@ The central challenge is that verifying an MoE system monolithically is expensiv
 
 \section{Related Work}
 
-Mixture-of-experts architectures route inputs through a gating network to specialized sub-models, enabling modular, scalable computation~\cite{jacobs1991}. Sparse gating~\cite{shazeer2017} made MoE practical at scale, and subsequent work extended the paradigm to vision~\cite{riquelme2021}, demonstrated that freezing pretrained experts reduces retraining cost for lifelong learning~\cite{fedus2022}, and scaled sparse routing to hundreds of billions of parameters~\cite{dai2024,jiang2024,deepseek2024}. Complementary advances in mitigating catastrophic forgetting~\cite{ramasesh2022}, evolving gating from unsupervised~\cite{jordan1994} to supervised~\cite{riquelme2021} schemes, and modular deep learning~\cite{pfeiffer2023} have collectively established MoE as a mature paradigm for composable model design.
+Sparse gating~\cite{shazeer2017} made MoE~\cite{jacobs1991} practical at scale, and subsequent work extended the paradigm to vision~\cite{riquelme2021}, demonstrated that freezing pretrained experts reduces retraining cost for lifelong learning~\cite{fedus2022}, and scaled sparse routing to hundreds of billions of parameters~\cite{dai2024,jiang2024,deepseek2024}. Complementary advances in catastrophic-forgetting mitigation~\cite{ramasesh2022}, gating evolution from unsupervised~\cite{jordan1994} to supervised~\cite{riquelme2021} schemes, and modular deep learning~\cite{pfeiffer2023} have established MoE as a mature paradigm for composable model design.
 
 Yet this scalability work largely ignores a critical question: \emph{are MoE systems robust, and can that robustness be formally certified?} The few studies that examine MoE robustness each address a different facet of this question without resolving it holistically. Puigcerver et al.~\cite{puigcerver2022} showed that sparse MoE Vision Transformers can be more robust than dense counterparts at the same computation cost, but their formal guarantees are derived only for simplified settings with smooth MoEs or linear experts under fixed routing and structured data-separation assumptions. Zhang et al.~\cite{zhang2025moe} studied model-level MoE ensembles of identical experts and found that \emph{within} such systems, the expert networks are the primary vulnerability (far more susceptible to adversarial attack than the router), a complementary rather than contradictory finding since it characterizes where vulnerability concentrates rather than whether MoE improves overall robustness. Pavlitska et al.~\cite{pavlitska2025robust} confirmed that sparse MoE layers inside CNNs improve adversarial robustness when combined with adversarial training, though MoE structure alone confers negligible benefit. All three studies examine \emph{homogeneous} MoE (same experts, same dataset); none consider \emph{heterogeneous} MoE with disjoint expert domains, nor do they analyze how robustness propagates through the router-expert composition or connect empirical resilience to provable certificates.
 
-Meanwhile, neural network verification has matured as an independent line of research. Katz et al.~\cite{katz2017} established the NP-completeness of the general problem, and Alsmann and Lange~\cite{alsmann2025complexity} recently extended complexity analysis to state space models, showing that satisfiability is undecidable in the general case and NP-complete under bounded context. These hardness results motivate scalable approximations: $\alpha$--$\beta$-CROWN~\cite{wang2021} provides state-of-the-art complete verification via bound propagation (current winner of VNN-COMP~\cite{kaulen2025}), NNV~\cite{tran2020nnv} offers reachability-based verification for learning-enabled cyber-physical systems, and GPU-accelerated approaches such as GRENA~\cite{zhong2025grena} transform constrained LP problems into unconstrained optimization on GPUs to scale abstract refinement to convolutional and residual networks. Certified training methods such as CROWN-IBP~\cite{zhang2020} and randomized smoothing~\cite{cohen2019} produce models with built-in provable guarantees, while Kielhoefer et al.~\cite{kielhoefer2025robustness} introduced the \emph{robustness margin}, a quantile-based metric that characterizes robustness independently of a fixed $\varepsilon$, offering a complementary perspective to the certified robustness accuracy we employ. PGD-based adversarial training~\cite{madry2018} provides complementary empirical robustness, and probabilistic verification methods such as sampling-based probability box propagation~\cite{chwialkowski2025probabilistic} bridge the gap between formal and statistical guarantees. However, all of these tools and techniques target \emph{monolithic} networks; they cannot directly certify a system whose behavior depends on dynamic routing among multiple sub-networks.
+Meanwhile, neural network verification has matured as an independent line of research. Katz et al.~\cite{katz2017} established the NP-completeness of the general problem, and Alsmann and Lange~\cite{alsmann2025complexity} recently extended complexity analysis to state space models, showing that satisfiability is undecidable in the general case and NP-complete under bounded context. These hardness results motivate scalable approximations: $\alpha$--$\beta$-CROWN~\cite{wang2021} provides state-of-the-art complete verification via bound propagation (current winner of VNN-COMP~\cite{kaulen2025}), NNV~\cite{tran2020nnv} offers reachability-based verification for cyber-physical systems, and GRENA~\cite{zhong2025grena} scales abstract refinement to CNNs via GPU-accelerated unconstrained optimization. Certified training methods such as CROWN-IBP~\cite{zhang2020} and randomized smoothing~\cite{cohen2019} produce models with built-in provable guarantees, while the robustness margin~\cite{kielhoefer2025robustness} characterizes robustness independently of a fixed $\varepsilon$. PGD-based adversarial training~\cite{madry2018} provides complementary empirical robustness, and probabilistic verification~\cite{chwialkowski2025probabilistic} bridges the gap between formal and statistical guarantees. However, all of these tools and techniques target \emph{monolithic} networks; they cannot directly certify a system whose behavior depends on dynamic routing among multiple sub-networks.
 
-One promising solution is compositional verification, long established in classical systems through assume-guarantee reasoning~\cite{henzinger1998}. Zhou and Tripakis~\cite{zhou2024compositional} recently adapted compositional inductive invariants to neural network controlled systems, demonstrating that modular proofs can scale where monolithic analysis cannot. Watson et al.~\cite{watson2025scenario} proposed scenario-based compositional verification for autonomous systems with neural perception, decomposing verification into environment-specific scenarios and composing probabilistic guarantees across them. However, both frameworks address feedback control loops or perception pipelines, not the conditional-activation structure of MoE, where a router's decision determines which expert's guarantees apply.
+One promising solution is compositional verification, long established in classical systems through assume-guarantee reasoning~\cite{henzinger1998}. Zhou and Tripakis~\cite{zhou2024compositional} recently adapted compositional inductive invariants to neural network controlled systems, demonstrating that modular proofs can scale where monolithic analysis cannot. Watson et al.~\cite{watson2025scenario} decompose verification of autonomous perception systems into environment-specific scenarios with composed probabilistic guarantees. However, both frameworks address feedback control loops or perception pipelines, not the conditional-activation structure of MoE, where a router's decision determines which expert's guarantees apply.
 
 These three lines of work (MoE scalability, adversarial robustness, and formal verification) have developed largely in isolation. MoE research scales models without certifying them; robustness studies attack or defend MoE empirically without formal guarantees; and verification certifies monolithic networks without addressing compositional, dynamically-routed architectures. This paper bridges all three by asking: \textit{Can compositional robustness in heterogeneous MoE systems be formally verified and empirically validated?} We answer affirmatively by proving that router invariance and expert robustness compose to yield system-level guarantees, and by showing that empirical adversarial accuracy correlates with formal certifiability in our study.
 
@@ -182,7 +182,7 @@ Given $N$ pretrained experts $\{E_i\}$, router $\mathcal{G}$, and $L_\infty$ adv
 \subsection{Compositional Robustness Theorem}
 \label{sec:compositional}
 
-The central question of this paper is whether a modular MoE system can be verified \emph{component-by-component} rather than as a monolithic whole. In assume-guarantee reasoning~\cite{henzinger1998}, a system property is decomposed into obligations on individual components: each component \emph{assumes} that its environment satisfies certain conditions and \emph{guarantees} a local property, and the composition of these local guarantees implies the system-level property. We apply this principle to hard-routed MoE: the router assumes a well-formed input and guarantees stable expert selection; each expert assumes it receives inputs from its own domain and guarantees correct classification. The theorem below formalizes this decomposition, proving that these two component-level guarantees are individually necessary and jointly sufficient for system robustness -- that is, no interaction effects between router and expert can invalidate component-level certificates. We proceed with a definition, two lemmas, and the composing theorem.
+Rather than verifying the MoE as a monolithic whole, we adopt assume-guarantee reasoning~\cite{henzinger1998}, in which each component \emph{assumes} certain environmental conditions and \emph{guarantees} a local property. In our setting, the router guarantees stable expert selection and each expert guarantees correct classification within its domain. We formalize this decomposition below through a definition, two supporting lemmas, and a composing theorem showing that these component-level guarantees are individually necessary and jointly sufficient for system robustness.
 
 \begin{definition}[Router Invariance]
 \label{def:router_invariance}
@@ -256,7 +256,7 @@ Each expert $E_i$ is denoted $E_{i\_\text{CNN\_NRT}}$ (non-robust) or $E_{i\_\te
 
 Both experts and router use a convolutional architecture (VerifiableCNN) designed for compatibility with $\alpha$--$\beta$-CROWN's bound propagation. The architecture comprises 4 convolutional layers with gradual channel growth ($20 \to 28 \to 40 \to 56$), $2{\times}2$ average pooling in blocks 1--3, and a 2-layer fully connected head (detailed specifications in Appendix~\ref{app:architecture}). Three design choices make the network amenable to LP-based verification: average pooling replaces max pooling to preserve linearity, increased channel capacity compensates for narrow widths, and static shapes minimize ONNX operators. Experts include BatchNorm (${\sim}$96K params for 43 classes), which we fold into convolutional weights during ONNX export (Appendix~\ref{app:onnx}) to eliminate BatchNorm operators from the verification graph. The router omits BatchNorm entirely for deterministic verification behavior (${\sim}$38K params).
 
-We train experts independently using Adam~\cite{kingma2015adam} with label smoothing~\cite{szegedy2016labelsmoothing} under two paradigms: Non-Robust Training (NRT) with standard cross-entropy, and Robust Training (RT) with PGD adversarial training ($\varepsilon = 8/255$, 7 steps). We evaluate models on Clean Accuracy (CA), Adversarial Accuracy (AA) under PGD attack, and the Robustness Gap (CA $-$ AA). Full hyperparameters are in Appendix~\ref{app:hyperparams}.
+We train experts independently using Adam~\cite{kingma2015adam} with label smoothing~\cite{szegedy2016labelsmoothing} under two paradigms: Non-Robust Training (NRT) with standard cross-entropy, and Robust Training (RT) with PGD adversarial training~\cite{madry2018,zhang2019trades} ($\varepsilon = 8/255$, 7 steps), deliberately trading clean accuracy for improved robustness against bounded perturbations. We evaluate models on Clean Accuracy (CA), Adversarial Accuracy (AA) under PGD attack, and the Robustness Gap (CA $-$ AA). Full hyperparameters are in Appendix~\ref{app:hyperparams}.
 
 \subsection{Router (GatingNet)}
 
@@ -276,8 +276,6 @@ Robust Training (RT) augments this with an adversarial term, adding the loss on 
 The central verification property for the router asks whether, for an input $x$ with true meta-class $m^*$, the routing decision is invariant under bounded perturbations: $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $\|x' - x\|_\infty \leq \varepsilon$. We encode this as a VNNLIB counterexample search, where the verifier attempts to find a perturbation that flips the router's selection. If no such counterexample exists, the router is provably robust at that input. Combined with independent expert verification, this yields a compositional guarantee: a verified router paired with a verified expert implies a verified MoE system, enabling fully modular certification (formalized in Section~\ref{sec:compositional}).
 
 \subsection{Training Paradigms and MoE Composition}
-
-We evaluate two training paradigms that represent opposite ends of the robustness spectrum. Non-Robust Training (NRT) uses standard supervised learning with cross-entropy loss, yielding high clean accuracy but leaving the model vulnerable to adversarial perturbations. Robust Training (RT), by contrast, applies PGD adversarial training~\cite{madry2018,zhang2019trades} with $\varepsilon = 8/255$ and 7 attack iterations, deliberately trading clean accuracy for improved robustness against bounded perturbations.
 
 When composing the full \textsf{MetaMoE} system, training optimizes a combined objective $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$ that balances two goals: $\mathcal{L}_{\text{cls}}$ enforces correct class prediction through the selected expert, while $\mathcal{L}_{\text{gate}}$ ensures the router assigns each input to the correct expert. This dual loss structure allows the router to learn accurate dataset-level routing while the frozen experts maintain their classification performance.
 
@@ -320,15 +318,15 @@ We verified 40 samples (20 CIFAR-10, 20 MNIST) at $\varepsilon = 2/255, 4/255, 8
 \begin{tikzpicture}
 \begin{axis}[
     ybar stacked,
-    width=0.9\columnwidth,
-    height=5.5cm,
-    bar width=14pt,
+    width=0.85\columnwidth,
+    height=4.8cm,
+    bar width=12pt,
     ymin=0, ymax=49,
     ylabel={Samples (out of 40)},
     symbolic x coords={NRT $2/255$, RT $2/255$, NRT $4/255$, RT $4/255$, NRT $8/255$, RT $8/255$},
     xtick=data,
     x tick label style={font=\small, rotate=45, anchor=east, yshift=-2.5pt},
-    legend style={at={(0.5,-0.355)}, anchor=north, font=\small, legend columns=2},
+    legend style={at={(0.5,-0.425)}, anchor=north, font=\small, legend columns=2},
     grid=major,
     grid style={dashed, gray!20},
     ytick={0,10,20,30,40},
@@ -354,65 +352,65 @@ We verified CIFAR-10 and MNIST experts (20 samples each, averaged over 5 runs) u
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-    cell/.style={minimum width=2.15cm, minimum height=0.9cm, align=center,
+    cell/.style={minimum width=1.85cm, minimum height=0.75cm, align=center,
                  font=\small, inner sep=0pt, outer sep=0pt},
 ]
 % Column headers
-\node[font=\footnotesize\bfseries] at (2.15*0.5, 0.45) {$\varepsilon{=}2/255$};
-\node[font=\footnotesize\bfseries] at (2.15*1.5, 0.45) {$\varepsilon{=}4/255$};
-\node[font=\footnotesize\bfseries] at (2.15*2.5, 0.45) {$\varepsilon{=}8/255$};
+\node[font=\footnotesize\bfseries] at (1.85*0.5, 0.4) {$\varepsilon{=}2/255$};
+\node[font=\footnotesize\bfseries] at (1.85*1.5, 0.4) {$\varepsilon{=}4/255$};
+\node[font=\footnotesize\bfseries] at (1.85*2.5, 0.4) {$\varepsilon{=}8/255$};
 
 % Row headers
-\node[font=\footnotesize, anchor=east] at (-0.15, -0.45) {CIFAR-10 NRT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -1.35) {CIFAR-10 RT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -2.25) {MNIST NRT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -3.15) {MNIST RT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -0.375) {CIFAR-10 NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -1.125) {CIFAR-10 RT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -1.875) {MNIST NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -2.625) {MNIST RT};
 
 % --- Row 1: CIFAR-10 NRT (all 0%) ---
-\fill[red!30] (0,0) rectangle (2.15,-0.9);
-\fill[red!30] (2.15,0) rectangle (4.3,-0.9);
-\fill[red!30] (4.3,0) rectangle (6.45,-0.9);
-\node[cell] at (2.15*0.5, -0.45) {0\%};
-\node[cell] at (2.15*1.5, -0.45) {0\%};
-\node[cell] at (2.15*2.5, -0.45) {0\%};
+\fill[red!30] (0,0) rectangle (1.85,-0.75);
+\fill[red!30] (1.85,0) rectangle (3.7,-0.75);
+\fill[red!30] (3.7,0) rectangle (5.55,-0.75);
+\node[cell] at (1.85*0.5, -0.375) {0\%};
+\node[cell] at (1.85*1.5, -0.375) {0\%};
+\node[cell] at (1.85*2.5, -0.375) {0\%};
 
 % --- Row 2: CIFAR-10 RT ---
-\fill[green!45] (0,-0.9) rectangle (2.15,-1.8);
-\fill[yellow!55] (2.15,-0.9) rectangle (4.3,-1.8);
-\fill[red!30] (4.3,-0.9) rectangle (6.45,-1.8);
-\node[cell] at (2.15*0.5, -1.35) {90\%};
-\node[cell] at (2.15*1.5, -1.35) {54\%};
-\node[cell] at (2.15*2.5, -1.35) {0\%};
+\fill[green!45] (0,-0.75) rectangle (1.85,-1.5);
+\fill[yellow!55] (1.85,-0.75) rectangle (3.7,-1.5);
+\fill[red!30] (3.7,-0.75) rectangle (5.55,-1.5);
+\node[cell] at (1.85*0.5, -1.125) {90\%};
+\node[cell] at (1.85*1.5, -1.125) {54\%};
+\node[cell] at (1.85*2.5, -1.125) {0\%};
 
 % --- Row 3: MNIST NRT ---
-\fill[green!30!yellow!20] (0,-1.8) rectangle (2.15,-2.7);
-\fill[red!30] (2.15,-1.8) rectangle (4.3,-2.7);
-\fill[red!30] (4.3,-1.8) rectangle (6.45,-2.7);
-\node[cell] at (2.15*0.5, -2.25) {75\%};
-\node[cell] at (2.15*1.5, -2.25) {0\%};
-\node[cell] at (2.15*2.5, -2.25) {0\%};
+\fill[green!30!yellow!20] (0,-1.5) rectangle (1.85,-2.25);
+\fill[red!30] (1.85,-1.5) rectangle (3.7,-2.25);
+\fill[red!30] (3.7,-1.5) rectangle (5.55,-2.25);
+\node[cell] at (1.85*0.5, -1.875) {75\%};
+\node[cell] at (1.85*1.5, -1.875) {0\%};
+\node[cell] at (1.85*2.5, -1.875) {0\%};
 
 % --- Row 4: MNIST RT ---
-\fill[green!65] (0,-2.7) rectangle (2.15,-3.6);
-\fill[green!60] (2.15,-2.7) rectangle (4.3,-3.6);
-\fill[green!50] (4.3,-2.7) rectangle (6.45,-3.6);
-\node[cell] at (2.15*0.5, -3.15) {\textbf{100\%}};
-\node[cell] at (2.15*1.5, -3.15) {\textbf{99\%}};
-\node[cell] at (2.15*2.5, -3.15) {\textbf{95\%}};
+\fill[green!65] (0,-2.25) rectangle (1.85,-3.0);
+\fill[green!60] (1.85,-2.25) rectangle (3.7,-3.0);
+\fill[green!50] (3.7,-2.25) rectangle (5.55,-3.0);
+\node[cell] at (1.85*0.5, -2.625) {\textbf{100\%}};
+\node[cell] at (1.85*1.5, -2.625) {\textbf{99\%}};
+\node[cell] at (1.85*2.5, -2.625) {\textbf{95\%}};
 
 % Grid lines
-\draw[thin, gray!60] (0,0) grid[xstep=2.15, ystep=0.9] (6.45,-3.6);
-\draw[semithick] (0,0) rectangle (6.45,-3.6);
+\draw[thin, gray!60] (0,0) grid[xstep=1.85, ystep=0.75] (5.55,-3.0);
+\draw[semithick] (0,0) rectangle (5.55,-3.0);
 % Horizontal separator between CIFAR-10 and MNIST blocks
-\draw[semithick] (0,-1.8) -- (6.45,-1.8);
+\draw[semithick] (0,-1.5) -- (5.55,-1.5);
 
 % Colorbar
-\shade[left color=red!30, right color=green!65] (0,-4.3) rectangle (6.45,-4.6);
-\draw[thin] (0,-4.3) rectangle (6.45,-4.6);
-\node[font=\scriptsize, anchor=north] at (0,-4.65) {0\%};
-\node[font=\scriptsize, anchor=north] at (3.225,-4.65) {50\%};
-\node[font=\scriptsize, anchor=north] at (6.45,-4.65) {100\%};
-\node[font=\scriptsize, anchor=north] at (3.225,-4.95) {Certified Robustness Accuracy (CRA)};
+\shade[left color=red!30, right color=green!65] (0,-3.6) rectangle (5.55,-3.85);
+\draw[thin] (0,-3.6) rectangle (5.55,-3.85);
+\node[font=\scriptsize, anchor=north] at (0,-3.9) {0\%};
+\node[font=\scriptsize, anchor=north] at (2.775,-3.9) {50\%};
+\node[font=\scriptsize, anchor=north] at (5.55,-3.9) {100\%};
+\node[font=\scriptsize, anchor=north] at (2.775,-4.15) {Certified Robustness Accuracy (CRA)};
 \end{tikzpicture}
 \caption{Expert certified robustness accuracy (CRA) across domains, training paradigms, and perturbation budgets (20 samples per configuration, mean over 5 runs). Green indicates high CRA; red indicates verification failure (timeout). Robust training (RT) is a prerequisite for verifiability: CIFAR-10 NRT is completely unverifiable at all $\varepsilon$, while MNIST RT maintains $\geq$95\% CRA even at $\varepsilon = 8/255$. Zero falsifications occurred in any configuration.}
 \label{fig:expert-heatmap}
@@ -431,9 +429,9 @@ Figure~\ref{fig:expert-robustness} confirms the expected robustness--accuracy tr
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=0.88\columnwidth,
-    height=5.5cm,
-    bar width=11pt,
+    width=0.82\columnwidth,
+    height=4.8cm,
+    bar width=10pt,
     ymin=0, ymax=115,
     ylabel={Accuracy (\%)},
     symbolic x coords={CIFAR-10 NRT, CIFAR-10 RT, MNIST NRT, MNIST RT},
@@ -508,9 +506,9 @@ Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) wi
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=0.85\columnwidth,
-    height=5.8cm,
-    bar width=10pt,
+    width=0.80\columnwidth,
+    height=4.8cm,
+    bar width=9pt,
     ymin=0, ymax=118,
     ylabel={(\%)},
     xtick={1,2, 4,5},
@@ -551,8 +549,8 @@ Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) wi
 % Separator line between groups
 \draw[thin, dashed, gray!50] (axis cs:3, 0) -- (axis cs:3, 115);
 % Group labels below tick labels
-\node[font=\footnotesize, text=black] at (axis cs:1.5, -21) {CIFAR-10};
-\node[font=\footnotesize, text=black] at (axis cs:4.5, -21) {MNIST};
+\node[font=\footnotesize, text=black] at (axis cs:1.5, -24) {CIFAR-10};
+\node[font=\footnotesize, text=black] at (axis cs:4.5, -24) {MNIST};
 \legend{AA ($\varepsilon{=}8/255$), CRA ($\varepsilon{=}2/255$)}
 \end{axis}
 \end{tikzpicture}
@@ -575,14 +573,14 @@ Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expe
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.85\columnwidth,
-    height=5.5cm,
+    width=0.80\columnwidth,
+    height=4.8cm,
     xlabel={meta\_top\_k},
     ylabel={Inference latency (ms)},
     xmin=0.5, xmax=5.5,
     ymin=50, ymax=170,
     xtick={1,2,3,4,5},
-    legend style={at={(0.02,0.98)}, anchor=north west, font=\small},
+    legend style={at={(0.98,0.02)}, anchor=south east, font=\footnotesize},
     grid=major,
     grid style={dashed, gray!30},
     every axis plot/.append style={thick, mark size=2.5pt},
@@ -612,19 +610,19 @@ Compositional verification is not merely more efficient -- it is currently the \
 
 Theorem~\ref{thm:compositional} establishes a biconditional for hard routing ($k{=}1$) with disjoint expert class spaces. Extending the result to soft or top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of the routing weights, since a small perturbation could reorder activated experts even when no single logit crosses a decision boundary. For overlapping class spaces, only the sufficient direction holds (Section~\ref{sec:compositional}), weakening the compositional guarantee to a one-sided implication.
 
-Our experiments use small verification-compatible CNNs (${\sim}$96K parameters per expert, ${\sim}$38K for the router). This scale is representative of embedded safety-critical deployments such as traffic sign classifiers on edge devices, but production vision systems often employ ResNets or Vision Transformers with millions of parameters. The compositional decomposition reduces the verification target, yet verifying a single large expert remains an open challenge for the verification community -- $\alpha$--$\beta$-CROWN and comparable tools face memory and time constraints well before reaching that scale.
+Our experiments use small verification-compatible CNNs (${\sim}$96K parameters per expert, ${\sim}$38K for the router). The compositional decomposition reduces the verification target, yet verifying a single large expert remains an open challenge -- $\alpha$--$\beta$-CROWN and comparable tools face memory and time constraints well before production scale.
 
-The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD, both traffic sign recognition), gating accuracy drops to 93.17\% (Appendix~\ref{app:similarity}), violating router invariance at ${\sim}$7\% of inputs. Systems with many similar-domain experts would face compounding routing errors.
+The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\% (Appendix~\ref{app:similarity}), violating router invariance at ${\sim}$7\% of inputs.
 
-We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications across all configurations is encouraging, a larger verification budget would strengthen statistical confidence. We also consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks, common corruptions) may exhibit different robustness characteristics and require separate verification specifications. Finally, empirical robustness (AA) is necessary but not sufficient for formal certifiability (CRA): robust training consistently improves both metrics, but on complex domains such as CIFAR-10 the verifier certifies far fewer samples than PGD finds robust, due to loose CROWN bounds.
+We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications is encouraging, a larger verification budget would strengthen statistical confidence. We consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks) require separate verification specifications.
 
 \section{Conclusion and Future Work}
 
 We presented \textsf{MetaMoE}, a framework for compositional robustness verification of heterogeneous MoE systems. The central result is Theorem~\ref{thm:compositional}: for hard-routed MoE with disjoint expert class spaces, router invariance and expert robustness are individually necessary and jointly sufficient for system robustness. This decomposition reduces verification cost from the full system to the largest single component, with the advantage scaling linearly in the number of experts (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$). We validated the theorem both formally, via $\alpha$--$\beta$-CROWN, and empirically, via PGD attacks, across 8 MoE configurations and 40 training runs.
 
-The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($< 0.1\%$ accuracy difference), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% certified routing accuracy at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, and non-robust training on complex domains yields complete verification failure (CRA $= 0\%$ for CIFAR-10-NRT), establishing robust training as a prerequisite for verifiability.
+The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($< 0.1\%$), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% certified routing accuracy at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, and non-robust training on complex domains yields complete verification failure (CRA $= 0\%$ for CIFAR-10-NRT), establishing robust training as a prerequisite for verifiability.
 
-We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, strengthening the empirical--formal correlation on complex domains calls for tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (Appendix~\ref{app:similarity}) expose a richer problem than routing failure alone. When experts cover visually similar domains -- both datasets contain 43 traffic sign classes, many of which are semantically shared (e.g., stop signs, speed limits) -- a misroute does not necessarily cause a misclassification: the receiving expert may still classify the input correctly if the relevant class appears in its own label space. Under our current formulation, any misroute violates router invariance and the biconditional of Theorem~\ref{thm:compositional} treats it as a system failure, yet the end-to-end prediction may remain correct. Relaxing the theorem to account for overlapping or semantically equivalent classes across experts would yield a weaker but more permissive compositional guarantee, where verification need only confirm that \emph{some} reachable expert classifies correctly rather than that the \emph{intended} expert is always selected. Formalizing this relaxation, and designing routers that exploit cross-expert redundancy rather than treating every misroute as catastrophic, is a natural next step for scaling the framework to systems with many related-domain experts. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
+We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, strengthening the empirical--formal correlation on complex domains calls for tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (Appendix~\ref{app:similarity}) expose a richer problem than routing failure alone: when experts share semantically equivalent classes, a misroute may not cause a misclassification. Relaxing Theorem~\ref{thm:compositional} to account for cross-expert redundancy would yield a more permissive compositional guarantee for similar-domain systems. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
 
 \bibliographystyle{splncs04}
 \bibliography{references_saiv2026}
