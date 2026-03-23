@@ -56,6 +56,58 @@ Formal verification tools such as $\alpha$--$\beta$-CROWN~\cite{wang2021} can ce
 
 This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE architecture in which each input carries two labels: a fine-grained \emph{class} (\emph{e.g.}, speed-limit sign) and a coarse \emph{meta-class} identifying the domain (\emph{e.g.}, German traffic signs vs.\ handwritten digits). The router learns to predict the meta-class and dispatches the input to the corresponding domain expert, which then predicts the fine-grained class. This two-level classification motivates the name \emph{Meta}MoE (Figure~\ref{fig:metamoe-arch}). The framework combines verifiable experts with a verifiable routing network, intermixing adversarially and non-adversarially trained components. We investigate how empirical adversarial robustness, measured by accuracy under Projected Gradient Descent (PGD) attacks~\cite{madry2018}, where higher accuracy indicates greater resilience to worst-case perturbations, relates to certified robustness (formal bounds), and establish conditions under which these guarantees propagate from individual components to the entire system.
 
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=0.4cm and 0.5cm,
+    box/.style={draw, rectangle, minimum width=1.8cm, minimum height=0.55cm, align=center, font=\footnotesize, inner sep=2pt},
+    routerbox/.style={box, fill=blue!15, rounded corners=3pt},
+    expertbox/.style={box, fill=green!20},
+    segbox/.style={box, fill=yellow!25},
+    outbox/.style={box, fill=orange!15, minimum width=2.4cm},
+    arr/.style={-{Stealth[length=4pt]}, semithick},
+]
+% Input
+\node[box] (input) {Input Image};
+
+% Router
+\node[routerbox, below=of input] (router) {Meta Gating\\[-2pt]Network $\mathcal{G}$};
+
+% Expert Probabilities
+\node[box, below=of router] (probs) {Expert Probabilities};
+
+% Experts row
+\node[expertbox, below left=0.5cm and 1.6cm of probs] (e0) {Expert $E_0$};
+\node[expertbox, below=0.5cm of probs] (e1) {Expert $E_1$};
+\node[expertbox, below right=0.5cm and 1.6cm of probs] (en) {Expert $E_N$};
+\node[font=\small] at ($(e1)!0.5!(en)$) {$\cdots$};
+
+% Segment row
+\node[segbox, below=0.35cm of e0] (s0) {Segment 0};
+\node[segbox, below=0.35cm of e1] (s1) {Segment 1};
+\node[segbox, below=0.35cm of en] (sn) {Segment $N$};
+\node[font=\small] at ($(s1)!0.5!(sn)$) {$\cdots$};
+
+% Combined Output
+\node[outbox, below=0.45cm of s1] (output) {Combined Output $\hat{y}$};
+
+% Arrows
+\draw[arr] (input) -- (router);
+\draw[arr] (router) -- (probs);
+\draw[arr] (probs) -- (e0);
+\draw[arr] (probs) -- (e1);
+\draw[arr] (probs) -- (en);
+\draw[arr] (e0) -- (s0);
+\draw[arr] (e1) -- (s1);
+\draw[arr] (en) -- (sn);
+\draw[arr] (s0) -- (output);
+\draw[arr] (s1) -- (output);
+\draw[arr] (sn) -- (output);
+\end{tikzpicture}
+\caption{\textsf{MetaMoE} architecture. The meta gating network $\mathcal{G}$ receives the input image and produces routing probabilities over $N$ experts. Under hard routing ($k{=}1$), the top-scoring expert $E_{m^*}$ is activated; its output populates the corresponding segment of the unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ (Eq.~1), with all other segments zeroed. Experts are frozen after independent training; only $\mathcal{G}$ is trained during MoE composition.}
+\label{fig:metamoe-arch}
+\end{figure}
+
 The central challenge is that verifying an MoE system monolithically is expensive: the verifier must reason about the router, all experts, and their interactions simultaneously. Our key insight is that under hard routing, exactly one expert processes each input, so the system decomposes naturally into two independent verification tasks: does the router select the right expert?, and does that expert classify correctly? If both hold, the system is correct. This insight leads to three contributions, each building on the previous:
 
 \begin{enumerate}
@@ -192,70 +244,13 @@ The practical consequence of this assume-guarantee decomposition is \emph{modula
 
 \subsection{Empirical--Formal Correlation}
 
-Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\text{AA}(\varepsilon)$, the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$, and \emph{certified robustness accuracy} $\text{CRA}(\varepsilon)$~\eqref{eq:certification_gap}, the fraction for which a formal verifier proves robustness within the $\varepsilon$-ball. We define the \emph{certification gap} as the difference between these two quantities:
-\begin{equation}
-\label{eq:certification_gap}
-    \Delta(\varepsilon) = \text{CRA}(\varepsilon) - \text{AA}(\varepsilon)
-\end{equation}
-When CRA and AA measure the same property on the same inputs, CRA $\leq$ AA must hold because formal verification is sound (every certified sample is truly robust) while PGD is a heuristic that may miss adversarial examples. However, in our MoE setting CRA and AA sometimes measure different properties: for example, router CRA verifies expert-selection invariance on individual samples, while router AA measures end-to-end classification accuracy under attack on the mixed test set. In such cases $\Delta$ can be positive and direct comparison is not meaningful; we report it to characterize the relationship between empirical and formal metrics rather than as a consistency check. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we investigate whether, within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for verifiability. Our experiments confirm this monotonic association and further reveal that the gap is domain-dependent ($\Delta = 9\%$ for MNIST-RT vs.\ $\Delta = 73\%$ for CIFAR-10-RT) and that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
+Two complementary metrics quantify robustness: \emph{adversarial accuracy} $\text{AA}(\varepsilon)$, the fraction of test samples correctly classified under a PGD attack with perturbation budget~$\varepsilon$, and \emph{certified robustness accuracy} $\text{CRA}(\varepsilon)$, the fraction for which a formal verifier proves robustness within the $\varepsilon$-ball. At a fixed~$\varepsilon$, soundness of the verifier guarantees $\text{CRA} \leq \text{AA}$, since every certified sample is truly robust while PGD may miss adversarial examples. In practice, AA is typically evaluated at the training~$\varepsilon$ (e.g., $8/255$) and CRA at a smaller verification~$\varepsilon$ (e.g., $2/255$), so their absolute values are not directly comparable. We therefore focus on whether the \emph{ranking} of models by AA predicts their ranking by CRA. Prior work has established that adversarial training generally improves certified robustness~\cite{salman2019provably,balunovic2020adversarial}, and surveys confirm this trend across verification methods~\cite{li2023sok}. Building on this foundation, we investigate whether, within a given domain and architecture, higher AA monotonically associates with higher CRA, with robust training as a prerequisite for verifiability. Our experiments confirm this monotonic association and further reveal that non-robust training on complex domains yields complete verification failure (CRA $= 0\%$), a finding we believe to be novel.
 
 \section{Methodology}
 
 Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning).
 
 Each expert $E_i$ is denoted $E_{i\_\text{CNN\_NRT}}$ (non-robust) or $E_{i\_\text{CNN\_RT}}$ (robust), where the index $i$ corresponds to: CIFAR-10 ($E_0$), MNIST ($E_1$), GTSRB ($E_2$), PTSD ($E_3$), BTSD ($E_4$), ETSD ($E_5$), TSRD ($E_6$). Full notation is provided in Appendix~\ref{app:notation}.
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-    node distance=0.4cm and 0.5cm,
-    box/.style={draw, rectangle, minimum width=1.8cm, minimum height=0.55cm, align=center, font=\footnotesize, inner sep=2pt},
-    routerbox/.style={box, fill=blue!15, rounded corners=3pt},
-    expertbox/.style={box, fill=green!20},
-    segbox/.style={box, fill=yellow!25},
-    outbox/.style={box, fill=orange!15, minimum width=2.4cm},
-    arr/.style={-{Stealth[length=4pt]}, semithick},
-]
-% Input
-\node[box] (input) {Input Image};
-
-% Router
-\node[routerbox, below=of input] (router) {Meta Gating\\[-2pt]Network $\mathcal{G}$};
-
-% Expert Probabilities
-\node[box, below=of router] (probs) {Expert Probabilities};
-
-% Experts row
-\node[expertbox, below left=0.5cm and 1.6cm of probs] (e0) {Expert $E_0$};
-\node[expertbox, below=0.5cm of probs] (e1) {Expert $E_1$};
-\node[expertbox, below right=0.5cm and 1.6cm of probs] (en) {Expert $E_N$};
-\node[font=\small] at ($(e1)!0.5!(en)$) {$\cdots$};
-
-% Segment row
-\node[segbox, below=0.35cm of e0] (s0) {Segment 0};
-\node[segbox, below=0.35cm of e1] (s1) {Segment 1};
-\node[segbox, below=0.35cm of en] (sn) {Segment $N$};
-\node[font=\small] at ($(s1)!0.5!(sn)$) {$\cdots$};
-
-% Combined Output
-\node[outbox, below=0.45cm of s1] (output) {Combined Output $\hat{y}$};
-
-% Arrows
-\draw[arr] (input) -- (router);
-\draw[arr] (router) -- (probs);
-\draw[arr] (probs) -- (e0);
-\draw[arr] (probs) -- (e1);
-\draw[arr] (probs) -- (en);
-\draw[arr] (e0) -- (s0);
-\draw[arr] (e1) -- (s1);
-\draw[arr] (en) -- (sn);
-\draw[arr] (s0) -- (output);
-\draw[arr] (s1) -- (output);
-\draw[arr] (sn) -- (output);
-\end{tikzpicture}
-\caption{\textsf{MetaMoE} architecture. The meta gating network $\mathcal{G}$ receives the input image and produces routing probabilities over $N$ experts. Under hard routing ($k{=}1$), the top-scoring expert $E_{m^*}$ is activated; its output populates the corresponding segment of the unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ (Eq.~1), with all other segments zeroed. Experts are frozen after independent training; only $\mathcal{G}$ is trained during MoE composition.}
-\label{fig:metamoe-arch}
-\end{figure}
 
 \subsection{Verification-Aware CNN Architecture}
 
@@ -506,7 +501,7 @@ As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD (visually similar traff
 \subsection{Empirical--Formal Correlation}
 \label{sec:eval-correlation}
 
-Figure~\ref{fig:gap-analysis} compares expert AA and CRA at $\varepsilon = 2/255$, where both metrics measure classification correctness on the same samples. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. CRA can exceed AA because the verifier proves correctness under \emph{all} perturbations in the $\varepsilon$-ball, whereas PGD (7 iterations) may not find the worst-case example. The resulting gap $\Delta = \text{CRA} - \text{AA}$ is domain-dependent: $\Delta = 9\%$ for MNIST-RT (PGD nearly exhausts the perturbation space) vs.\ $\Delta = 73\%$ for CIFAR-10-RT (looser CROWN bounds and weaker PGD convergence on complex decision boundaries). We treat $\Delta$ as a diagnostic of bound tightness relative to attack strength, not as a universal robustness surplus. Routers are excluded from this comparison because router CRA verifies routing invariance (a per-sample argmax property) while router AA measures end-to-end classification, making their difference uninformative (see Section~\ref{sec:eval-formal}).
+Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) with CRA ($\alpha$--$\beta$-CROWN, $\varepsilon = 2/255$). Because the perturbation budgets differ, absolute values are not directly comparable; we focus on whether the model ranking by AA predicts the ranking by CRA. Within each domain, higher AA monotonically associates with higher CRA: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and CRA ($75\% \to 100\%$); CIFAR-10 NRT$\to$RT moves from completely unverifiable (CRA $= 0\%$) to CRA $= 90\%$. Routers are excluded from this comparison because router CRA verifies routing invariance (a per-sample argmax property) while router AA measures end-to-end classification, making their comparison uninformative (see Section~\ref{sec:eval-formal}).
 
 \begin{figure}[t]
 \centering
@@ -549,19 +544,19 @@ Figure~\ref{fig:gap-analysis} compares expert AA and CRA at $\varepsilon = 2/255
     (5, 100.0) +- (0,0.0)
 };
 % Gap annotations (Delta) above bar pairs
-\node[font=\scriptsize, text=black!70] at (axis cs:1, 8) {--};
-\node[font=\scriptsize, text=black!70] at (axis cs:2, 98) {$\Delta{=}73$};
-\node[font=\scriptsize, text=black!70] at (axis cs:4, 83) {$\Delta{=}29$};
-\node[font=\scriptsize, text=black!70] at (axis cs:5, 108) {$\Delta{=}9$};
+% \node[font=\scriptsize, text=black!70] at (axis cs:1, 8) {--};
+% \node[font=\scriptsize, text=black!70] at (axis cs:2, 98) {$\Delta{=}73$};
+% \node[font=\scriptsize, text=black!70] at (axis cs:4, 83) {$\Delta{=}29$};
+% \node[font=\scriptsize, text=black!70] at (axis cs:5, 108) {$\Delta{=}9$};
 % Separator line between groups
 \draw[thin, dashed, gray!50] (axis cs:3, 0) -- (axis cs:3, 115);
 % Group labels below tick labels
 \node[font=\footnotesize, text=black] at (axis cs:1.5, -21) {CIFAR-10};
 \node[font=\footnotesize, text=black] at (axis cs:4.5, -21) {MNIST};
-\legend{Adversarial Accuracy (AA), Certified Robustness (CRA)}
+\legend{AA ($\varepsilon{=}8/255$), CRA ($\varepsilon{=}2/255$)}
 \end{axis}
 \end{tikzpicture}
-\caption{Expert empirical--formal robustness comparison at $\varepsilon = 2/255$ (mean $\pm$ std over 5 runs). $\Delta = \text{CRA} - \text{AA}$ annotated above each pair. Within each domain, higher AA associates with higher CRA, but the absolute gap is domain-dependent: MNIST-RT achieves tight correspondence ($\Delta = 9\%$), while CIFAR-10-RT shows a large gap ($\Delta = 73\%$) reflecting looser CROWN bounds on complex domains. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router results are omitted because router CRA (routing invariance) and router AA (end-to-end classification) measure different properties; see Section~\ref{sec:eval-formal}.}
+\caption{Expert empirical--formal robustness correlation (AA at $\varepsilon = 8/255$, CRA at $\varepsilon = 2/255$; mean $\pm$ std over 5 runs). Because the perturbation budgets differ, absolute values are not directly comparable; the key observation is that within each domain, the model ranking by AA predicts the ranking by CRA. CIFAR-10 NRT is completely unverifiable (both metrics $\approx 0\%$). Router results are omitted because router CRA (routing invariance) and router AA (end-to-end classification) measure different properties; see Section~\ref{sec:eval-formal}.}
 \label{fig:gap-analysis}
 \end{figure}
 
@@ -621,15 +616,15 @@ Our experiments use small verification-compatible CNNs (${\sim}$96K parameters p
 
 The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD, both traffic sign recognition), gating accuracy drops to 93.17\% (Appendix~\ref{app:similarity}), violating router invariance at ${\sim}$7\% of inputs. Systems with many similar-domain experts would face compounding routing errors.
 
-We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications across all configurations is encouraging, a larger verification budget would strengthen statistical confidence. We also consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks, common corruptions) may exhibit different robustness characteristics and require separate verification specifications. Finally, the certification gap $\Delta$ between CRA and AA varies from $9\%$ (MNIST-RT) to $73\%$ (CIFAR-10-RT) at $\varepsilon = 2/255$, indicating that empirical robustness is a necessary but not sufficient proxy for formal certifiability on complex domains where CROWN bounds remain loose.
+We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications across all configurations is encouraging, a larger verification budget would strengthen statistical confidence. We also consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks, common corruptions) may exhibit different robustness characteristics and require separate verification specifications. Finally, empirical robustness (AA) is necessary but not sufficient for formal certifiability (CRA): robust training consistently improves both metrics, but on complex domains such as CIFAR-10 the verifier certifies far fewer samples than PGD finds robust, due to loose CROWN bounds.
 
 \section{Conclusion and Future Work}
 
 We presented \textsf{MetaMoE}, a framework for compositional robustness verification of heterogeneous MoE systems. The central result is Theorem~\ref{thm:compositional}: for hard-routed MoE with disjoint expert class spaces, router invariance and expert robustness are individually necessary and jointly sufficient for system robustness. This decomposition reduces verification cost from the full system to the largest single component, with the advantage scaling linearly in the number of experts (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$). We validated the theorem both formally, via $\alpha$--$\beta$-CROWN, and empirically, via PGD attacks, across 8 MoE configurations and 40 training runs.
 
-The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($\Delta < 0.1\%$), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% certified routing accuracy at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, and non-robust training on complex domains yields complete verification failure (CRA $= 0\%$ for CIFAR-10-NRT), establishing robust training as a prerequisite for verifiability.
+The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% adversarial accuracy difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($< 0.1\%$ accuracy difference), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% certified routing accuracy at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, higher empirical adversarial accuracy monotonically associates with higher certified robustness, and non-robust training on complex domains yields complete verification failure (CRA $= 0\%$ for CIFAR-10-NRT), establishing robust training as a prerequisite for verifiability.
 
-We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, closing the empirical--formal gap on complex domains calls for tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (Appendix~\ref{app:similarity}) expose a richer problem than routing failure alone. When experts cover visually similar domains -- both datasets contain 43 traffic sign classes, many of which are semantically shared (e.g., stop signs, speed limits) -- a misroute does not necessarily cause a misclassification: the receiving expert may still classify the input correctly if the relevant class appears in its own label space. Under our current formulation, any misroute violates router invariance and the biconditional of Theorem~\ref{thm:compositional} treats it as a system failure, yet the end-to-end prediction may remain correct. Relaxing the theorem to account for overlapping or semantically equivalent classes across experts would yield a weaker but more permissive compositional guarantee, where verification need only confirm that \emph{some} reachable expert classifies correctly rather than that the \emph{intended} expert is always selected. Formalizing this relaxation, and designing routers that exploit cross-expert redundancy rather than treating every misroute as catastrophic, is a natural next step for scaling the framework to systems with many related-domain experts. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
+We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, strengthening the empirical--formal correlation on complex domains calls for tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (Appendix~\ref{app:similarity}) expose a richer problem than routing failure alone. When experts cover visually similar domains -- both datasets contain 43 traffic sign classes, many of which are semantically shared (e.g., stop signs, speed limits) -- a misroute does not necessarily cause a misclassification: the receiving expert may still classify the input correctly if the relevant class appears in its own label space. Under our current formulation, any misroute violates router invariance and the biconditional of Theorem~\ref{thm:compositional} treats it as a system failure, yet the end-to-end prediction may remain correct. Relaxing the theorem to account for overlapping or semantically equivalent classes across experts would yield a weaker but more permissive compositional guarantee, where verification need only confirm that \emph{some} reachable expert classifies correctly rather than that the \emph{intended} expert is always selected. Formalizing this relaxation, and designing routers that exploit cross-expert redundancy rather than treating every misroute as catastrophic, is a natural next step for scaling the framework to systems with many related-domain experts. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
 
 \bibliographystyle{splncs04}
 \bibliography{references_saiv2026}
@@ -731,9 +726,7 @@ Conv Block 4: Conv2d($40 \to 56$, $3 \times 3$, padding=1), ReLU $\to 56 \times 
 \section{Empirical--Formal Robustness Correlation Analysis}
 \label{app:gap}
 
-CRA from formal verification often exceeds AA from PGD attacks. CRA measures the fraction of samples \textit{provably robust} within the $\varepsilon$-ball (all possible perturbations). AA measures robustness against \textit{specific attack sequences} (PGD with 7 iterations). PGD is a heuristic that may not find the worst-case adversarial example.
-
-The gap $\Delta = \text{CRA} - \text{AA}$ varies: simple domains (MNIST-RT: $\Delta = 9.23\%$) achieve tight correspondence; complex domains (CIFAR-10-RT: $\Delta = 72.76\%$) exhibit loose correspondence; routers ($\Delta \approx 65\%$) reflect geometric dataset separation creating decision boundary margins $\gg \varepsilon$.
+We evaluate AA using PGD attacks at $\varepsilon = 8/255$ (the training perturbation budget) and CRA using $\alpha$--$\beta$-CROWN at $\varepsilon = 2/255$ (a practical verification budget). Because these use different perturbation budgets, their absolute values cannot be compared directly -- at a fixed $\varepsilon$, formal verification is sound so $\text{CRA} \leq \text{AA}$ always holds. Instead, we examine whether models that rank higher by AA also rank higher by CRA. This correlation holds within each domain: for both CIFAR-10 and MNIST, RT models rank above NRT models on both metrics.
 
 \textbf{Critical finding:} CIFAR-10-NRT exhibits CRA $= 0\%$ (complete verification failure), demonstrating robust training is a prerequisite for verifiability. Non-robust models produce excessively loose CROWN bounds due to chaotic decision boundaries.
 
