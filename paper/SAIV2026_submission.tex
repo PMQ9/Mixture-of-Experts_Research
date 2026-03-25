@@ -33,13 +33,11 @@
 \title{{\textsf{MetaMoE}:} Formal Verification of Compositional Robustness and Scalability of Mixture-of-Experts Architecture}
 \titlerunning{Compositional Robustness of Mixture-of-Experts}
 
-\author{Quang Pham\inst{1} \and Ben Wooding\inst{1} \and Samuel Sasaki\inst{1} \and Luke Nam\inst{1} \and Taylor T. Johnson\inst{1}}
+\author{Quang Pham\inst{1} \and Ben Wooding\inst{1} \and Luke Nam\inst{1} \and Samuel Sasaki\inst{1} \and Taylor T. Johnson\inst{1}}
 \authorrunning{Q. Pham et al.}
 
 \institute{Institute for Software Integrated Systems, Vanderbilt University, Nashville, TN, USA\\
-\email{\{quang.m.pham, samuel.sasaki, luke.nam, taylor.johnson\}@vanderbilt.edu}\\
-\email{woodingben@gmail.com}}
-
+\email{\{quang.m.pham, ben.wooding, luke.nam, samuel.sasaki, taylor.johnson\}@vanderbilt.edu}}
 \maketitle
 
 \begin{abstract}
@@ -603,7 +601,9 @@ Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expe
 The compositional verification advantage grows linearly with $N$: our $N{=}2$ setting yields a ${\sim}$2.4$\times$ verification cost reduction, scaling to ${\sim}$7$\times$ at $N{=}7$ datasets (Table~\ref{tab:notation}), since monolithic cost scales with total system size while per-component cost remains fixed.
 
 \textbf{Why monolithic MoE verification is infeasible.}
+
 Compositional verification is not merely more efficient -- it is currently the \emph{only} viable approach, due to two independent structural barriers. First, ONNX export is trace-based~\cite{pytorchonnx}: the exporter records a single execution path, hard-coding the router's expert selection for the dummy input into a static graph~\cite{pytorchcontrolflow}. The ONNX IR is fundamentally a static, side-effect-free computation graph~\cite{onnxir}; its \texttt{If} operator requires identically shaped branch outputs~\cite{pytorchcontrolflow}, which is incompatible with experts having different class space dimensions. Second, all current verifiers operate on fixed computational graphs. Bound propagation (CROWN~\cite{xu2020abcrown}, $\alpha$--$\beta$-CROWN~\cite{wang2021}) is undefined when graph topology varies per input; SMT-based (Marabou~\cite{katz2022marabou}) and abstract-interpretation (ERAN~\cite{singh2019eran}) verifiers likewise require fixed topologies. No VNN-COMP benchmark (2021--2025) has included models with input-dependent routing~\cite{kaulen2025}. Our compositional decomposition sidesteps both barriers by reducing the problem to standard feedforward CNN verification, yielding $O(1)$ per-component cost and compatibility with all existing monolithic verifiers.
+
 
 \subsection{Limitations}
 \label{sec:limitations}
