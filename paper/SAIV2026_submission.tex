@@ -293,7 +293,7 @@ When composing the full \textsf{MetaMoE} system, training optimizes a combined o
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
-Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Verifying our \textsf{MetaMoE} system (router + 2~experts $\approx$~231K parameters) monolithically is not merely expensive -- it is \emph{structurally infeasible} with current tools: MoE forward passes contain input-dependent control flow (\texttt{argmax}/\texttt{top\_k} expert selection) that cannot be faithfully captured by trace-based ONNX export~\cite{pytorchonnx,onnxir}, and no existing verifier propagates bounds through conditional execution paths~\cite{xu2020abcrown,katz2022marabou} (we detail these limitations in Section~\ref{sec:eval-scalability}). This motivates a \textbf{compositional verification strategy} that decomposes the~problem:
+Standard $\alpha$--$\beta$-CROWN verifies monolithic networks. Verifying our \textsf{MetaMoE} system (router + 2~experts $\approx$~231K parameters) monolithically is not merely expensive -- it is \emph{structurally infeasible} with current tools, due to two independent structural barriers. First, ONNX export is trace-based~\cite{pytorchonnx}: the exporter records a single execution path, hard-coding the router's expert selection for the dummy input into a static graph~\cite{pytorchcontrolflow}. The ONNX IR is fundamentally a static, side-effect-free computation graph~\cite{onnxir}; its \texttt{If} operator requires identically shaped branch outputs~\cite{pytorchcontrolflow}, which is incompatible with experts having different class space dimensions. Second, all current verifiers operate on fixed computational graphs. Bound propagation (CROWN~\cite{xu2020abcrown}, $\alpha$--$\beta$-CROWN~\cite{wang2021}) is undefined when graph topology varies per input; SMT-based (Marabou~\cite{katz2022marabou}) and abstract-interpretation (ERAN~\cite{singh2019eran}) verifiers likewise require fixed topologies. No VNN-COMP benchmark (2021--2025) has included models with input-dependent routing~\cite{kaulen2025}. Our compositional decomposition sidesteps both barriers by reducing the problem to standard feedforward CNN verification, yielding $O(1)$ per-component cost and compatibility with all existing monolithic verifiers. This motivates a \textbf{compositional verification strategy} that decomposes the~problem:
 
 \textbf{Key insight.} Router correctness is independent of expert computations. We verify the router maintains invariant expert selection within $\varepsilon$-balls, then verify each expert independently. By Theorem~\ref{thm:compositional}, if both components are verified, the full system is verified:
 \begin{equation}
@@ -458,7 +458,7 @@ Figure~\ref{fig:expert-robustness} confirms the expected robustness--accuracy tr
     symbolic x coords={CIFAR-10 NRT, CIFAR-10 RT, MNIST NRT, MNIST RT},
     xtick=data,
     x tick label style={font=\footnotesize, rotate=25, anchor=east},
-    legend style={at={(0.5,-0.35)}, anchor=north, font=\footnotesize, legend columns=2},
+    legend style={at={(0.5,-0.36)}, anchor=north, font=\footnotesize, legend columns=2},
     legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
     grid style={dashed, gray!20},
@@ -590,7 +590,7 @@ We compared \textsf{MetaMoE} against monolithic training across two scenarios: i
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[scale=0.85, every node/.style={scale=0.85}]
+\begin{tikzpicture}[scale=1.00, every node/.style={scale=1.00}]
 \begin{axis}[
     xbar stacked,
     width=0.78\columnwidth,
@@ -696,11 +696,6 @@ Inference latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expe
 \caption{Inference latency (ms) vs.\ meta\_top\_k for different numbers of total experts.}
 \label{tab:inference}
 \end{figure}
-
-\textbf{Why monolithic MoE verification is infeasible.}
-
-Compositional verification is not merely more efficient -- it is currently the \emph{only} viable approach, due to two independent structural barriers. First, ONNX export is trace-based~\cite{pytorchonnx}: the exporter records a single execution path, hard-coding the router's expert selection for the dummy input into a static graph~\cite{pytorchcontrolflow}. The ONNX IR is fundamentally a static, side-effect-free computation graph~\cite{onnxir}; its \texttt{If} operator requires identically shaped branch outputs~\cite{pytorchcontrolflow}, which is incompatible with experts having different class space dimensions. Second, all current verifiers operate on fixed computational graphs. Bound propagation (CROWN~\cite{xu2020abcrown}, $\alpha$--$\beta$-CROWN~\cite{wang2021}) is undefined when graph topology varies per input; SMT-based (Marabou~\cite{katz2022marabou}) and abstract-interpretation (ERAN~\cite{singh2019eran}) verifiers likewise require fixed topologies. No VNN-COMP benchmark (2021--2025) has included models with input-dependent routing~\cite{kaulen2025}. Our compositional decomposition sidesteps both barriers by reducing the problem to standard feedforward CNN verification, yielding $O(1)$ per-component cost and compatibility with all existing monolithic verifiers.
-
 
 \subsection{Limitations}
 \label{sec:limitations}
