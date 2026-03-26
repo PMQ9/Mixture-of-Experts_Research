@@ -721,46 +721,10 @@ We see three directions for extending this work. First, generalizing Theorem~\re
 
 \appendix
 
-\section{ONNX Export Details}
-\label{app:onnx}
-
-\subsection{BatchNorm Folding}
-
-For a convolutional layer with weights $W \in \mathbb{R}^{C_{\text{out}} \times C_{\text{in}} \times k \times k}$ (where $C_{\text{out}}$ is the number of output channels, $C_{\text{in}}$ the number of input channels, and $k \times k$ the kernel size) and bias $b \in \mathbb{R}^{C_{\text{out}}}$, followed by a BatchNorm layer with running mean $\mu_i$, running variance $\sigma^2_i$, learnable scale $\gamma_i$, and shift $\beta_i$ (all per output channel~$i$), with numerical stability constant $\varepsilon_{\text{bn}} = 10^{-5}$, the folded (merged) parameters are:
-\begin{align}
-W'_{i,j,m,n} &= \gamma_i \cdot \frac{W_{i,j,m,n}}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \quad \forall i,j,m,n \\
-b'_i &= \frac{\gamma_i}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \cdot (b_i - \mu_i) + \beta_i \quad \forall i
-\end{align}
-Here, the index $i$ ranges over output channels ($1 \leq i \leq C_{\text{out}}$), $j$ over input channels, and $m, n$ over spatial kernel dimensions. The folded layer $\text{Conv}(W', b')$ is mathematically equivalent to $\text{BatchNorm}(\text{Conv}(W, b))$, eliminating the BatchNorm operator from the ONNX graph.
-
-Verification: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ for random inputs. All models exported with PyTorch 2.0+, ONNX opset 13, static input shape $(1, 3, 32, 32)$, raw logits output.
-
-\section{Dataset Characteristics}
-\label{app:datasets}
-
-\begin{table}[t]
-\centering
-\caption{Dataset statistics.}
-\small
-\begin{tabular}{lllll}
-\toprule
-\textbf{Dataset} & \textbf{Classes} & \textbf{Train} & \textbf{Test} & \textbf{Domain} \\
-\midrule
-CIFAR-10 & 10 & 50,000 & 10,000 & General objects \\
-MNIST & 10 & 60,000 & 10,000 & Handwritten digits \\
-GTSRB & 43 & 39,209 & 12,630 & German traffic signs \\
-PTSD & 43 & 14,405 & 2,421 & Persian traffic signs \\
-BTSD & 62 & 4,575 & 2,520 & Belgian traffic signs \\
-ETSD & 55 & 6,133 & 2,027 & European traffic signs \\
-TSRD & 58 & 4,170 & 1,994 & Chinese traffic signs \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \section{Dataset and Expert Notation}
-\label{app:notation}
+\phantomsection\label{app:notation}
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Dataset and expert notation. Each expert is trained in two paradigms: Non-Robust Training (NRT) and Robust Training (RT).}
 \label{tab:notation}
@@ -781,7 +745,7 @@ TSRD & $E_6$ & $E_{6\_\text{NRT}}$ & $E_{6\_\text{RT}}$ \\
 \end{table}
 
 \section{Detailed Architecture Specifications}
-\label{app:architecture}
+\phantomsection\label{app:architecture}
 
 The VerifiableCNN architecture used for experts (${\sim}$96K parameters with BatchNorm, 43 classes; ${\sim}$94K for 10 classes) and router (${\sim}$38K parameters without BatchNorm):
 
@@ -797,8 +761,44 @@ Conv Block 4: Conv2d($40 \to 56$, $3 \times 3$, padding=1), ReLU $\to 56 \times 
 
 \textbf{Design Rationale:} Gradual channel growth ($3 \to 20 \to 28 \to 40 \to 56$) compensates for narrow channels. Average pooling (linear operation) facilitates LP-based verification. Router omits BatchNorm to eliminate train/eval discrepancies. All $3 \times 3$ convolutions enable uniform bound propagation.
 
+\section{ONNX Export Details}
+\phantomsection\label{app:onnx}
+
+\subsection{BatchNorm Folding}
+
+For a convolutional layer with weights $W \in \mathbb{R}^{C_{\text{out}} \times C_{\text{in}} \times k \times k}$ (where $C_{\text{out}}$ is the number of output channels, $C_{\text{in}}$ the number of input channels, and $k \times k$ the kernel size) and bias $b \in \mathbb{R}^{C_{\text{out}}}$, followed by a BatchNorm layer with running mean $\mu_i$, running variance $\sigma^2_i$, learnable scale $\gamma_i$, and shift $\beta_i$ (all per output channel~$i$), with numerical stability constant $\varepsilon_{\text{bn}} = 10^{-5}$, the folded (merged) parameters are:
+\begin{align}
+W'_{i,j,m,n} &= \gamma_i \cdot \frac{W_{i,j,m,n}}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \quad \forall i,j,m,n \\
+b'_i &= \frac{\gamma_i}{\sqrt{\sigma^2_i + \varepsilon_{\text{bn}}}} \cdot (b_i - \mu_i) + \beta_i \quad \forall i
+\end{align}
+Here, the index $i$ ranges over output channels ($1 \leq i \leq C_{\text{out}}$), $j$ over input channels, and $m, n$ over spatial kernel dimensions. The folded layer $\text{Conv}(W', b')$ is mathematically equivalent to $\text{BatchNorm}(\text{Conv}(W, b))$, eliminating the BatchNorm operator from the ONNX graph.
+
+Verification: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ for random inputs. All models exported with PyTorch 2.0+, ONNX opset 13, static input shape $(1, 3, 32, 32)$, raw logits output.
+
+\section{Dataset Characteristics}
+\phantomsection\label{app:datasets}
+
+\begin{table}[t]
+\centering
+\caption{Dataset statistics.}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Dataset} & \textbf{Classes} & \textbf{Train} & \textbf{Test} & \textbf{Domain} \\
+\midrule
+CIFAR-10 & 10 & 50,000 & 10,000 & General objects \\
+MNIST & 10 & 60,000 & 10,000 & Handwritten digits \\
+GTSRB & 43 & 39,209 & 12,630 & German traffic signs \\
+PTSD & 43 & 14,405 & 2,421 & Persian traffic signs \\
+BTSD & 62 & 4,575 & 2,520 & Belgian traffic signs \\
+ETSD & 55 & 6,133 & 2,027 & European traffic signs \\
+TSRD & 58 & 4,170 & 1,994 & Chinese traffic signs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Training Time Breakdown}
-\label{app:training-time}
+\phantomsection\label{app:training-time}
 
 Tables~\ref{tab:train-2ds} and~\ref{tab:train-3ds} show the full training time comparison between monolithic and \textsf{MetaMoE} compositional training.
 
