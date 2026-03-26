@@ -248,7 +248,7 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 \textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. Because robustness requires correct classification on all inputs in $B_\varepsilon(x)$, including the clean input~$x$ itself, and the clean system correctly classifies $x$, the true label $y$ must lie in $m^*$'s class range. Therefore $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
 \end{proof}
 
-The practical consequence of this assume-guarantee decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires additional invariance conditions (Section~\ref{sec:limitations}) \BW{It's always advised that you avoid forward references}. We examine the harder case of visually similar datasets (GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}) in Appendix~\ref{app:similarity} \BW{Should link to the first appendix not appedix I.This is also only one paragraph in that appendix so probably better to either expand it out or just remove it.}.
+The practical consequence of this assume-guarantee decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of routing weights. For visually similar domains (\emph{e.g.}, GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}, both traffic sign datasets), gating accuracy drops to 93.17\%, so the router invariance premise is violated at ${\sim}$7\% of inputs; we revisit this limitation in Section~\ref{sec:limitations}.
 
 \subsection{Empirical Results Supporting the Formal Findings}
 
@@ -260,9 +260,9 @@ Prior work has established that adversarial training generally improves certifie
 
 \section{Methodology}
 
-Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 7 datasets: CIFAR-10, MNIST, GTSRB~\cite{gtsrb} (diverse domains) and PTSD~\cite{ptsd}, BTSD, ETSD, TSRD (similar traffic sign domains for lifelong learning). \BW{Provide some intuition about what each of these are.}
+Given an RGB input image $x \in \mathbb{R}^{C \times H \times W}$ and $N$ domain-specific datasets each containing $C_i$ classes, we independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$ (one per dataset, frozen after training) and a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$ that outputs one routing logit per expert. We evaluate on 4 datasets: CIFAR-10~\cite{cifar10} (natural images, 10 classes), MNIST~\cite{mnist1998} (handwritten digits, 10 classes), GTSRB~\cite{gtsrb} (German traffic signs, 43 classes), and PTSD~\cite{ptsd} (Persian traffic signs, 43 classes). The first two form a visually dissimilar pair; the latter two share visual structure, testing the router under harder conditions. The framework extends to additional traffic sign datasets (BTSD, ETSD, TSRD) for lifelong learning (Appendix~\ref{app:notation}).
 
-Each expert $E_i$ is denoted $E_{i\_\text{CNN\_NRT}}$ (non-robust) \BW{too much subscript, remove the $\_CNN\_$} parts) or $E_{i\_\text{CNN\_RT}}$ (robust), where the index $i$ corresponds to: CIFAR-10 ($E_0$), MNIST ($E_1$), GTSRB ($E_2$), PTSD ($E_3$), BTSD ($E_4$), ETSD ($E_5$), TSRD ($E_6$). Full notation is provided in Appendix~\ref{app:notation}. \BW{I think its clear without needing to refer to the appendix.}
+Each expert $E_i$ is denoted $E_{i\_\text{NRT}}$ (non-robustly trained) or $E_{i\_\text{RT}}$ (robustly trained), where the index $i$ corresponds to: CIFAR-10 ($E_0$), MNIST ($E_1$), GTSRB ($E_2$), and PTSD ($E_3$).
 
 \subsection{Verification-Aware CNN Architecture}
 
@@ -506,7 +506,7 @@ Both NRT & $91.32 \pm 0.06$ & $28.78 \pm 0.59$ & $62.54\%$ \\
 \end{tabular}
 \end{table}
 
-As detailed in Appendix~\ref{app:similarity}, GTSRB+PTSD (visually similar traffic sign datasets) achieves only 93.17\% gating accuracy and 29.47\% AA, compared to 100\% and 41.93\% for CIFAR10+MNIST (Both RT). The 12.12\% AA gap demonstrates that routing difficulty directly propagates to system robustness. Clean accuracy standard deviations range from 0.04\% to 0.08\%, indicating highly reproducible training outcomes. \BW{I think you need a clearer section where you describe what all the tests you are running are, describe the image sets, describe what happens to each image and to the collection of images as a whole. Describe how each metric is calculated (whether per image or for the group).}
+GTSRB+PTSD (visually similar traffic sign datasets) achieves only 93.17\% gating accuracy and 29.47\% AA, compared to 100\% and 41.93\% for CIFAR10+MNIST (Both RT). The 12.12\% AA gap demonstrates that routing difficulty directly propagates to system robustness. Clean accuracy standard deviations range from 0.04\% to 0.08\%, indicating highly reproducible training outcomes. \BW{I think you need a clearer section where you describe what all the tests you are running are, describe the image sets, describe what happens to each image and to the collection of images as a whole. Describe how each metric is calculated (whether per image or for the group).}
 
 \subsection{Empirical Results Supporting the Formal Findings}
 \label{sec:eval-correlation}
@@ -626,7 +626,7 @@ Theorem~\ref{thm:compositional} establishes a biconditional for hard routing ($k
 
 Our experiments use small verification-compatible CNNs (${\sim}$96K parameters per expert, ${\sim}$38K for the router). The compositional decomposition reduces the verification target, yet verifying a single large expert remains an open challenge -- $\alpha$--$\beta$-CROWN and comparable tools face memory and time constraints well before production scale.
 
-The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\% (Appendix~\ref{app:similarity}), violating router invariance at ${\sim}$7\% of inputs.
+The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\%, violating router invariance at ${\sim}$7\% of inputs.
 
 We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications is encouraging, a larger verification budget would strengthen statistical confidence. We consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks) require separate verification specifications.
 
@@ -636,7 +636,7 @@ We presented \textsf{MetaMoE}, a framework for compositional robustness verifica
 
 The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% AA difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($< 0.1\%$), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% RoCRA at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, the empirical results supported the certified findings by preserving the same ordering across models, while non-robust training on complex domains yielded complete verification failure in our setting.
 
-We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, extending these empirical results to more complex domains will require tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (Appendix~\ref{app:similarity}) expose a richer problem than routing failure alone: when experts share semantically equivalent classes, a misroute may not cause a misclassification. Relaxing Theorem~\ref{thm:compositional} to account for cross-expert redundancy would yield a more permissive compositional guarantee for similar-domain systems. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
+We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, extending these empirical results to more complex domains will require tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (93.17\% gating accuracy vs.\ 100\% for CIFAR10+MNIST) expose a richer problem than routing failure alone: when experts share semantically equivalent classes, a misroute may not cause a misclassification. Relaxing Theorem~\ref{thm:compositional} to account for cross-expert redundancy would yield a more permissive compositional guarantee for similar-domain systems. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
 
 \bibliographystyle{splncs04}
 \bibliography{references_saiv2026}
@@ -702,13 +702,13 @@ TSRD & 58 & 4,170 & 1,994 & Chinese traffic signs \\
 \textbf{Dataset} & \textbf{Meta-class} & \multicolumn{2}{c}{\textbf{Notation}} \\
  & & \textbf{NRT} & \textbf{RT} \\
 \midrule
-CIFAR-10 & $E_0$ & $E_{0\_\text{CNN\_NRT}}$ & $E_{0\_\text{CNN\_RT}}$ \\
-MNIST & $E_1$ & $E_{1\_\text{CNN\_NRT}}$ & $E_{1\_\text{CNN\_RT}}$ \\
-GTSRB & $E_2$ & $E_{2\_\text{CNN\_NRT}}$ & $E_{2\_\text{CNN\_RT}}$ \\
-PTSD & $E_3$ & $E_{3\_\text{CNN\_NRT}}$ & $E_{3\_\text{CNN\_RT}}$ \\
-BTSD & $E_4$ & $E_{4\_\text{CNN\_NRT}}$ & $E_{4\_\text{CNN\_RT}}$ \\
-ETSD & $E_5$ & $E_{5\_\text{CNN\_NRT}}$ & $E_{5\_\text{CNN\_RT}}$ \\
-TSRD & $E_6$ & $E_{6\_\text{CNN\_NRT}}$ & $E_{6\_\text{CNN\_RT}}$ \\
+CIFAR-10 & $E_0$ & $E_{0\_\text{NRT}}$ & $E_{0\_\text{RT}}$ \\
+MNIST & $E_1$ & $E_{1\_\text{NRT}}$ & $E_{1\_\text{RT}}$ \\
+GTSRB & $E_2$ & $E_{2\_\text{NRT}}$ & $E_{2\_\text{RT}}$ \\
+PTSD & $E_3$ & $E_{3\_\text{NRT}}$ & $E_{3\_\text{RT}}$ \\
+BTSD & $E_4$ & $E_{4\_\text{NRT}}$ & $E_{4\_\text{RT}}$ \\
+ETSD & $E_5$ & $E_{5\_\text{NRT}}$ & $E_{5\_\text{RT}}$ \\
+TSRD & $E_6$ & $E_{6\_\text{NRT}}$ & $E_{6\_\text{RT}}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -780,14 +780,5 @@ Details & Initial 2-dataset: 91.5 mins \newline Retrain to add MNIST: 151 mins &
 \end{table}
 
 The key insight is the incremental cost: adding a new dataset requires 151 mins of full retraining for the monolithic model vs.\ 102.5 mins (72.5 + 30) for \textsf{MetaMoE}. Of the \textsf{MetaMoE} cost, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable.
-
-\section{Dataset Similarity Analysis: GTSRB+PTSD vs.\ CIFAR10+MNIST}
-\label{app:similarity}
-
-GTSRB+PTSD (both traffic sign datasets) achieves only 93.17\% gating accuracy vs.\ 100\% for CIFAR10+MNIST. The 6.83\% routing error exceeds the margin explained by expert imbalance, indicating inherent domain confusion from shared visual structures.
-
-Adversarial robustness gap: GTSRB+PTSD achieves 29.47\% AA vs.\ 41.59\% for CIFAR10+MNIST (12.12\% gap). Adversarial attacks exploit routing uncertainty more effectively when the router must distinguish between visually similar domains.
-
-The compositional verification property (Verified router $\land$ Verified expert $\implies$ Verified system) holds trivially for dissimilar datasets (100\% gating accuracy) but requires additional verification effort for similar domains, where probabilistic guarantees may be needed.
 
 \end{document}
