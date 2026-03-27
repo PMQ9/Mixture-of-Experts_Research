@@ -266,6 +266,7 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 
 The practical consequence of this assume-guarantee decomposition is \emph{modular verification} (Figure~\ref{fig:compositional-intuition}): verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of routing weights. For visually similar domains (\emph{e.g.}, GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}, both traffic sign datasets), gating accuracy drops to 93.17\%, so the router invariance premise is violated at ${\sim}$7\% of inputs; we revisit this limitation in Section~\ref{sec:limitations}.
 
+
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[>=Stealth,
@@ -332,6 +333,7 @@ The practical consequence of this assume-guarantee decomposition is \emph{modula
 \caption{Compositional robustness decomposition (Theorem~\ref{thm:compositional}). \textbf{(a)}~Input $x$ within perturbation ball $B_\varepsilon(x)$. \textbf{(b)}~Router invariance: all perturbed inputs route to $E_{m^*}$. \textbf{(c)}~Expert robustness: $E_{m^*}$ predicts class $y$ throughout the ball. The system is robust iff both hold.}
 \label{fig:compositional-intuition}
 \end{figure}
+
 
 \subsection{Empirical Results Supporting the Formal Findings}
 
@@ -442,12 +444,7 @@ Figure~\ref{tab:router-verification} shows results for 40 samples (20 CIFAR-10, 
 \label{tab:router-verification}
 \end{figure}
 
-RoCRA ($\approx 100\%$) substantially exceeds end-to-end AA ($\approx 35\%$), which is expected: RoCRA verifies only routing invariance, while AA measures end-to-end classification where expert misclassifications dominate. The router maintains 100\% gating accuracy under PGD, but the selected expert may misclassify. The apparent inversion of $\text{ExCRA} \leq \text{AA}$ arises because RoCRA and AA use different $\varepsilon$ values and measure different properties.
-
-\textbf{Expert verification.}
-We verified CIFAR-10 and MNIST experts (20 samples each, 5 runs) using ONNX models with BatchNorm folding. Figure~\ref{fig:expert-heatmap} reveals two patterns. First, domain complexity dominates verifiability: MNIST-RT achieves 100\%/99\%/95\% ExCRA at $\varepsilon = 2/255, 4/255, 8/255$, while CIFAR-10-NRT is completely unverifiable (0\% at all $\varepsilon$). Second, robust training is a prerequisite: CIFAR-10-RT achieves 90\% ExCRA at $\varepsilon = 2/255$ vs.\ 0\% for NRT, confirming that adversarial training tightens CROWN bounds. All failures are timeouts, not falsifications.
-
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
 \begin{tikzpicture}[
     cell/.style={minimum width=1.85cm, minimum height=0.75cm, align=center,
@@ -513,6 +510,12 @@ We verified CIFAR-10 and MNIST experts (20 samples each, 5 runs) using ONNX mode
 \caption{ExCRA across domains, training paradigms, and perturbation budgets (20 samples per configuration, mean over 5 runs). Green indicates high ExCRA; red indicates verification failure (timeout). Robust training (RT) is a prerequisite for verifiability: CIFAR-10 NRT is completely unverifiable at all $\varepsilon$, while MNIST RT maintains $\geq$95\% ExCRA even at $\varepsilon = 8/255$. Zero falsifications occurred in any configuration.}
 \label{fig:expert-heatmap}
 \end{figure}
+
+RoCRA ($\approx 100\%$) substantially exceeds end-to-end AA ($\approx 35\%$), which is expected: RoCRA verifies only routing invariance, while AA measures end-to-end classification where expert misclassifications dominate. The router maintains 100\% gating accuracy under PGD, but the selected expert may misclassify. The apparent inversion of $\text{ExCRA} \leq \text{AA}$ arises because RoCRA and AA use different $\varepsilon$ values and measure different properties.
+
+\textbf{Expert verification.}
+We verified CIFAR-10 and MNIST experts (20 samples each, 5 runs) using ONNX models with BatchNorm folding. Figure~\ref{fig:expert-heatmap} reveals two patterns. First, domain complexity dominates verifiability: MNIST-RT achieves 100\%/99\%/95\% ExCRA at $\varepsilon = 2/255, 4/255, 8/255$, while CIFAR-10-NRT is completely unverifiable (0\% at all $\varepsilon$). Second, robust training is a prerequisite: CIFAR-10-RT achieves 90\% ExCRA at $\varepsilon = 2/255$ vs.\ 0\% for NRT, confirming that adversarial training tightens CROWN bounds. All failures are timeouts, not falsifications.
+
 
 \subsection{Empirical Adversarial Robustness}
 \label{sec:eval-empirical}
@@ -735,7 +738,7 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
 \node[font=\scriptsize, anchor=west] at (axis cs:205,{MetaMoE (+MNIST)}) {\textbf{202.0}};
 \end{axis}
 \end{tikzpicture}
-\caption{Training time breakdown: monolithic vs.\ \textsf{MetaMoE} for 2 datasets (GTSRB + CIFAR-10) and incremental addition of MNIST. Monolithic training requires full retraining from scratch (red), while \textsf{MetaMoE} only trains the new expert (green) and fine-tunes the router (orange), yielding a 16.7\% speedup that grows with each additional expert.}
+\caption{Training time: monolithic vs.\ \textsf{MetaMoE} for 2 datasets and incremental MNIST addition. Monolithic retrains from scratch (red); \textsf{MetaMoE} trains only the new expert (green) and fine-tunes the router (orange), yielding a 16.7\% speedup.}
 \label{fig:training-time}
 \end{figure}
 
@@ -749,7 +752,7 @@ Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. F
 \begin{tikzpicture}
 \begin{axis}[
     width=0.80\columnwidth,
-    height=4.8cm,
+    height=4.5cm,
     xlabel={meta\_top\_k},
     ylabel={Inference latency (ms)},
     xmin=0.5, xmax=5.5,
@@ -783,7 +786,7 @@ Our experiments use small verification-compatible CNNs (${\sim}$96K parameters p
 
 The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\%, violating router invariance at ${\sim}$7\% of inputs.
 
-We verified 20--40 samples per configuration at a cost of ${\sim}$11 seconds per router sample and up to 300 seconds per expert sample. While zero falsifications is encouraging, a larger verification budget would strengthen statistical confidence. We consider only $\ell_\infty$-bounded perturbations; other threat models ($\ell_2$, patch attacks) require separate verification specifications.
+We verified 20--40 samples per configuration (${\sim}$11s/router, up to 300s/expert). While zero falsifications is encouraging, a larger budget would strengthen confidence. We consider only $\ell_\infty$ perturbations; other threat models ($\ell_2$, patch attacks) require separate specifications.
 
 \section{Conclusion and Future Work}
 
