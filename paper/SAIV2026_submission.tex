@@ -250,6 +250,73 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 
 The practical consequence of this assume-guarantee decomposition is \emph{modular verification}: verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of routing weights. For visually similar domains (\emph{e.g.}, GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}, both traffic sign datasets), gating accuracy drops to 93.17\%, so the router invariance premise is violated at ${\sim}$7\% of inputs; we revisit this limitation in Section~\ref{sec:limitations}.
 
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[>=Stealth,
+    box/.style={draw, rounded corners=1.5pt, font=\scriptsize, inner sep=2pt, minimum height=0.35cm},
+]
+
+% --- Panel (a): Input in perturbation ball ---
+\begin{scope}[shift={(-3.8,0)}]
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
+    \node[font=\scriptsize, blue!70] at (0,1.0) {$B_\varepsilon(x)$};
+    \fill[black] (0,0) circle (1.8pt);
+    \node[font=\scriptsize, anchor=north, yshift=-1pt] at (0,0) {$x$};
+    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+        \fill[gray!50] (\a:\r) circle (1pt);
+    }
+    \node[font=\scriptsize, gray!60] at (0.5,-0.55) {$x'$};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(a) Perturbation ball};
+\end{scope}
+
+% --- Panel (b): Router invariance ---
+\begin{scope}[shift={(0,0)}]
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
+    \fill[black] (0,0) circle (1.8pt);
+    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+        \fill[gray!50] (\a:\r) circle (1pt);
+    }
+    \node[box, fill=green!25] (esel) at (-0.6,-1.45) {$E_{m^*}$};
+    \node[box, fill=red!12, text=gray!70] (eother) at (0.6,-1.45) {$E_{j{\neq}m^*}$};
+    % Solid arrow: all inputs route to selected expert
+    \draw[->, green!60!black, semithick] (0,-0.88) -- (esel.north);
+    % Dashed crossed-out arrow: rejected expert
+    \draw[->, red!40, thin, densely dashed] (0,-0.88) -- (eother.north);
+    \node[font=\small, red!50, opacity=0.7] at (eother) {$\times$};
+    \node[font=\scriptsize, green!50!black] at (0, -1.85) {\checkmark\ invariant};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(b) Router invariance};
+    \node[font=\scriptsize, text=green!45!black] at (0,-2.18) {Same $m^*$\; $\forall\, x'{\in}B_\varepsilon(x)$};
+\end{scope}
+
+% --- Panel (c): Expert robustness ---
+\begin{scope}[shift={(3.8,0)}]
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
+    \fill[black] (0,0) circle (1.8pt);
+    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+        \fill[gray!50] (\a:\r) circle (1pt);
+    }
+    \node[box, fill=green!25] (expert) at (0,-1.32) {$E_{m^*}$};
+    \draw[->, semithick, black!70] (0,-0.88) -- (expert.north);
+    \node[box, fill=orange!18, font=\scriptsize\bfseries] (yhat) at (0,-1.9) {$\hat{y}{=}y$};
+    \draw[->, semithick, black!70] (expert.south) -- (yhat.north);
+    \node[font=\scriptsize, green!50!black] at (0, -2.22) {\checkmark\ robust\; $\forall\, x'{\in}B_\varepsilon(x)$};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(c) Expert robustness};
+\end{scope}
+
+% --- Composition arrows ---
+\draw[->, semithick, gray!70] (-2.55,0) -- (-1.25,0);
+\draw[->, semithick, gray!70] (1.25,0) -- (2.55,0);
+
+% --- Bottom: composed result ---
+\node[draw, semithick, rounded corners=3pt, fill=yellow!12, inner sep=3pt, font=\small, align=center] (result) at (0,-2.7) {%
+    \textbf{Thm.~\ref{thm:compositional}:}\;
+    MoE robust at $x$ $\Longleftrightarrow$ (b) $\land$ (c)};
+
+\end{tikzpicture}
+\caption{Compositional robustness decomposition (Theorem~\ref{thm:compositional}). \textbf{(a)}~Input $x$ within perturbation ball $B_\varepsilon(x)$. \textbf{(b)}~Router invariance: all perturbed inputs route to $E_{m^*}$. \textbf{(c)}~Expert robustness: $E_{m^*}$ predicts class $y$ throughout the ball. The system is robust iff both hold.}
+\label{fig:compositional-intuition}
+\end{figure}
+
 \subsection{Empirical Results Supporting the Formal Findings}
 
 ExCRA and AA play complementary but distinct roles. ExCRA is the primary decision criterion: it provides a provable guarantee via formal verification. AA under PGD~\cite{madry2018} serves only as supporting empirical evidence. At a fixed $\varepsilon$, soundness ensures $\text{ExCRA} \leq \text{AA}$, but in practice the two metrics use different perturbation budgets ($\varepsilon = 2/255$ for ExCRA vs.\ $8/255$ for AA), so their absolute values are not directly comparable. We therefore examine whether empirical results preserve the same \emph{model ordering} observed under certification, rather than treating AA as a substitute for ExCRA.
