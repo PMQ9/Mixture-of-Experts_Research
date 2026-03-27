@@ -63,10 +63,26 @@ This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE a
     expertbox/.style={box, fill=green!20},
     segbox/.style={box, fill=yellow!25},
     outbox/.style={box, fill=orange!15, minimum width=2.4cm},
+    labelbox/.style={draw, rectangle, rounded corners=2pt, font=\scriptsize, inner sep=2.5pt, align=left},
     arr/.style={-{Stealth[length=4pt]}, semithick},
 ]
 % Input
-\node[box] (input) {Input Image};
+\node[box, minimum width=2.0cm] (input) {Input Image $x$};
+
+% Dual-label annotation to the right of input
+\node[labelbox, fill=blue!8, right=1.2cm of input, anchor=west] (metalabel) {%
+    \textbf{Meta-class} $m$\; {\color{blue!60}\scriptsize($\mathcal{G}$ predicts)}\\[1pt]
+    \textit{e.g.}, $m{=}2$ (GTSRB)};
+\node[labelbox, fill=green!10, below=0.15cm of metalabel.south west, anchor=north west] (domainlabel) {%
+    \textbf{Domain class} $y$\; {\color{green!50!black}\scriptsize($E_{m^*}$ predicts)}\\[1pt]
+    \textit{e.g.}, Speed Limit 30};
+
+% "dual labels" title above the two boxes, with brace and line to input
+\node[font=\scriptsize\bfseries, text=gray!50!black, anchor=south] at (metalabel.north) {dual labels};
+\draw[decorate, decoration={brace, amplitude=4pt, mirror}, semithick, gray!50!black]
+    ([xshift=-4pt]metalabel.north west) -- ([xshift=-4pt]domainlabel.south west)
+    node[midway] (bracetip) {};
+\draw[gray!50!black, thin, densely dashed] (input.east) -- (bracetip.west);
 
 % Router
 \node[routerbox, below=of input] (router) {Meta Gating\\[-2pt]Network $\mathcal{G}$};
@@ -102,7 +118,7 @@ This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE a
 \draw[arr] (s1) -- (output);
 \draw[arr] (sn) -- (output);
 \end{tikzpicture}
-\caption{\textsf{MetaMoE} architecture. The meta gating network $\mathcal{G}$ receives the input image and produces routing probabilities over $N$ experts. Under hard routing ($k{=}1$), the top-scoring expert $E_{m^*}$ is activated; its output populates the corresponding segment of the unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ (Eq.~1), with all other segments zeroed. Experts are frozen after independent training; only $\mathcal{G}$ is trained during MoE composition.}
+\caption{\textsf{MetaMoE} architecture. Each input carries two labels: a coarse \emph{meta-class} $m$ identifying the domain and a fine-grained \emph{domain class} $y$. The meta gating network $\mathcal{G}$ predicts $m$ to route the input to the corresponding expert $E_{m^*}$, which then predicts $y$. Under hard routing ($k{=}1$), the top-scoring expert's output populates the corresponding segment of the unified output vector $\hat{y} \in \mathbb{R}^{C_{\text{total}}}$ (Eq.~1), with all other segments zeroed. Experts are frozen after independent training; only $\mathcal{G}$ is trained during MoE composition.}
 \label{fig:metamoe-arch}
 \end{figure}
 
