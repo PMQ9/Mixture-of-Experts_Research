@@ -261,11 +261,8 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 \begin{proof}
 \textbf{(Sufficiency.)} Follows directly by composing Lemmas~\ref{lem:router} and~\ref{lem:expert}: router invariance ensures the same expert~$m^*$ is selected for all $x' \in B_\varepsilon(x)$, and expert robustness ensures that expert produces the correct output throughout.
 
-\textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. Because robustness requires correct classification on all inputs in $B_\varepsilon(x)$, including the clean input~$x$ itself, and the clean system correctly classifies $x$, the true label $y$ must lie in $m^*$'s class range. Therefore $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
+\textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. Because robustness requires correct classification on all inputs in $B_\varepsilon(x)$, including the clean input~$x$ itself, and the clean system correctly classifies $x$, the true label $y$ must lie in $m^*$'s class range. Hence $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
 \end{proof}
-
-The practical consequence of this assume-guarantee decomposition is \emph{modular verification} (Figure~\ref{fig:compositional-intuition}): verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of routing weights. For visually similar domains (\emph{e.g.}, GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}, both traffic sign datasets), gating accuracy drops to 93.17\%, so the router invariance premise is violated at ${\sim}$7\% of inputs; we revisit this limitation in Section~\ref{sec:limitations}.
-
 
 \begin{figure}[t]
 \centering
@@ -275,57 +272,57 @@ The practical consequence of this assume-guarantee decomposition is \emph{modula
 
 % --- Panel (a): Input in perturbation ball ---
 \begin{scope}[shift={(-3.8,0)}]
-    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
-    \node[font=\scriptsize, blue!70] at (0,1.0) {$B_\varepsilon(x)$};
-    \fill[black] (0,0) circle (1.8pt);
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.65);
+    \node[font=\scriptsize, blue!70] at (0,0.8) {$B_\varepsilon(x)$};
+    \fill[black] (0,0) circle (1.5pt);
     \node[font=\scriptsize, anchor=north, yshift=-1pt] at (0,0) {$x$};
-    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+    \foreach \a/\r in {30/0.32, 110/0.43, 200/0.28, 310/0.47, 160/0.20, 350/0.25, 70/0.51, 245/0.40} {
         \fill[gray!50] (\a:\r) circle (1pt);
     }
-    \node[font=\scriptsize, gray!60] at (0.5,-0.55) {$x'$};
-    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(a) Perturbation ball};
+    \node[font=\scriptsize, gray!60] at (0.4,-0.45) {$x'$};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.0) {(a) Perturbation ball};
 \end{scope}
 
 % --- Panel (b): Router invariance ---
 \begin{scope}[shift={(0,0)}]
-    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
-    \fill[black] (0,0) circle (1.8pt);
-    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.65);
+    \fill[black] (0,0) circle (1.5pt);
+    \foreach \a/\r in {30/0.32, 110/0.43, 200/0.28, 310/0.47, 160/0.20, 350/0.25, 70/0.51, 245/0.40} {
         \fill[gray!50] (\a:\r) circle (1pt);
     }
-    \node[box, fill=green!25] (esel) at (-0.6,-1.45) {$E_{m^*}$};
-    \node[box, fill=red!12, text=gray!70] (eother) at (0.6,-1.45) {$E_{j{\neq}m^*}$};
+    \node[box, fill=green!25] (esel) at (-0.6,-1.15) {$E_{m^*}$};
+    \node[box, fill=red!12, text=gray!70] (eother) at (0.6,-1.15) {$E_{j{\neq}m^*}$};
     % Solid arrow: all inputs route to selected expert
-    \draw[->, green!60!black, semithick] (0,-0.88) -- (esel.north);
+    \draw[->, green!60!black, semithick] (0,-0.7) -- (esel.north);
     % Dashed crossed-out arrow: rejected expert
-    \draw[->, red!40, thin, densely dashed] (0,-0.88) -- (eother.north);
+    \draw[->, red!40, thin, densely dashed] (0,-0.7) -- (eother.north);
     \node[font=\small, red!50, opacity=0.7] at (eother) {$\times$};
-    \node[font=\scriptsize, green!50!black] at (0, -1.85) {\checkmark\ invariant};
-    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(b) Router invariance};
-    \node[font=\scriptsize, text=green!45!black] at (0,-2.18) {Same $m^*$\; $\forall\, x'{\in}B_\varepsilon(x)$};
+    \node[font=\scriptsize, green!50!black] at (0, -1.5) {\checkmark\ invariant};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.0) {(b) Router invariance};
+    \node[font=\scriptsize, text=green!45!black] at (0,-1.78) {Same $m^*$\; $\forall\, x'{\in}B_\varepsilon(x)$};
 \end{scope}
 
 % --- Panel (c): Expert robustness ---
 \begin{scope}[shift={(3.8,0)}]
-    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.82);
-    \fill[black] (0,0) circle (1.8pt);
-    \foreach \a/\r in {30/0.4, 110/0.55, 200/0.35, 310/0.6, 160/0.25, 350/0.32, 70/0.65, 245/0.5} {
+    \draw[blue!60, semithick, fill=blue!6] (0,0) circle (0.65);
+    \fill[black] (0,0) circle (1.5pt);
+    \foreach \a/\r in {30/0.32, 110/0.43, 200/0.28, 310/0.47, 160/0.20, 350/0.25, 70/0.51, 245/0.40} {
         \fill[gray!50] (\a:\r) circle (1pt);
     }
-    \node[box, fill=green!25] (expert) at (0,-1.32) {$E_{m^*}$};
-    \draw[->, semithick, black!70] (0,-0.88) -- (expert.north);
-    \node[box, fill=orange!18, font=\scriptsize\bfseries] (yhat) at (0,-1.9) {$\hat{y}{=}y$};
+    \node[box, fill=green!25] (expert) at (0,-1.05) {$E_{m^*}$};
+    \draw[->, semithick, black!70] (0,-0.7) -- (expert.north);
+    \node[box, fill=orange!18, font=\scriptsize\bfseries] (yhat) at (0,-1.7) {$\hat{y}{=}y$};
     \draw[->, semithick, black!70] (expert.south) -- (yhat.north);
-    \node[font=\scriptsize, green!50!black] at (0, -2.22) {\checkmark\ robust\; $\forall\, x'{\in}B_\varepsilon(x)$};
-    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.22) {(c) Expert robustness};
+    \node[font=\scriptsize, green!50!black] at (0, -1.97) {\checkmark\ robust\; $\forall\, x'{\in}B_\varepsilon(x)$};
+    \node[font=\footnotesize\bfseries, anchor=south] at (0,1.0) {(c) Expert robustness};
 \end{scope}
 
 % --- Composition arrows ---
-\draw[->, semithick, gray!70] (-2.55,0) -- (-1.25,0);
-\draw[->, semithick, gray!70] (1.25,0) -- (2.55,0);
+\draw[->, semithick, gray!70] (-2.75,0) -- (-1.05,0);
+\draw[->, semithick, gray!70] (1.05,0) -- (2.75,0);
 
 % --- Bottom: composed result ---
-\node[draw, semithick, rounded corners=3pt, fill=yellow!12, inner sep=3pt, font=\small, align=center] (result) at (0,-2.7) {%
+\node[draw, semithick, rounded corners=3pt, fill=yellow!12, inner sep=3pt, font=\small, align=center] (result) at (0,-2.45) {%
     \textbf{Thm.~\ref{thm:compositional}:}\;
     MoE robust at $x$ $\Longleftrightarrow$ (b) $\land$ (c)};
 
@@ -334,6 +331,7 @@ The practical consequence of this assume-guarantee decomposition is \emph{modula
 \label{fig:compositional-intuition}
 \end{figure}
 
+The practical consequence of this assume-guarantee decomposition is \emph{modular verification} (Figure~\ref{fig:compositional-intuition}): verify router invariance and expert robustness independently, then compose guarantees via Theorem~\ref{thm:compositional}. This avoids verifying the full MoE as a monolithic network, reducing verification cost and enabling incremental certification -- when a new expert is added, only the new expert and the updated router require (re-)verification, while existing expert certificates remain valid. Note that the biconditional holds under hard routing with disjoint class spaces; for overlapping classes only sufficiency holds, and soft/top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of routing weights. For visually similar domains (\emph{e.g.}, GTSRB~\cite{gtsrb} vs.\ PTSD~\cite{ptsd}, both traffic sign datasets), gating accuracy drops to 93.17\%, so the router invariance premise is violated at ${\sim}$7\% of inputs; we revisit this limitation in Section~\ref{sec:limitations}.
 
 \subsection{Empirical Results Supporting the Formal Findings}
 
