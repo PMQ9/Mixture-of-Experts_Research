@@ -56,8 +56,8 @@ This paper introduces \textsf{MetaMoE}, a verification-aware heterogeneous MoE a
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[scale=0.9, every node/.style={scale=0.9},
-    node distance=0.35cm and 0.45cm,
+\begin{tikzpicture}[scale=0.75, every node/.style={scale=0.75},
+    node distance=0.3cm and 0.4cm,
     box/.style={draw, rectangle, minimum width=1.6cm, minimum height=0.5cm, align=center, font=\footnotesize, inner sep=2pt},
     routerbox/.style={box, fill=blue!15, rounded corners=3pt},
     expertbox/.style={box, fill=green!20},
@@ -266,9 +266,9 @@ That is, for disjoint expert class spaces, where $m^*$ is the router-selected ex
 \textbf{(Necessity, under disjoint classes.)} Suppose condition~(i) fails: there exists $x' \in B_\varepsilon(x)$ with $m^*(x') = m' \neq m^*$. Since experts have disjoint class spaces, $E_{m'}$ outputs logits only over $m'$'s classes. Because robustness requires correct classification on all inputs in $B_\varepsilon(x)$, including the clean input~$x$ itself, and the clean system correctly classifies $x$, the true label $y$ must lie in $m^*$'s class range. Hence $\arg\max_c \hat{y}_c(x') \neq y$, and the MoE is not robust. Now suppose (i)~holds but (ii)~fails: there exists $x' \in B_\varepsilon(x)$ with $\arg\max_c E_{m^*,c}(x') \neq y$. By Lemma~\ref{lem:router}, $\hat{y}(x')$ is determined by $E_{m^*}(x')$, so $\arg\max_c \hat{y}_c(x') \neq y$, and again the MoE is not robust. \qed
 \end{proof}
 
-\begin{figure}[t]
+\begin{figure}
 \centering
-\begin{tikzpicture}[>=Stealth,
+\begin{tikzpicture}[>=Stealth, scale=0.82, every node/.style={scale=0.82},
     box/.style={draw, rounded corners=1.5pt, font=\scriptsize, inner sep=2pt, minimum height=0.35cm},
 ]
 
@@ -418,15 +418,15 @@ Figure~\ref{tab:router-verification} shows results for 40 samples (20 CIFAR-10, 
 \begin{tikzpicture}
 \begin{axis}[
     ybar stacked,
-    width=0.85\columnwidth,
-    height=4.8cm,
-    bar width=12pt,
+    width=0.80\columnwidth,
+    height=3.6cm,
+    bar width=11pt,
     ymin=0, ymax=49,
     ylabel={Samples (out of 40)},
     symbolic x coords={NRT $2/255$, RT $2/255$, NRT $4/255$, RT $4/255$, NRT $8/255$, RT $8/255$},
     xtick=data,
-    x tick label style={font=\small, rotate=45, anchor=east, yshift=-2.5pt},
-    legend style={at={(0.5,-0.425)}, anchor=north, font=\small, legend columns=2},
+    x tick label style={font=\scriptsize, rotate=45, anchor=east, yshift=-2pt},
+    legend style={at={(0.5,-0.58)}, anchor=north, font=\small, legend columns=2},
     grid=major,
     grid style={dashed, gray!20},
     ytick={0,10,20,30,40},
@@ -447,65 +447,65 @@ Figure~\ref{tab:router-verification} shows results for 40 samples (20 CIFAR-10, 
 \begin{figure}[!t]
 \centering
 \begin{tikzpicture}[
-    cell/.style={minimum width=1.85cm, minimum height=0.75cm, align=center,
+    cell/.style={minimum width=1.6cm, minimum height=0.65cm, align=center,
                  font=\small, inner sep=0pt, outer sep=0pt},
 ]
 % Column headers
-\node[font=\footnotesize\bfseries] at (1.85*0.5, 0.4) {$\varepsilon{=}2/255$};
-\node[font=\footnotesize\bfseries] at (1.85*1.5, 0.4) {$\varepsilon{=}4/255$};
-\node[font=\footnotesize\bfseries] at (1.85*2.5, 0.4) {$\varepsilon{=}8/255$};
+\node[font=\footnotesize\bfseries] at (1.6*0.5, 0.35) {$\varepsilon{=}2/255$};
+\node[font=\footnotesize\bfseries] at (1.6*1.5, 0.35) {$\varepsilon{=}4/255$};
+\node[font=\footnotesize\bfseries] at (1.6*2.5, 0.35) {$\varepsilon{=}8/255$};
 
 % Row headers
-\node[font=\footnotesize, anchor=east] at (-0.15, -0.375) {CIFAR-10 NRT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -1.125) {CIFAR-10 RT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -1.875) {MNIST NRT};
-\node[font=\footnotesize, anchor=east] at (-0.15, -2.625) {MNIST RT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -0.325) {CIFAR-10 NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -0.975) {CIFAR-10 RT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -1.625) {MNIST NRT};
+\node[font=\footnotesize, anchor=east] at (-0.15, -2.275) {MNIST RT};
 
 % --- Row 1: CIFAR-10 NRT (all 0%) ---
-\fill[red!30] (0,0) rectangle (1.85,-0.75);
-\fill[red!30] (1.85,0) rectangle (3.7,-0.75);
-\fill[red!30] (3.7,0) rectangle (5.55,-0.75);
-\node[cell] at (1.85*0.5, -0.375) {0\%};
-\node[cell] at (1.85*1.5, -0.375) {0\%};
-\node[cell] at (1.85*2.5, -0.375) {0\%};
+\fill[red!30] (0,0) rectangle (1.6,-0.65);
+\fill[red!30] (1.6,0) rectangle (3.2,-0.65);
+\fill[red!30] (3.2,0) rectangle (4.8,-0.65);
+\node[cell] at (1.6*0.5, -0.325) {0\%};
+\node[cell] at (1.6*1.5, -0.325) {0\%};
+\node[cell] at (1.6*2.5, -0.325) {0\%};
 
 % --- Row 2: CIFAR-10 RT ---
-\fill[green!45] (0,-0.75) rectangle (1.85,-1.5);
-\fill[yellow!55] (1.85,-0.75) rectangle (3.7,-1.5);
-\fill[red!30] (3.7,-0.75) rectangle (5.55,-1.5);
-\node[cell] at (1.85*0.5, -1.125) {90\%};
-\node[cell] at (1.85*1.5, -1.125) {54\%};
-\node[cell] at (1.85*2.5, -1.125) {0\%};
+\fill[green!45] (0,-0.65) rectangle (1.6,-1.3);
+\fill[yellow!55] (1.6,-0.65) rectangle (3.2,-1.3);
+\fill[red!30] (3.2,-0.65) rectangle (4.8,-1.3);
+\node[cell] at (1.6*0.5, -0.975) {90\%};
+\node[cell] at (1.6*1.5, -0.975) {54\%};
+\node[cell] at (1.6*2.5, -0.975) {0\%};
 
 % --- Row 3: MNIST NRT ---
-\fill[green!30!yellow!20] (0,-1.5) rectangle (1.85,-2.25);
-\fill[red!30] (1.85,-1.5) rectangle (3.7,-2.25);
-\fill[red!30] (3.7,-1.5) rectangle (5.55,-2.25);
-\node[cell] at (1.85*0.5, -1.875) {75\%};
-\node[cell] at (1.85*1.5, -1.875) {0\%};
-\node[cell] at (1.85*2.5, -1.875) {0\%};
+\fill[green!30!yellow!20] (0,-1.3) rectangle (1.6,-1.95);
+\fill[red!30] (1.6,-1.3) rectangle (3.2,-1.95);
+\fill[red!30] (3.2,-1.3) rectangle (4.8,-1.95);
+\node[cell] at (1.6*0.5, -1.625) {75\%};
+\node[cell] at (1.6*1.5, -1.625) {0\%};
+\node[cell] at (1.6*2.5, -1.625) {0\%};
 
 % --- Row 4: MNIST RT ---
-\fill[green!65] (0,-2.25) rectangle (1.85,-3.0);
-\fill[green!60] (1.85,-2.25) rectangle (3.7,-3.0);
-\fill[green!50] (3.7,-2.25) rectangle (5.55,-3.0);
-\node[cell] at (1.85*0.5, -2.625) {\textbf{100\%}};
-\node[cell] at (1.85*1.5, -2.625) {\textbf{99\%}};
-\node[cell] at (1.85*2.5, -2.625) {\textbf{95\%}};
+\fill[green!65] (0,-1.95) rectangle (1.6,-2.6);
+\fill[green!60] (1.6,-1.95) rectangle (3.2,-2.6);
+\fill[green!50] (3.2,-1.95) rectangle (4.8,-2.6);
+\node[cell] at (1.6*0.5, -2.275) {\textbf{100\%}};
+\node[cell] at (1.6*1.5, -2.275) {\textbf{99\%}};
+\node[cell] at (1.6*2.5, -2.275) {\textbf{95\%}};
 
 % Grid lines
-\draw[thin, gray!60] (0,0) grid[xstep=1.85, ystep=0.75] (5.55,-3.0);
-\draw[semithick] (0,0) rectangle (5.55,-3.0);
+\draw[thin, gray!60] (0,0) grid[xstep=1.6, ystep=0.65] (4.8,-2.6);
+\draw[semithick] (0,0) rectangle (4.8,-2.6);
 % Horizontal separator between CIFAR-10 and MNIST blocks
-\draw[semithick] (0,-1.5) -- (5.55,-1.5);
+\draw[semithick] (0,-1.3) -- (4.8,-1.3);
 
 % Colorbar
-\shade[left color=red!30, right color=green!65] (0,-3.6) rectangle (5.55,-3.85);
-\draw[thin] (0,-3.6) rectangle (5.55,-3.85);
-\node[font=\scriptsize, anchor=north] at (0,-3.9) {0\%};
-\node[font=\scriptsize, anchor=north] at (2.775,-3.9) {50\%};
-\node[font=\scriptsize, anchor=north] at (5.55,-3.9) {100\%};
-\node[font=\scriptsize, anchor=north] at (2.775,-4.15) {Expert Certified Robustness Accuracy (ExCRA)};
+\shade[left color=red!30, right color=green!65] (0,-3.1) rectangle (4.8,-3.3);
+\draw[thin] (0,-3.1) rectangle (4.8,-3.3);
+\node[font=\scriptsize, anchor=north] at (0,-3.35) {0\%};
+\node[font=\scriptsize, anchor=north] at (2.4,-3.35) {50\%};
+\node[font=\scriptsize, anchor=north] at (4.8,-3.35) {100\%};
+\node[font=\scriptsize, anchor=north] at (2.4,-3.55) {Expert Certified Robustness Accuracy (ExCRA)};
 \end{tikzpicture}
 \caption{ExCRA across domains, training paradigms, and perturbation budgets (20 samples per configuration, mean over 5 runs). Green indicates high ExCRA; red indicates verification failure (timeout). Robust training (RT) is a prerequisite for verifiability: CIFAR-10 NRT is completely unverifiable at all $\varepsilon$, while MNIST RT maintains $\geq$95\% ExCRA even at $\varepsilon = 8/255$. Zero falsifications occurred in any configuration.}
 \label{fig:expert-heatmap}
@@ -530,15 +530,15 @@ Figure~\ref{fig:expert-robustness} confirms the robustness--accuracy tradeoff: C
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=0.82\columnwidth,
-    height=4.8cm,
-    bar width=10pt,
+    width=0.76\columnwidth,
+    height=3.6cm,
+    bar width=9pt,
     ymin=0, ymax=115,
     ylabel={Accuracy (\%)},
     symbolic x coords={CIFAR-10 NRT, CIFAR-10 RT, MNIST NRT, MNIST RT},
     xtick=data,
-    x tick label style={font=\footnotesize, rotate=25, anchor=east},
-    legend style={at={(0.5,-0.36)}, anchor=north, font=\footnotesize, legend columns=2},
+    x tick label style={font=\scriptsize, rotate=30, anchor=east},
+    legend style={at={(0.5,-0.59)}, anchor=north, font=\footnotesize, legend columns=2},
     legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
     grid style={dashed, gray!20},
@@ -608,16 +608,16 @@ Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) wi
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    width=0.80\columnwidth,
-    height=4.8cm,
-    bar width=9pt,
+    width=0.74\columnwidth,
+    height=3.6cm,
+    bar width=8pt,
     ymin=0, ymax=118,
     ylabel={(\%)},
     xtick={1,2, 4,5},
     xticklabels={NRT, RT, NRT, RT},
     x tick label style={font=\footnotesize},
     xmin=0, xmax=6,
-    legend style={at={(0.5,-0.28)}, anchor=north, font=\footnotesize, legend columns=2},
+    legend style={at={(0.5,-0.52)}, anchor=north, font=\footnotesize, legend columns=2},
     legend image code/.code={\fill[#1] (0cm,-0.1cm) rectangle (0.3cm,0.1cm);},
     grid=major,
     grid style={dashed, gray!20},
@@ -651,8 +651,8 @@ Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) wi
 % Separator line between groups
 \draw[thin, dashed, gray!50] (axis cs:3, 0) -- (axis cs:3, 115);
 % Group labels below tick labels
-\node[font=\footnotesize, text=black] at (axis cs:1.5, -24) {CIFAR-10};
-\node[font=\footnotesize, text=black] at (axis cs:4.5, -24) {MNIST};
+\node[font=\footnotesize, text=black] at (axis cs:1.5, -38) {CIFAR-10};
+\node[font=\footnotesize, text=black] at (axis cs:4.5, -38) {MNIST};
 \legend{AA ($\varepsilon{=}8/255$), ExCRA ($\varepsilon{=}2/255$)}
 \end{axis}
 \end{tikzpicture}
@@ -670,11 +670,11 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[scale=1.00, every node/.style={scale=1.00}]
+\begin{tikzpicture}[scale=0.92, every node/.style={scale=0.92}]
 \begin{axis}[
     xbar stacked,
     width=0.78\columnwidth,
-    height=3.6cm,
+    height=3.2cm,
     bar width=9pt,
     xlabel={Training time (minutes)},
     xlabel style={font=\scriptsize},
@@ -771,14 +771,14 @@ Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. F
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.80\columnwidth,
-    height=4.5cm,
+    width=0.74\columnwidth,
+    height=3.9cm,
     xlabel={meta\_top\_k},
     ylabel={Inference latency (ms)},
     xmin=0.5, xmax=5.5,
     ymin=50, ymax=170,
     xtick={1,2,3,4,5},
-    legend style={at={(0.98,0.02)}, anchor=south east, font=\footnotesize},
+    legend style={at={(1.02,0.98)}, anchor=north west, font=\footnotesize},
     grid=major,
     grid style={dashed, gray!30},
     every axis plot/.append style={thick, mark size=2.5pt},
@@ -814,7 +814,7 @@ We presented \textsf{MetaMoE}, a framework for compositional robustness verifica
 
 The experiments reveal that for dissimilar datasets, expert robustness dominates system behavior (13.15\% AA difference between all-RT and all-NRT experts) while the router training paradigm has negligible impact ($< 0.1\%$), allowing a 3.2$\times$ router training speedup by forgoing adversarial augmentation. Router verification achieves 100\% RoCRA at $\varepsilon \leq 4/255$ with zero falsifications across all 40 runs, satisfying the invariance condition of Theorem~\ref{thm:compositional}. Within each domain, the empirical results supported the certified findings by preserving the same ordering across models, while non-robust training on complex domains yielded complete verification failure in our setting.
 
-We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, extending these empirical results to more complex domains will require tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (93.17\% gating accuracy vs.\ 100\% for CIFAR10+MNIST) expose a richer problem than routing failure alone: when experts share semantically equivalent classes, a misroute may not cause a misclassification. Relaxing Theorem~\ref{thm:compositional} to account for cross-expert redundancy would yield a more permissive compositional guarantee for similar-domain systems. We hope the compositional perspective introduced here provides a useful foundation for building verifiable modular AI in safety-critical applications.
+We see three directions for extending this work. First, generalizing Theorem~\ref{thm:compositional} to soft and top-$k$ routing will require reasoning about weight stability under perturbation; probabilistic verification methods~\cite{chwialkowski2025probabilistic} may offer relaxed but practical guarantees in that setting. Second, extending these empirical results to more complex domains will require tighter bound propagation or certified training methods such as CROWN-IBP~\cite{zhang2020} integrated into the expert training pipeline. Third, the GTSRB+PTSD results (93.17\% gating accuracy vs.\ 100\% for CIFAR10+MNIST) expose a richer problem than routing failure alone: when experts share semantically equivalent classes, a misroute may not cause a misclassification. Relaxing Theorem~\ref{thm:compositional} to account for cross-expert redundancy would yield a more permissive compositional guarantee for similar-domain systems. The compositional perspective introduced here provides a foundation for building verifiable modular AI in safety-critical applications.
 
 \bibliographystyle{splncs04}
 \bibliography{references_saiv2026}
