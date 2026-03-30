@@ -4,12 +4,7 @@
         {
             "label": "Compile LaTeX to PDF",
             "type": "shell",
-            "command": "pdflatex",
-            "args": [
-                "-interaction=nonstopmode",
-                "-output-directory=${workspaceFolder}/paper",
-                "${workspaceFolder}/paper/SAIV2026_submission.tex"
-            ],
+            "command": "cd \"${workspaceFolder}/paper\" && pdflatex -interaction=nonstopmode SAIV2026_submission.tex && bibtex SAIV2026_submission && pdflatex -interaction=nonstopmode SAIV2026_submission.tex && pdflatex -interaction=nonstopmode SAIV2026_submission.tex",
             "group": {
                 "kind": "build",
                 "isDefault": true

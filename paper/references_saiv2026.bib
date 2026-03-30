@@ -66,7 +66,7 @@
 }
 
 @techreport{cifar10,
-  author    = {Krizhevsky, Alex},
+  author    = {Krizhevsky, Alex and Hinton, Geoffrey},
   title     = {Learning Multiple Layers of Features from Tiny Images},
   institution = {University of Toronto},
   year      = {2009}
@@ -271,35 +271,35 @@
 @inproceedings{watson2025scenario,
   author    = {Watson, Christopher and Alur, Rajeev and Gopinath, Divya and Mangal, Ravi and Pasareanu, Corina S.},
   title     = {Scenario-based Compositional Verification of Autonomous Systems with Neural Perception},
-  booktitle = {International Conference on Safe and Trustworthy AI (SAIV)},
+  booktitle = {International Symposium on AI Verification (SAIV)},
   year      = {2025}
 }
 
 @inproceedings{kielhoefer2025robustness,
   author    = {Kielhoefer, Lionel and Bosman, Annelot W. and Hoos, Holger H. and van Rijn, Jan N.},
   title     = {Robustness Margin: A New Measure for the Robustness of Neural Networks},
-  booktitle = {International Conference on Safe and Trustworthy AI (SAIV)},
+  booktitle = {International Symposium on AI Verification (SAIV)},
   year      = {2025}
 }
 
 @inproceedings{zhong2025grena,
   author    = {Zhong, Yuyi and Tan, Shaun Zong Zhi and Xu, Hanping and Khoo, Siau-Cheng},
   title     = {{GRENA}: {GPU}-aided Abstract Refinement for Neural Network Verification},
-  booktitle = {International Conference on Safe and Trustworthy AI (SAIV)},
+  booktitle = {International Symposium on AI Verification (SAIV)},
   year      = {2025}
 }
 
 @inproceedings{alsmann2025complexity,
   author    = {Alsmann, Eric and Lange, Martin},
   title     = {On the Complexity of Formal Reasoning in State Space Models},
-  booktitle = {International Conference on Safe and Trustworthy AI (SAIV)},
+  booktitle = {International Symposium on AI Verification (SAIV)},
   year      = {2025}
 }
 
 @inproceedings{chwialkowski2025probabilistic,
   author    = {Chwialkowski, Marcel and Goubault, Eric and Putot, Sylvie},
   title     = {Probabilistic Verification of Neural Networks with Sampling-based Probability Box Propagation},
-  booktitle = {International Conference on Safe and Trustworthy AI (SAIV)},
+  booktitle = {International Symposium on AI Verification (SAIV)},
   year      = {2025}
 }
 
@@ -316,7 +316,7 @@
   title        = {Export a Model with Control Flow to {ONNX} --- {PyTorch} Tutorials},
   year         = {2025},
   howpublished = {\url{https://pytorch.org/tutorials/beginner/onnx/export_control_flow_model_to_onnx_tutorial.html}},
-  note         = {Conditional logic requires \texttt{torch.cond()} refactoring; both branches must produce same-shaped outputs.}
+  note         = {Conditional logic requires \texttt{torch.cond()} refactoring; both branches must produce the same number of outputs with compatible types.}
 }
 
 @misc{onnxir,
@@ -327,11 +327,15 @@
   note         = {Graphs are topologically ordered, side-effect-free computations with frozen attributes.}
 }
 
-@article{katz2022marabou,
-  author    = {Wu, Haoze and Ozdemir, Omri and Isac, Aleksandar and Zelji\'{c}, Teruhiro and Banerjee, Vatsal and Javanmard, Pasha and Huang, Jianlin and Henriksen, Patrick and Moran, Guy and Shubham, Sai and {others}},
+@inproceedings{wu2024marabou,
+  author    = {Wu, Haoze and Isac, Omri and Zelji\'{c}, Aleksandar and Tagomori, Teruhiro and Daggitt, Matthew and Kokke, Wen and Refaeli, Idan and Amir, Guy and Julian, Kyle and Bassan, Shahaf and Huang, Pei and Lahav, Ori and Wu, Min and Zhang, Min and Komendantskaya, Ekaterina and Katz, Guy and Barrett, Clark},
   title     = {Marabou 2.0: A Versatile Formal Analyzer of Neural Networks},
-  journal   = {arXiv preprint arXiv:2401.14461},
-  year      = {2024}
+  booktitle = {International Conference on Computer Aided Verification (CAV)},
+  pages     = {249--264},
+  year      = {2024},
+  publisher = {Springer},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {14682}
 }
 
 @inproceedings{singh2019eran,
