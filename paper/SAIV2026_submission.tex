@@ -146,7 +146,7 @@ These three lines of work (MoE scalability, adversarial robustness, and formal v
 
 \section{Problem Formulation}
 
-We define the following notation used throughout this paper. Let $x \in \mathbb{R}^{C \times H \times W}$ denote a normalized input image, where $C = 3$ is the number of color channels (RGB), $H$ is the image height, and $W$ is the image width (in our experiments, $H = W = 32$ pixels). Let $N$ denote the total number of domain-specific experts in the system, and let $C_i$ denote the number of classes in dataset~$i$ (\emph{e.g.}, $C_i = 10$ for CIFAR-10, $C_i = 43$ for GTSRB). The total number of classes across all datasets is $C_{\text{total}} = \sum_{i=1}^{N} C_i$, and the target class label is $y \in \{1, \ldots, C_{\text{total}}\}$.
+We define the following notation used throughout this paper. Let $x \in \mathbb{R}^{C \times H \times W}$ denote a normalized input image, where $C = 3$ is the number of color channels (RGB), $H$ is the image height, and $W$ is the image width (in our experiments, $H = W = 32$ pixels). Let $N$ denote the total number of domain-specific experts in the system, and let $C_i$ denote the number of classes in dataset~$i$ (\emph{e.g.}, $C_i = 10$ for CIFAR-10, $C_i = 43$ for GTSRB). The total number of classes across all datasets is $C_{\text{total}} = \sum_{i=1}^{N} C_i$. Each input carries two labels: a ground-truth \emph{meta-class} $m \in \{0, \ldots, N{-}1\}$ identifying which dataset (and hence which expert) the input belongs to, and a fine-grained \emph{class label} $y \in \{1, \ldots, C_{\text{total}}\}$.
 
 A heterogeneous MoE system consists of two types of components:
 
@@ -182,17 +182,19 @@ We consider an adversary that applies a small perturbation $\delta \in \mathbb{R
 
 We quantify verifiability with two \emph{certified} metrics, each computed by a formal verifier over a finite test set~$D$. For a single test image $(x,y)$, the verifier returns a binary verdict: either it \emph{proves} that the property holds for every perturbation in $B_\varepsilon(x)$, or it cannot (timeout or counterexample). The aggregate metric is the fraction of images in~$D$ that receive a positive verdict.
 
-\textbf{Expert Certified Robustness Accuracy (ExCRA).} For an expert $E_i$, the per-image property is correct classification under all perturbations: $\arg\max_c E_{i,c}(x') = y$ for all $x' \in B_\varepsilon(x)$. The aggregate metric is:
+\textbf{Expert Certified Robustness Accuracy (ExCRA).} For an expert $E_i$, the per-image property is correct classification under all perturbations: $\arg\max_c E_{i,c}(x') = y$ for all $x' \in B_\varepsilon(x)$, where $E_{i,c}(\cdot)$ denotes the $c$-th logit of expert~$i$'s output. The aggregate metric is:
 \begin{equation}
     \text{ExCRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbbm{1}\bigl[\text{Verify}(E_i, x, \varepsilon)\bigr]
 \end{equation}
 
-\textbf{Router Certified Robustness Accuracy (RoCRA).} For the router $\mathcal{G}$, the per-image property is invariant expert selection: $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$, where $m^* = \arg\max_i \mathcal{G}_i(x)$. The aggregate metric is:
+\textbf{Router Certified Robustness Accuracy (RoCRA).} For the router $\mathcal{G}$, the per-image property is invariant expert selection: $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$, where $\mathcal{G}_i(\cdot)$ denotes the $i$-th routing logit and $m^* = \arg\max_i \mathcal{G}_i(x)$. The aggregate metric is:
 \begin{equation}
     \text{RoCRA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,m^*) \in D} \mathbbm{1}\bigl[\text{Verify}(\mathcal{G}, x, \varepsilon)\bigr]
 \end{equation}
 
 In both cases, $\mathbbm{1}[\text{Verify}(\cdot)]$ equals~1 only when the verifier produces a formal proof; timeouts and counterexamples both yield~0. Because these metrics aggregate binary formal verdicts over a test set, a reported value such as ``ExCRA $= 90\%$'' means ``the verifier formally certified 18 out of 20 test images.''\!
+
+\textbf{Adversarial Accuracy (AA).} As an empirical complement to the certified metrics, we measure the fraction of test images that remain correctly classified under PGD attack~\cite{madry2018}: $\text{AA}(\varepsilon) = \frac{1}{|D|} \sum_{(x,y) \in D} \mathbbm{1}[\arg\max_c f_c(x^{\text{adv}}) = y]$, where $x^{\text{adv}} = \arg\max_{x' \in B_\varepsilon(x)} \mathcal{L}(f(x'), y)$ is a PGD-generated adversarial example and $f$ is the model under evaluation (expert or full MoE). AA upper-bounds true robustness since PGD is heuristic.
 
 \subsection{Problem Statement}
 
@@ -361,14 +363,14 @@ Once all experts are frozen, the router is trained on meta-class labels $m \in \
 \begin{equation}
 \mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x),\, m\bigr)\bigr].
 \end{equation}
-RT adds an adversarial term using PGD-generated perturbations ($\varepsilon = 8/255$):
+RT adds an adversarial term using PGD-generated perturbations $x^{\text{adv}} = \arg\max_{x' \in B_\varepsilon(x)} \text{CE}(\mathcal{G}(x'), m)$ with $\varepsilon = 8/255$:
 \begin{equation}
 \mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x^{\text{adv}}),\, m\bigr)\bigr].
 \end{equation}
 
 \subsection{Training Paradigms and MoE Composition}
 
-When composing the full \textsf{MetaMoE} system, training optimizes a combined objective $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$ that balances two goals: $\mathcal{L}_{\text{cls}}$ enforces correct class prediction through the selected expert, while $\mathcal{L}_{\text{gate}}$ ensures the router assigns each input to the correct expert. This dual loss structure allows the router to learn accurate dataset-level routing while the frozen experts maintain their classification performance.
+When composing the full \textsf{MetaMoE} system, training optimizes a combined objective $\mathcal{L} = \mathcal{L}_{\text{cls}} + \lambda \mathcal{L}_{\text{gate}}$, where $\mathcal{L}_{\text{cls}} = \text{CE}(\hat{y},\, y)$ is the cross-entropy between the unified MoE output and the true class label, $\mathcal{L}_{\text{gate}} = \text{CE}(\mathcal{G}(x),\, m)$ is the cross-entropy between the router's output and the true meta-class, and $\lambda > 0$ is a scalar weight balancing the two terms. This dual loss structure allows the router to learn accurate dataset-level routing while the frozen experts maintain their classification performance.
 
 \section{Compositional Verification with $\alpha$--$\beta$-CROWN}
 
