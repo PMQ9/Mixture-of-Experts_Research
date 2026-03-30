@@ -355,7 +355,7 @@ We train experts independently using Adam~\cite{kingma2015adam} (lr $10^{-3}$, b
 
 \subsection{Router (GatingNet)}
 
-The router $\mathcal{G}(x) \in \mathbb{R}^N$ produces $N$ raw logits and selects expert $m^* = \arg\max_i g_i$. It shares the expert's convolutional backbone but omits BatchNorm (${\sim}$38K params for $N{=}2$), with its final layer outputting $N$ routing logits instead of $C_i$ class logits.
+The router $\mathcal{G}(x) \in \mathbb{R}^N$ produces $N$ raw logits and selects expert $m^* = \arg\max_i g_i$. It shares the expert's convolutional backbone but omits BatchNorm, with its final layer outputting $N$ routing logits instead of $C_i$ class logits.
 
 Because the router receives images from multiple datasets with different pixel distributions, all inputs are normalized using dataset-averaged statistics: $\mu_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \mu_i$, $\sigma_{\text{unified}} = \frac{1}{N} \sum_{i=0}^{N-1} \sigma_i$. This prevents distribution mismatch and ensures no single dataset dominates routing features.
 
@@ -386,7 +386,7 @@ This reduces the verification target from the full system (${\sim}$231K paramete
 
 \subsection{Adapting Verification to the MoE Setting}
 
-Applying $\alpha$--$\beta$-CROWN to our compositional setting requires several adaptations. By Theorem~\ref{thm:compositional}, we export only the router as a standalone ONNX model (${\sim}$38K parameters), a ${\sim}$6$\times$ reduction from the full system. Perturbation bounds are applied in the unified normalization space so that the verified $\varepsilon$ matches the space used during adversarial training.
+Applying $\alpha$--$\beta$-CROWN to our compositional setting requires several adaptations. By Theorem~\ref{thm:compositional}, we export only the router as a standalone ONNX model, a ${\sim}$6$\times$ reduction from the full system. Perturbation bounds are applied in the unified normalization space so that the verified $\varepsilon$ matches the space used during adversarial training.
 
 Two architectural decisions further support verification. First, the router omits BatchNorm, eliminating train/eval discrepancies while maintaining 99.97\% routing accuracy. Second, because $\alpha$--$\beta$-CROWN searches for counterexamples, we negate the desired property in the VNNLIB specification: for an input belonging to expert~$i$, we assert that some other expert's logit exceeds~$i$'s. If no counterexample is found, the router is provably invariant.
 
@@ -397,7 +397,7 @@ We evaluate \textsf{MetaMoE} along three axes: formal verification with $\alpha$
 \subsection{Experimental Setup}
 \label{sec:eval-setup}
 
-All experiments use VerifiableCNN experts (${\sim}$94--96K parameters) and a VerifiableCNN router without BatchNorm (${\sim}$38K parameters), trained under NRT or RT. Results are averaged over 5 independent runs on an NVIDIA GeForce RTX 4060 (8GB) with PyTorch 2.1.0 (CUDA 12.1), $\alpha$--$\beta$-CROWN (commit d4c79e3), and fixed seed 42.
+All experiments use VerifiableCNN experts and router, trained under NRT or RT. Results are averaged over 5 independent runs on an NVIDIA GeForce RTX 4060 (8GB) with PyTorch 2.1.0 (CUDA 12.1), $\alpha$--$\beta$-CROWN (commit d4c79e3), and fixed seed 42.
 
 \textbf{Test sets.} Formal verification uses 20--40 correctly classified images per configuration (${\sim}$11s/router sample, up to 300s/expert sample). PGD attacks evaluate the full test set of each dataset.
 
@@ -578,7 +578,7 @@ We tested all 8 combinations of router training (RT/NRT) $\times$ 4 expert confi
 
 \begin{table}[t]
 \centering
-\caption{Expert configuration dominates system robustness. Rows show expert training combinations averaged across both RT and NRT router training (which differ by $< 0.1\%$). 40 total runs: 8 configurations $\times$ 5 runs. All configurations achieve 100\% gating accuracy.}
+\caption{Expert configuration dominates system robustness. \emph{Clean Acc}: end-to-end MoE classification accuracy on unperturbed test inputs. \emph{Adv Acc}: end-to-end MoE accuracy under PGD attack ($\varepsilon = 8/255$, 7 steps). \emph{Robustness Gap}: Clean Acc $-$ Adv Acc (smaller is better). Rows show expert training combinations averaged across both RT and NRT router training (which differ by $< 0.1\%$). 40 total runs: 8 configurations $\times$ 5 runs. All configurations achieve 100\% gating accuracy.}
 \label{tab:expert-impact}
 \small
 \begin{tabular}{llll}
@@ -601,7 +601,7 @@ GTSRB+PTSD achieves only 93.17\% gating accuracy and 29.47\% AA, compared to 100
 \subsection{Empirical Results Supporting the Formal Findings}
 \label{sec:eval-correlation}
 
-Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) with ExCRA ($\alpha$--$\beta$-CROWN, $\varepsilon = 2/255$). Because the perturbation budgets differ, we compare \emph{orderings} rather than absolute values. Within each domain, the same ranking holds: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and ExCRA ($75\% \to 100\%$), while CIFAR-10 NRT$\to$RT moves from complete verification failure (ExCRA $= 0\%$) to ExCRA $= 90\%$. Routers are excluded because RoCRA and router AA measure different properties (routing invariance vs.\ end-to-end classification).
+Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) with ExCRA ($\alpha$--$\beta$-CROWN, $\varepsilon = 2/255$). Because the perturbation budgets differ, we compare \emph{orderings} rather than absolute values. Within each domain, the same ranking holds: MNIST NRT$\to$RT increases both AA ($46\% \to 91\%$) and ExCRA ($75\% \to 100\%$), while CIFAR-10 NRT$\to$RT moves from complete verification failure (ExCRA $= 0\%$) to ExCRA $= 90\%$. Routers are excluded because RoCRA and router AA measure different properties.
 
 \begin{figure}[t]
 \centering
@@ -656,7 +656,7 @@ Figure~\ref{fig:gap-analysis} compares expert AA (PGD, $\varepsilon = 8/255$) wi
 \legend{AA ($\varepsilon{=}8/255$), ExCRA ($\varepsilon{=}2/255$)}
 \end{axis}
 \end{tikzpicture}
-\caption{Expert empirical results supporting the formal findings (AA at $\varepsilon = 8/255$, ExCRA at $\varepsilon = 2/255$; mean $\pm$ std over 5 runs). Because the perturbation budgets differ, absolute values are not directly comparable. The key observation is that within each domain, the empirical results preserve the same model ordering observed under certified robustness analysis. CIFAR-10 NRT is completely unverifiable (ExCRA $= 0\%$). Router results are omitted because RoCRA (routing invariance) and router AA (end-to-end classification) measure different properties.}
+\caption{Expert empirical results supporting the formal findings (AA at $\varepsilon = 8/255$, ExCRA at $\varepsilon = 2/255$; mean $\pm$ std over 5 runs). Because the perturbation budgets differ ($4\times$ larger $\varepsilon$ for AA), absolute values are not directly comparable -- in particular, ExCRA can exceed AA simply because it certifies a smaller perturbation ball. The key observation is that within each domain, the NRT$\to$RT ordering is consistent across both metrics, indicating that the empirical robustness trends support the formal certification findings. CIFAR-10 NRT is completely unverifiable (ExCRA $= 0\%$). Router results are omitted because RoCRA and router AA measure different properties.}
 \label{fig:gap-analysis}
 \end{figure}
 
@@ -687,7 +687,7 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
     ytick=data,
     y tick label style={font=\scriptsize},
     x tick label style={font=\scriptsize},
-    xmin=0, xmax=275,
+    xmin=0, xmax=290,
     legend style={at={(0.5,-0.42)}, anchor=north, font=\scriptsize, legend columns=5},
     grid=major,
     grid style={dashed, gray!20},
@@ -732,17 +732,30 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
 };
 \legend{Joint training, Expert(s), New expert, Router, Full retrain}
 % Total time annotations
-\node[font=\scriptsize, anchor=west] at (axis cs:94,{Monolithic (2 datasets)}) {\textbf{91.5}};
-\node[font=\scriptsize, anchor=west] at (axis cs:102,{MetaMoE (2 datasets)}) {\textbf{99.5}};
-\node[font=\scriptsize, anchor=west] at (axis cs:245,{Monolithic (+MNIST)}) {\textbf{242.5}};
-\node[font=\scriptsize, anchor=west] at (axis cs:205,{MetaMoE (+MNIST)}) {\textbf{202.0}};
+\node[font=\scriptsize, anchor=west] at (axis cs:94,{Monolithic (2 datasets)}) {\textbf{91.5\,min}};
+\node[font=\scriptsize, anchor=west] at (axis cs:102,{MetaMoE (2 datasets)}) {\textbf{99.5\,min}};
+\node[font=\scriptsize, anchor=west] at (axis cs:245,{Monolithic (+MNIST)}) {\textbf{242.5\,min}};
+\node[font=\scriptsize, anchor=west] at (axis cs:205,{MetaMoE (+MNIST)}) {\textbf{202.0\,min}};
+% Per-segment labels for all 4 bars (black bold text, transparent background)
+% Monolithic (2 datasets): gray 91.5
+\node[font=\tiny\bfseries] at (axis cs:45.75,{Monolithic (2 datasets)}) {91.5};
+% MetaMoE (2 datasets): blue 87.5 | orange 12
+\node[font=\tiny\bfseries] at (axis cs:43.75,{MetaMoE (2 datasets)}) {87.5};
+\node[font=\tiny\bfseries] at (axis cs:93.5,{MetaMoE (2 datasets)}) {12};
+% Monolithic (+MNIST): gray 91.5 | red 151
+\node[font=\tiny\bfseries] at (axis cs:45.75,{Monolithic (+MNIST)}) {91.5};
+\node[font=\tiny\bfseries] at (axis cs:167,{Monolithic (+MNIST)}) {151};
+% MetaMoE (+MNIST): blue 87.5 | green 72.5 | orange 42
+\node[font=\tiny\bfseries] at (axis cs:43.75,{MetaMoE (+MNIST)}) {87.5};
+\node[font=\tiny\bfseries] at (axis cs:123.75,{MetaMoE (+MNIST)}) {72.5};
+\node[font=\tiny\bfseries] at (axis cs:181,{MetaMoE (+MNIST)}) {42};
 \end{axis}
 \end{tikzpicture}
-\caption{Training time: monolithic vs.\ \textsf{MetaMoE} for 2 datasets and incremental MNIST addition. Monolithic retrains from scratch (red); \textsf{MetaMoE} trains only the new expert (green) and fine-tunes the router (orange), yielding a 16.7\% speedup.}
+\caption{Training time: monolithic vs.\ \textsf{MetaMoE} for initial 2-dataset training (top) and incremental MNIST addition (bottom). Top pair: costs are comparable (91.5 vs.\ 99.5\,min). Bottom pair: monolithic retrains all three datasets from scratch (gray\,+\,red\,=\,242.5\,min), while \textsf{MetaMoE} reuses frozen experts (blue), trains only the new MNIST expert (green), and fine-tunes the router (orange), saving 16.7\% overall. The incremental cost alone drops from 151\,min (monolithic retrain) to 102.5\,min (expert\,+\,router), a 32\% reduction.}
 \label{fig:training-time}
 \end{figure}
 
-For 2 datasets, costs are comparable (91.5 vs.\ 99.5 mins). The advantage emerges at scale: adding MNIST requires full retraining for the monolithic model (151 mins) but only independent expert training (72.5 mins) plus router fine-tuning (30 mins) for \textsf{MetaMoE}. Only the 30-min fine-tuning touches the existing system; expert training is fully parallelizable. This gap widens with each additional expert, and the same linear scaling applies to re-verification (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$).
+For 2 datasets (top pair), costs are comparable (91.5 vs.\ 99.5 mins) because both approaches must train on the same data. The advantage emerges when scaling: the bottom pair shows that adding MNIST forces the monolithic model to retrain all three datasets from scratch (gray initial~+~red retrain~=~242.5 mins), whereas \textsf{MetaMoE} reuses the frozen 2-dataset experts (blue, already paid), trains only the new MNIST expert independently (green, 72.5 mins), and fine-tunes the router on the combined validation set (orange, 30 mins). The incremental cost is therefore 151 mins (monolithic) vs.\ 102.5 mins (\textsf{MetaMoE}), a 32\% reduction. Crucially, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable. This gap widens with each additional expert, and the same linear scaling applies to re-verification (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$).
 
 \textbf{Inference scaling.}
 Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. Figure~\ref{tab:inference} confirms $O(k)$ scaling: at $k{=}1$, latency is ${\sim}$71ms regardless of total expert count.
@@ -782,9 +795,9 @@ Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. F
 
 Theorem~\ref{thm:compositional} establishes a biconditional for hard routing ($k{=}1$) with disjoint expert class spaces. Extending the result to soft or top-$k$ routing requires verifying invariance of the full top-$k$ set and stability of the routing weights, since a small perturbation could reorder activated experts even when no single logit crosses a decision boundary. For overlapping class spaces, only the sufficient direction holds (Section~\ref{sec:compositional}), weakening the compositional guarantee to a one-sided implication.
 
-Our experiments use small verification-compatible CNNs (${\sim}$96K parameters per expert, ${\sim}$38K for the router). The compositional decomposition reduces the verification target, yet verifying a single large expert remains an open challenge -- $\alpha$--$\beta$-CROWN and comparable tools face memory and time constraints well before production scale.
+Our experiments use small verification-compatible CNNs. The compositional decomposition reduces the verification target, yet verifying a single large expert remains an open challenge -- $\alpha$--$\beta$-CROWN and comparable tools face memory and time constraints well before production scale.
 
-The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\%, violating router invariance at ${\sim}$7\% of inputs.
+The framework also depends on the router's ability to discriminate between expert domains. For visually dissimilar datasets (CIFAR-10 vs.\ MNIST), the router achieves 100\% gating accuracy and Theorem~\ref{thm:compositional} applies directly. For visually similar datasets (GTSRB vs.\ PTSD), gating accuracy drops to 93.17\%, violating router invariance at roughly 7\% of inputs.
 
 We verified 20--40 samples per configuration (${\sim}$11s/router, up to 300s/expert). While zero falsifications is encouraging, a larger budget would strengthen confidence. We consider only $\ell_\infty$ perturbations; other threat models ($\ell_2$, patch attacks) require separate specifications.
 
