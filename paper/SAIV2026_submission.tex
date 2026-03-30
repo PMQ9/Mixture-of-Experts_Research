@@ -688,26 +688,33 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
     y tick label style={font=\scriptsize},
     x tick label style={font=\scriptsize},
     xmin=0, xmax=290,
-    legend style={at={(0.5,-0.42)}, anchor=north, font=\scriptsize, legend columns=5},
+    legend style={at={(0.45,-0.42)}, anchor=north, font=\scriptsize, legend columns=6},
     grid=major,
     grid style={dashed, gray!20},
     enlarge y limits=0.25,
     every axis plot/.append style={fill opacity=0.85},
     clip=false,
 ]
-% Combined/joint training (gray) -- monolithic only
-\addplot[fill=gray!45, draw=gray!65] coordinates {
+% Joint training (teal) -- monolithic 2-dataset only
+\addplot[fill=teal!45, draw=teal!65] coordinates {
     (91.5,{Monolithic (2 datasets)})
     (0,{MetaMoE (2 datasets)})
-    (91.5,{Monolithic (+MNIST)})
+    (0,{Monolithic (+MNIST)})
     (0,{MetaMoE (+MNIST)})
 };
-% Individual expert training (blue) -- MoE only
+% Expert training (blue) -- MoE 2-dataset only
 \addplot[fill=blue!50, draw=blue!70] coordinates {
     (0,{Monolithic (2 datasets)})
     (87.5,{MetaMoE (2 datasets)})
     (0,{Monolithic (+MNIST)})
-    (87.5,{MetaMoE (+MNIST)})
+    (0,{MetaMoE (+MNIST)})
+};
+% Prior training (gray) -- carry-over cost in +MNIST bars
+\addplot[fill=gray!45, draw=gray!65] coordinates {
+    (0,{Monolithic (2 datasets)})
+    (0,{MetaMoE (2 datasets)})
+    (91.5,{Monolithic (+MNIST)})
+    (99.5,{MetaMoE (+MNIST)})
 };
 % New expert training (green) -- MoE incremental only
 \addplot[fill=green!55, draw=green!70] coordinates {
@@ -716,12 +723,12 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
     (0,{Monolithic (+MNIST)})
     (72.5,{MetaMoE (+MNIST)})
 };
-% Router training/fine-tuning (orange) -- MoE only
+% Router (orange) -- MoE only (initial in bar 2, fine-tune in bar 4)
 \addplot[fill=orange!60, draw=orange!80] coordinates {
     (0,{Monolithic (2 datasets)})
     (12,{MetaMoE (2 datasets)})
     (0,{Monolithic (+MNIST)})
-    (42,{MetaMoE (+MNIST)})
+    (30,{MetaMoE (+MNIST)})
 };
 % Full retrain (red) -- monolithic incremental only
 \addplot[fill=red!45, draw=red!65] coordinates {
@@ -730,14 +737,14 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
     (151,{Monolithic (+MNIST)})
     (0,{MetaMoE (+MNIST)})
 };
-\legend{Joint training, Expert(s), New expert, Router, Full retrain}
+\legend{Joint training, Experts, Prior training, New expert, Router, Full retrain}
 % Total time annotations
 \node[font=\scriptsize, anchor=west] at (axis cs:94,{Monolithic (2 datasets)}) {\textbf{91.5\,min}};
 \node[font=\scriptsize, anchor=west] at (axis cs:102,{MetaMoE (2 datasets)}) {\textbf{99.5\,min}};
 \node[font=\scriptsize, anchor=west] at (axis cs:245,{Monolithic (+MNIST)}) {\textbf{242.5\,min}};
 \node[font=\scriptsize, anchor=west] at (axis cs:205,{MetaMoE (+MNIST)}) {\textbf{202.0\,min}};
 % Per-segment labels for all 4 bars (black bold text, transparent background)
-% Monolithic (2 datasets): gray 91.5
+% Monolithic (2 datasets): teal 91.5
 \node[font=\tiny\bfseries] at (axis cs:45.75,{Monolithic (2 datasets)}) {91.5};
 % MetaMoE (2 datasets): blue 87.5 | orange 12
 \node[font=\tiny\bfseries] at (axis cs:43.75,{MetaMoE (2 datasets)}) {87.5};
@@ -745,17 +752,17 @@ Figure~\ref{fig:training-time} compares \textsf{MetaMoE} against monolithic trai
 % Monolithic (+MNIST): gray 91.5 | red 151
 \node[font=\tiny\bfseries] at (axis cs:45.75,{Monolithic (+MNIST)}) {91.5};
 \node[font=\tiny\bfseries] at (axis cs:167,{Monolithic (+MNIST)}) {151};
-% MetaMoE (+MNIST): blue 87.5 | green 72.5 | orange 42
-\node[font=\tiny\bfseries] at (axis cs:43.75,{MetaMoE (+MNIST)}) {87.5};
-\node[font=\tiny\bfseries] at (axis cs:123.75,{MetaMoE (+MNIST)}) {72.5};
-\node[font=\tiny\bfseries] at (axis cs:181,{MetaMoE (+MNIST)}) {42};
+% MetaMoE (+MNIST): gray 99.5 | green 72.5 | orange 30
+\node[font=\tiny\bfseries] at (axis cs:49.75,{MetaMoE (+MNIST)}) {99.5};
+\node[font=\tiny\bfseries] at (axis cs:135.75,{MetaMoE (+MNIST)}) {72.5};
+\node[font=\tiny\bfseries] at (axis cs:187,{MetaMoE (+MNIST)}) {30};
 \end{axis}
 \end{tikzpicture}
-\caption{Training time: monolithic vs.\ \textsf{MetaMoE} for initial 2-dataset training (top) and incremental MNIST addition (bottom). Top pair: costs are comparable (91.5 vs.\ 99.5\,min). Bottom pair: monolithic retrains all three datasets from scratch (gray\,+\,red\,=\,242.5\,min), while \textsf{MetaMoE} reuses frozen experts (blue), trains only the new MNIST expert (green), and fine-tunes the router (orange), saving 16.7\% overall. The incremental cost alone drops from 151\,min (monolithic retrain) to 102.5\,min (expert\,+\,router), a 32\% reduction.}
+\caption{Training time: monolithic vs.\ \textsf{MetaMoE} for initial 2-dataset training (top) and incremental MNIST addition (bottom). Top pair: costs are comparable (91.5 vs.\ 99.5\,min). Bottom pair: gray segments show prior training carried over from the top pair; monolithic must then fully retrain on all three datasets (red, 151\,min), while \textsf{MetaMoE} only trains the new MNIST expert (green, 72.5\,min) and fine-tunes the router (orange, 30\,min). The incremental cost drops from 151\,min to 102.5\,min, a 32\% reduction.}
 \label{fig:training-time}
 \end{figure}
 
-For 2 datasets (top pair), costs are comparable (91.5 vs.\ 99.5 mins) because both approaches must train on the same data. The advantage emerges when scaling: the bottom pair shows that adding MNIST forces the monolithic model to retrain all three datasets from scratch (gray initial~+~red retrain~=~242.5 mins), whereas \textsf{MetaMoE} reuses the frozen 2-dataset experts (blue, already paid), trains only the new MNIST expert independently (green, 72.5 mins), and fine-tunes the router on the combined validation set (orange, 30 mins). The incremental cost is therefore 151 mins (monolithic) vs.\ 102.5 mins (\textsf{MetaMoE}), a 32\% reduction. Crucially, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable. This gap widens with each additional expert, and the same linear scaling applies to re-verification (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$).
+For 2 datasets (top pair), costs are comparable (91.5 vs.\ 99.5 mins) because both approaches must train on the same data. The advantage emerges when scaling: the bottom pair shows that adding MNIST forces the monolithic model to retrain all three datasets from scratch (gray initial~+~red retrain~=~242.5 mins), whereas \textsf{MetaMoE} carries over the full prior 2-dataset cost (blue, 99.5 mins), trains only the new MNIST expert independently (green, 72.5 mins), and fine-tunes the router (orange, 30 mins). The incremental cost is therefore 151 mins (monolithic) vs.\ 102.5 mins (\textsf{MetaMoE}), a 32\% reduction. Crucially, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable. This gap widens with each additional expert, and the same linear scaling applies to re-verification (${\sim}$2.4$\times$ at $N{=}2$, ${\sim}$7$\times$ at $N{=}7$).
 
 \textbf{Inference scaling.}
 Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. Figure~\ref{tab:inference} confirms $O(k)$ scaling: at $k{=}1$, latency is ${\sim}$71ms regardless of total expert count.
@@ -871,7 +878,7 @@ Verification: $\max|f_{\text{original}}(x) - f_{\text{folded}}(x)| < 10^{-5}$ fo
 \section{Dataset Characteristics}
 \phantomsection\label{app:datasets}
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Dataset statistics.}
 \small
