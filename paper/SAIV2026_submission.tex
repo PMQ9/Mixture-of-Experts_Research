@@ -363,7 +363,8 @@ Once all experts are frozen, the router is trained on meta-class labels $m \in \
 \begin{equation}
 \mathcal{L}_{\text{NRT}} = \mathbb{E}_{(x,m)}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x),\, m\bigr)\bigr].
 \end{equation}
-RT adds an adversarial term using PGD-generated perturbations $x^{\text{adv}} = \arg\max_{x' \in B_\varepsilon(x)} \text{CE}(\mathcal{G}(x'), m)$ with $\varepsilon = 8/255$:
+RT adds an adversarial term, defining
+$x^{\text{adv}} \!=\! \arg\max_{x'\in B_\varepsilon(x)} \text{CE}(\mathcal{G}(x'),m)$:
 \begin{equation}
 \mathcal{L}_{\text{RT}} = \mathcal{L}_{\text{NRT}} + \mathbb{E}\!\bigl[\text{CE}\!\bigl(\mathcal{G}(x^{\text{adv}}),\, m\bigr)\bigr].
 \end{equation}
@@ -401,7 +402,7 @@ All experiments use VerifiableCNN experts and router, trained under NRT or RT. R
 
 \textbf{Test sets.} Formal verification uses 20--40 correctly classified images per configuration (${\sim}$11s/router sample, up to 300s/expert sample). PGD attacks evaluate the full test set of each dataset.
 
-\textbf{Experiments.} We run four groups: (1)~router verification at $\varepsilon \in \{2/255, 4/255, 8/255\}$ under NRT and RT (40 samples); (2)~expert verification across 4 variants and 3 $\varepsilon$ budgets (20 samples each); (3)~empirical PGD robustness ($\varepsilon = 8/255$) for all 8 MoE configurations (40 total runs); and (4)~AA vs.\ ExCRA ordering comparison.
+\textbf{Experiments.} We run four groups: (1)~router verification at $\varepsilon \in \{2/255,\allowbreak 4/255,\allowbreak 8/255\}$ under NRT and RT (40 samples); (2)~expert verification across 4 variants and 3 $\varepsilon$ budgets (20 samples each); (3)~empirical PGD robustness ($\varepsilon = 8/255$) for all 8 MoE configurations (40 total runs); and (4)~AA vs.\ ExCRA ordering comparison.
 
 \textbf{Per-image procedure.} Every metric aggregates a per-image binary outcome. Clean and gating accuracy score each image correct/incorrect. AA uses PGD to generate worst-case perturbations; it upper-bounds true robustness since PGD is heuristic. ExCRA and RoCRA use $\alpha$--$\beta$-CROWN for formal proofs over the entire $\varepsilon$-ball; only completed proofs score 1, making these lower bounds on true robustness.
 
