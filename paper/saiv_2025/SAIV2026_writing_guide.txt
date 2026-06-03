@@ -1,0 +1,96 @@
+================================================================================
+SAIV 2026 WRITING GUIDE -- Patterns from 8 Accepted SAIV 2025 Papers
+================================================================================
+
+1. FORMAT & LENGTH
+------------------
+- Springer LNCS format (\documentclass[runningheads]{llncs})
+- Full papers: 16-20 pages (including references)
+- Extended abstracts also accepted: Paper #31 was just 6 pages
+- Typical split: 12-15 pages body + 2-4 pages references + optional appendix
+
+2. UNIVERSAL STRUCTURE
+----------------------
+Every accepted paper follows this skeleton:
+
+  Abstract (150-250 words)
+  1. Introduction          (2-3 pp) -- must end with bulleted contributions
+  2. Background            (1.5-3 pp) -- numbered Definitions are expected
+  3. Approach/Method       (3-5 pp) -- core contribution; include Theorem(s)
+  4. Experiments           (3-5 pp) -- tables with baselines, setup details
+  5. Related Work          (0.5-1.5 pp) -- can fold into Intro
+  6. Conclusion            (0.5-1 pp) -- limitations + future work
+  Acknowledgments / Disclosure of Interests / References / Appendix
+
+3. WHAT EVERY ACCEPTED PAPER HAS
+---------------------------------
+- Explicit bulleted contribution list in Introduction (7 of 8 papers)
+- At least one numbered Definition (7 of 8)
+- At least one Theorem or Proposition (6 of 8)
+- Comparison against baselines in tables (6 of 8)
+- Architecture/system diagram figure (6 of 8)
+- Honest limitation discussion (most papers)
+- Connection to safety-critical applications or formal verification tools
+
+4. TABLES
+---------
+Most common types:
+  (a) Comparison table: rows = methods, columns = metrics (verified/falsified/
+      time). Bold best result. See Paper #15 Table 2.
+  (b) Setup table: rows = networks/datasets, columns = properties.
+      See Paper #15 Table 1.
+  (c) Results matrix: multi-condition results. See Paper #35 Table 2.
+
+Use \booktabs (\toprule, \midrule, \bottomrule). Keep captions descriptive.
+
+5. FIGURES
+----------
+Common types:
+  (a) Architecture/pipeline diagram -- almost mandatory
+  (b) Line/bar plots comparing methods across parameters
+  (c) Conceptual illustrations of the verification approach
+  (d) Log-scale plots for error bounds or verification time
+
+Range: 1-11 figures. Average ~5-7. Theory papers fewer, tool papers more.
+
+6. WRITING STYLE
+----------------
+- First person plural ("we") throughout
+- Precise quantification: "3.37x tighter" not "much tighter"
+- Formal but not verbose; short declarative sentences for key results
+- Bold only for emphasis on headline numbers in experiments
+- Define all acronyms on first use
+- No exclamation marks, no hype words
+- Cross-reference heavily (Section X, Table Y, Figure Z)
+
+7. MATH PRESENTATION
+---------------------
+- Number all referenced equations
+- Use Definition / Theorem / Proposition / Lemma environments
+- Short proofs inline; long proofs in appendix with sketch in body
+- Notation table if notation is heavy (Paper #14 does this)
+
+8. WHAT REVIEWERS VALUE
+------------------------
+- FORMAL RIGOR: theorems, definitions, proofs -- this is SAIV, not a pure ML venue
+- HONESTY: acknowledge limitations (multiple papers do this explicitly)
+- BASELINES: compare with state-of-art tools (alpha-beta-CROWN, GUROBI, etc.)
+- SAFETY MOTIVATION: connect to a concrete safety-critical domain
+- REPRODUCIBILITY: hardware specs, hyperparameters, dataset details
+
+9. COMMON PITFALLS
+-------------------
+- No formal content (only empirical) -- will get rejected
+- Overclaiming what was actually proved
+- Missing baselines or vague "significant improvement" without numbers
+- Unclear threat model (perturbation type, epsilon, property verified)
+- Weak conclusion that just restates abstract
+
+10. REFERENCES
+--------------
+- Range: 13-46 across accepted papers
+- Cite recent VNN-COMP / alpha-beta-CROWN work
+- Cite prior SAIV/CAV papers
+- Include 2024-2025 references to show awareness of latest work
+
+================================================================================

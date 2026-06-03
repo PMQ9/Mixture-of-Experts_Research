@@ -1,5 +1,12 @@
 {
     "python.analysis.extraPaths": [
         "./src/Vision_Transformer_Pytorch"
+    ],
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "$(file-pdf) Build PDF",
+            "task": "Compile LaTeX to PDF",
+            "tooltip": "Compile SAIV2026_submission.tex to PDF"
+        }
     ]
 }

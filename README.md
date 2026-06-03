@@ -1,6 +1,12 @@
 # Mixture-of-Experts_Research
 Research MoE application in safety-critical system at Institute of Software Integrated System - Vanderbilt University
 
+# Paper
+
+SAIV 2026 submission:
+- PDF: [paper/SAIV2026_Submission.pdf](paper/SAIV2026_Submission.pdf)
+- LaTeX source: [paper/SAIV2026_submission.tex](paper/SAIV2026_submission.tex)
+
 # To do list
  **DevOps**
 
@@ -17,6 +23,11 @@ Research MoE application in safety-critical system at Institute of Software Inte
 - `pip install tqdm matplotlib netron onnx adversarial-robustness-toolbox timm`
 
 - NNV and GNNV modules for robustness verification: `git submodule update --init --recursive`
+
+ **Dataset**
+
+- To retrain and reproduce the results, download the full dataset bundle from Google Drive:
+    https://drive.google.com/file/d/1UU9683D34-InbZEVKBKD__VlinFLk0_d/view?usp=sharing
 
  **Instruction**
 

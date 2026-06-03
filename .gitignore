@@ -56,3 +56,8 @@ artifacts/E*/
 ! paper/artifacts/**/test_result.txt
 
 .claude/settings.local.json
+paper/*.bbl
+paper/*.aux
+paper/*.blg
+paper/*.log
+paper/*.out
