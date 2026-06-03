@@ -41,7 +41,7 @@
 \maketitle
 
 \begin{abstract}
-Mixture-of-experts (MoE) architectures offer modularity and scalability, yet their robustness, and the practicality of certifying that robustness, in heterogeneous settings are not well understood. This work presents \textsf{MetaMoE}, a heterogeneous MoE framework designed for compositional formal verification. In \textsf{MetaMoE}, a neural network, called a router, classifies an input image's domain and routes it to the corresponding domain expert neural network for fine-grained classification; we study how robustness propagates compositionally across these router and experts and establish when system-level verification can be derived from component-level verification. In homogeneous MoE, all experts share the same task, so a misroute may still preserve correctness if the receiving expert classifies the input correctly; in heterogeneous MoE, experts operate on disjoint class spaces, making any misroute catastrophic. We prove that when the router maintains expert selection within a perturbation limit, and the selected expert also maintains its classification within that perturbation limit, the end-to-end system robustness is compositional. This enables scalability as the computational power needed for verification and re-verification does not snowball as the system expands. We further complement the formal verification results with empirical experiments, which support the same robustness trends observed under certification. Experiments across 8 MoE configurations and 3 perturbation budgets show that robustly trained (RT) experts improve adversarial accuracy by up to $13.1\%$ over non-robustly trained (NRT) ones and are a prerequisite for formal certifiability -- NRT models on complex domains are completely unverifiable -- while router training paradigm has negligible impact ($<0.1\%$), and verified routers achieve $100\%$ certified robustness accuracy (RoCRA) at practical perturbation bounds. These results outline a principled path toward scalable, verifiable modular AI. 
+Mixture-of-experts (MoE) architectures offer modularity and scalability, yet their robustness, and the practicality of certifying that robustness, in heterogeneous settings are not well understood. This work presents \textsf{MetaMoE}, a heterogeneous MoE framework designed for compositional formal verification. In \textsf{MetaMoE}, a neural network, called a router, classifies an input image's domain and routes it to the corresponding domain expert neural network for fine-grained classification; we study how robustness propagates compositionally across these router and experts and establish when system-level verification can be derived from component-level verification. In homogeneous MoE, all experts share the same task, so a misroute may still preserve correctness if the receiving expert classifies the input correctly; in heterogeneous MoE, experts operate on disjoint class spaces, making any misroute catastrophic. We prove that when the router maintains expert selection under hard routing (k=1) within a perturbation limit, and the selected expert also maintains its classification within that perturbation limit, the end-to-end system robustness is compositional. This enables scalability as the computational power needed for verification and re-verification does not snowball as the system expands. We further complement the formal verification results with empirical experiments, which support the same robustness trends observed under certification. Experiments across 8 MoE configurations and 3 perturbation budgets show that robustly trained (RT) experts improve adversarial accuracy by up to $13.1\%$ over non-robustly trained (NRT) ones and are a prerequisite for formal certifiability -- NRT models on complex domains are completely unverifiable -- while router training paradigm has negligible impact ($<0.1\%$), and verified routers achieve $100\%$ certified robustness accuracy (RoCRA) at practical perturbation bounds. These results outline a principled path toward scalable, verifiable modular AI. 
 
 \keywords{Mixture-of-experts \and Adversarial Robustness \and Formal Verification \and Compositional Verification \and Neural Network Verification \and Safety-Critical AI}
 \end{abstract}
@@ -166,7 +166,7 @@ representing its contribution to the final output. To combine outputs from exper
         0, & \text{otherwise}
     \end{cases}
 \end{equation}
-where $y_{s_j}[c - o_{s_j}]$ is expert~$s_j$'s logit at local class index $c - o_{s_j}$, and the per-index renormalization makes contributions a convex combination of expert logits when multiple activated experts share that class. In the disjoint-class hard-routing regime verified here, $|\mathcal{A}(c)| \leq 1$ and \eqref{eq:first} collapses to $\hat{y}_c = y_{s_{j^*}}[c - o_{s_{j^*}}]$; the general form is stated for the soft and top-$k$ extensions of Section~\ref{sec:limitations}.
+where $y_{s_j}[c - o_{s_j}]$ is expert~$s_j$'s logit at local class index $c - o_{s_j}$, and the per-index renormalization makes contributions a convex combination of expert logits when multiple activated experts share that class. In the disjoint-class hard-routing regime verified here, $|\mathcal{A}(c)| \leq 1$ and \eqref{eq:first} collapses to $\hat{y}_c = y_{s_{j^*}}[c - o_{s_{j^*}}]$. Proving the general form for the soft and top-$k$ extensions is left as future work, see Section~\ref{sec:limitations}.
 
 \subsection{Adversarial Threat Model and Robustness}
 \label{sec:threat-model}
@@ -220,8 +220,6 @@ Router $\mathcal{G}$ is \emph{invariant} at input $x$ within perturbation ball $
 That is, no perturbation within the $\varepsilon$-ball can cause the router to select a different expert.
 \end{definition}
 
-With this definition, we establish the compositional robustness result in two steps: Lemma~\ref{lem:router} shows that router invariance fixes the active expert throughout the perturbation ball, and Lemma~\ref{lem:expert} shows that expert robustness then preserves the final classification. Theorem~\ref{thm:compositional} composes both into a biconditional.
-
 \begin{lemma}[Router Invariance Preserves Expert Selection]
 \label{lem:router}
 Let $m^* = \arg\max_i \mathcal{G}_i(x)$ be the expert selected for clean input~$x$. If $\mathcal{G}$ is invariant at $x$ within $B_\varepsilon(x)$ (Definition~\ref{def:router_invariance}), then $m^*(x') = m^*$ for all $x' \in B_\varepsilon(x)$, and the MoE output reduces to a fixed expert's output: $\hat{y}(x') = E_{m^*}(x')$ (up to class offsets) for all $x' \in B_\varepsilon(x)$.
@@ -230,6 +228,8 @@ Let $m^* = \arg\max_i \mathcal{G}_i(x)$ be the expert selected for clean input~$
 \begin{proof}
 By Definition~\ref{def:router_invariance}, $\arg\max_i \mathcal{G}_i(x') = m^*$ for all $x' \in B_\varepsilon(x)$. Under hard routing ($k{=}1$), only expert~$m^*$ is activated, so $\hat{y}_c(x') = E_{m^*}(x')[c - o_{m^*}]$ for $c \in \{o_{m^*}, \ldots, o_{m^*} + C_{m^*} - 1\}$ and $\hat{y}_c(x') = 0$ otherwise. The MoE output is therefore fully determined by $E_{m^*}$. \qed
 \end{proof}
+
+Lemma~\ref{lem:router} eliminates the routing dimension of the problem: under hard routing, an invariant router selects the same expert for every input in the perturbation ball, so the full MoE output depends only on that expert. The remaining question is whether that expert classifies correctly throughout the ball.
 
 \begin{lemma}[Expert Robustness Preserves Classification]
 \label{lem:expert}
@@ -244,7 +244,7 @@ and the MoE output is determined solely by $E_{m^*}$, then $\arg\max_c \hat{y}_c
 Since the MoE output vector $\hat{y}(x')$ is zero outside the class range of $E_{m^*}$ and equals $E_{m^*}(x')$ within that range (by Lemma~\ref{lem:router}), the argmax of $\hat{y}(x')$ coincides with the argmax of $E_{m^*}(x')$ (shifted by offset $o_{m^*}$). By assumption, this argmax equals $y$ for all $x' \in B_\varepsilon(x)$. \qed
 \end{proof}
 
-Lemma~\ref{lem:expert} completes the reduction: once routing is fixed, the unified output vector contains nonzero logits only from the selected expert, so expert-level correctness results in system-level correctness.
+% Lemma~\ref{lem:expert} completes the reduction: once routing is fixed, the unified output vector contains nonzero logits only from the selected expert, so expert-level correctness results in system-level correctness.
 
 \begin{theorem}[Compositional Robustness]
 \label{thm:compositional}
@@ -343,7 +343,7 @@ Both metrics aggregate per-image binary outcomes over a test set: ``AA $= 17\%$'
 
 \section{Methodology}
 
-\textbf{Why heterogeneous vision MoE?} Deployed vision systems rarely stay within a single training distribution: handling inputs that span disjoint domains is the rule rather than the exception, and dispatching each input to a dataset-specific expert is a natural design. We evaluate on both a visually-dissimilar pair (CIFAR-10 vs.\ MNIST) and a structurally-similar one (GTSRB+PTSD).
+\textbf{Why heterogeneous vision MoE?} Deployed vision systems rarely stay within a single training distribution: handling inputs that span disjoint domains is common and dispatching each input to a dataset-specific expert is therefore a natural design. We evaluate on both a visually-dissimilar pair (CIFAR-10 vs.\ MNIST) and a structurally-similar one (GTSRB+PTSD).
 
 We independently train $N$ expert networks $E_i: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^{C_i}$, one per dataset and frozen after training, together with a single router $\mathcal{G}: \mathbb{R}^{C \times H \times W} \to \mathbb{R}^N$. We evaluate on four datasets: CIFAR-10~\cite{cifar10} (10 classes), MNIST~\cite{mnist1998} (10 classes), GTSRB~\cite{gtsrb} (German traffic signs, 43 classes), and PTSD~\cite{ptsd} (Persian traffic signs, 43 classes). CIFAR-10 and MNIST form a visually dissimilar pair; GTSRB and PTSD share visual structure, testing the router under harder conditions. The framework extends to additional traffic sign datasets for lifelong learning (Appendix~\ref{app:notation}). Each expert is denoted $E_{i\_\text{NRT}}$ or $E_{i\_\text{RT}}$ for non-robust and robust training respectively, with $i \in \{0{:}\text{CIFAR-10},\, 1{:}\text{MNIST},\, 2{:}\text{GTSRB},\, 3{:}\text{PTSD}\}$.
 
@@ -424,11 +424,11 @@ Figure~\ref{tab:router-verification} shows results for 40 samples (20 CIFAR-10, 
     height=3.2cm,
     bar width=11pt,
     ymin=0, ymax=49,
-    ylabel={Samples (out of 40)},
+    ylabel={Samples},
     symbolic x coords={NRT $2/255$, RT $2/255$, NRT $4/255$, RT $4/255$, NRT $8/255$, RT $8/255$},
     xtick=data,
     x tick label style={font=\scriptsize, rotate=45, anchor=east, yshift=-2pt},
-    legend style={at={(0.5,-0.58)}, anchor=north, font=\small, legend columns=2},
+    legend style={at={(0.5,-0.85)}, anchor=north, font=\small, legend columns=2},
     grid=major,
     grid style={dashed, gray!20},
     ytick={0,10,20,30,40},
@@ -439,7 +439,7 @@ Figure~\ref{tab:router-verification} shows results for 40 samples (20 CIFAR-10, 
     {(NRT $2/255$,40) (RT $2/255$,40) (NRT $4/255$,40) (RT $4/255$,40) (NRT $8/255$,24) (RT $8/255$,40)};
 \addplot[fill=gray!50, draw=gray!70, postaction={pattern=north east lines, pattern color=gray!70}] coordinates
     {(NRT $2/255$,0) (RT $2/255$,0) (NRT $4/255$,0) (RT $4/255$,0) (NRT $8/255$,16) (RT $8/255$,0)};
-\legend{Verified, Timeout (not falsified)}
+\legend{\vspace{0.2cm}Verified, Timeout (not falsified)}
 \end{axis}
 \end{tikzpicture}
 \caption{Router formal verification (40 samples per configuration: 20 MNIST + 20 CIFAR-10, averaged over 5 runs). Both routers achieve 100\% RoCRA at practical $\varepsilon \leq 4/255$. At $\varepsilon = 8/255$, only NRT degrades -- and exclusively due to verification timeouts, not falsifications. Zero counterexamples were found in any configuration.}
@@ -807,11 +807,11 @@ Latency follows $L(k) = L_{\text{router}} + \sum_{i=1}^k L_{\text{expert}_i}$. F
 \subsection{Limitations}
 \label{sec:limitations}
 
-Theorem~\ref{thm:compositional} establishes a biconditional only for hard routing ($k{=}1$) with disjoint class spaces; soft or top-$k$ routing requires invariance of the full top-$k$ set and routing-weight stability, and overlapping class spaces weaken the result to a one-sided implication (Section~\ref{sec:compositional}). The framework also depends on router discrimination: CIFAR-10 vs.\ MNIST gives 100\% gating accuracy, while visually similar GTSRB vs.\ PTSD drops to 93.17\%, violating invariance at ${\sim}$7\% of inputs.
+Theorem~\ref{thm:compositional} is established for hard routing ($k{=}1$) with disjoint class spaces. Soft or top-$k$ routing requires invariance of the full top-$k$ set and routing-weight stability; overlapping class spaces weaken the result to a one-sided implication (Section~\ref{sec:compositional}). The framework also depends on router discrimination: CIFAR-10 vs.\ MNIST gives 100\% gating accuracy, while visually similar GTSRB vs.\ PTSD drops to 93.17\%, violating invariance at ${\sim}$7\% of inputs.
 
-Our experiments use small verification-compatible CNNs on 20--40 samples per configuration (${\sim}$11s/router, up to 300s/expert); larger experts or sample budgets remain bounded by current tool capacity. We consider only $\ell_\infty$ perturbations; $\ell_2$ and patch attacks need separate specifications.
+Our experiments use small verification-compatible CNNs on 20--40 samples per configuration (${\approx}$11s/router, up to 300s/expert); larger experts or sample budgets remain bounded by current tool capacity. We consider only $\ell_\infty$ perturbations; $\ell_2$ and patch attacks need separate specifications.
 
-\textbf{Scope of the certified guarantee.} Theorem~\ref{thm:compositional} certifies each tested cube $B_\varepsilon(x)$ independently, not the input distribution -- a \emph{cube-wise} guarantee (Casadio et al.'s constraint security~\cite{casadio2022}) shared by all current complete verifiers~\cite{kaulen2025} and silent about unseen images. PGD-AA~\cite{madry2018} provides the empirical complement.
+\textbf{Scope of the certified guarantee.} Theorem~\ref{thm:compositional} certifies each tested cube $B_\varepsilon(x)$ independently, not the input distribution, this is a \emph{cube-wise} guarantee (Casadio et al.'s constraint security~\cite{casadio2022}) shared by all current complete verifiers~\cite{kaulen2025} and is silent about unseen images. PGD-AA~\cite{madry2018} provides the empirical complement.
 
 \section{Conclusion and Future Work}
 
@@ -821,10 +821,13 @@ We see four directions for extending this work. First, generalizing Theorem~\ref
 
 Fourth, the same view may scale to MoE LLMs such as Mixtral~\cite{jiang2024}, DeepSeekMoE~\cite{dai2024}, and DeepSeek-V4~\cite{deepseekv4}, which route each token to a sparse subset of hundreds of experts: a port of Theorem~\ref{thm:compositional} would require the soft-routing extension above, distributional rather than argmax specifications~\cite{casadio2022,chwialkowski2025probabilistic}, and per-expert verifiers that scale to transformer blocks~\cite{kaulen2025}.
 
-The compositional perspective introduced here provides a foundation for building verifiable modular AI in safety-critical applications.
+The compositional perspective introduced here provides a foundation for building verifiable modular AI in safety-critical applications. The code is available: \url{https://github.com/PMQ9/Mixture-of-Experts_Research}.
 
-\bibliographystyle{splncs04}
-\bibliography{references_saiv2026}
+\newpage
+\begin{credits}
+\subsubsection{\ackname}
+The material presented in this paper is based upon work supported by the National Science Foundation (NSF) through grant number 2220401, the Defense Advanced Research Projects Agency (DARPA) under contract number FA8750-23-C-0518, and the U.S. Department of Energy, Office of Science, Office of Advanced Scientific Computing Research, under Award Number DE-SC0025528. Any opinions, findings, and conclusions or recommendations expressed in this paper are those of the authors and do not necessarily reflect the views of DARPA or NSF.
+\end{credits}
 
 \appendix
 
@@ -942,5 +945,9 @@ Details & Initial 2-dataset: 91.5 mins \newline Retrain to add MNIST: 151 mins &
 \end{table}
 
 The key insight is the incremental cost: adding a new dataset requires 151 mins of full retraining for the monolithic model vs.\ 102.5 mins (72.5 + 30) for \textsf{MetaMoE}. Of the \textsf{MetaMoE} cost, only the 30-min router fine-tuning step touches the existing system; the 72.5-min expert training is fully independent and parallelizable.
+
+
+\bibliographystyle{splncs04}
+\bibliography{references_saiv2026}
 
 \end{document}
