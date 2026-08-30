@@ -98,6 +98,11 @@ parser.add_argument('--at_mode', type=str, default='PGD', choices=['PGD', 'TRADE
 parser.add_argument('--visualize_robustness', action='store_true', help='visualize model switching experts')
 parser.add_argument('--adv_training', action='store_true', help='Enable adversarial training for individual experts')
 parser.add_argument('--trades_beta', type=float, default=6.0, help='Beta for TRADES regularization')
+# Checkpoint and resume functionality
+parser.add_argument('--save_checkpoint', action='store_true', help='Save checkpoint at each epoch for resuming training')
+parser.add_argument('--checkpoint_dir', type=str, default=None, help='Directory to save checkpoints (default: artifacts/checkpoints)')
+parser.add_argument('--checkpoint_freq', type=int, default=1, help='Frequency of checkpoint saving in epochs (default: 1, save every epoch)')
+parser.add_argument('--resume_from', type=str, default=None, help='Resume training from a checkpoint file')
 
 config_fields = [f.name for f in fields(VisionTransformerConfig)]
 help_msg = f"Comma-separated list of config overrides, e.g., 'img_size=48,patch_size=8'. Available parameters: {', '.join(config_fields)}"
@@ -172,6 +177,43 @@ def pgd_gating_attack(model, data, meta_class, epsilon=8.0/255.0, alpha=0.01, nu
         data_adv = data_adv.detach()
     model.train()
     return data_adv
+
+def save_checkpoint(model, optimizer, scheduler, epoch, metrics, checkpoint_path):
+    """Save training checkpoint including model, optimizer, scheduler, and training metrics."""
+    checkpoint = {
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'model': model,  # Also save full model for compatibility
+        'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
+        'metrics': metrics,
+    }
+    torch.save(checkpoint, checkpoint_path)
+    print(f"Checkpoint saved: {checkpoint_path}")
+
+def load_checkpoint(checkpoint_path, model, optimizer, scheduler, device):
+    """Load training checkpoint and return the starting epoch."""
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+
+    # Try to restore model state_dict first, fall back to full model
+    if 'model_state_dict' in checkpoint:
+        model.load_state_dict(checkpoint['model_state_dict'])
+    elif 'model' in checkpoint:
+        model = checkpoint['model'].to(device)
+
+    if optimizer and 'optimizer_state_dict' in checkpoint:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    if scheduler and 'scheduler_state_dict' in checkpoint:
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+
+    metrics = checkpoint.get('metrics', {})
+    start_epoch = checkpoint.get('epoch', 0) + 1  # Resume from next epoch
+
+    print(f"Checkpoint loaded: {checkpoint_path}")
+    print(f"Resuming from epoch {start_epoch}")
+
+    return model, optimizer, scheduler, start_epoch, metrics
 
 def train(model, loader, optimizer, criterion, device, balance_loss_weight=None, default_meta_class=None):
     model.train()
@@ -856,6 +898,13 @@ def main():
             return 0.5 * (1 + np.cos(np.pi * (t % T_max) / T_max))
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
+    # Setup checkpoint directory if saving checkpoints
+    checkpoint_dir = None
+    if args.save_checkpoint:
+        checkpoint_dir = args.checkpoint_dir or os.path.join(OUTPUT_DIR, 'checkpoints')
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        print(f"Checkpoint directory: {checkpoint_dir}")
+
     train_losses = []
     test_losses = []
     train_accs = []
@@ -880,8 +929,35 @@ def main():
     best_train_acc = 0
     total_training_time = 0
     test_inference_times = []
-        
-    for epoch in range(EPOCHS):
+    start_epoch = 0
+
+    # Resume from checkpoint if specified
+    if args.resume_from:
+        if not os.path.exists(args.resume_from):
+            raise FileNotFoundError(f"Checkpoint not found: {args.resume_from}")
+        model, optimizer, scheduler, start_epoch, saved_metrics = load_checkpoint(
+            args.resume_from, model, optimizer, scheduler, DEVICE
+        )
+        # Restore training metrics from checkpoint
+        train_losses = saved_metrics.get('train_losses', [])
+        test_losses = saved_metrics.get('test_losses', [])
+        train_accs = saved_metrics.get('train_accs', [])
+        test_accs = saved_metrics.get('test_accs', [])
+        train_balance_losses = saved_metrics.get('train_balance_losses', [])
+        test_balance_losses = saved_metrics.get('test_balance_losses', [])
+        train_gating_losses = saved_metrics.get('train_gating_losses', [])
+        test_gating_losses = saved_metrics.get('test_gating_losses', [])
+        train_gating_accs = saved_metrics.get('train_gating_accs', [])
+        test_gating_accs = saved_metrics.get('test_gating_accs', [])
+        test_gtsrb_accs = saved_metrics.get('test_gtsrb_accs', [])
+        test_cifar10_accs = saved_metrics.get('test_cifar10_accs', [])
+        test_mnist_accs = saved_metrics.get('test_mnist_accs', [])
+        best_acc = saved_metrics.get('best_acc', 0)
+        best_train_acc = saved_metrics.get('best_train_acc', 0)
+        total_training_time = saved_metrics.get('total_training_time', 0)
+        test_inference_times = saved_metrics.get('test_inference_times', [])
+
+    for epoch in range(start_epoch, EPOCHS):
         start_time = time.time()
         if args.meta_moe:
             train_results = train(model, train_loader, optimizer, criterion, DEVICE, balance_loss_weight=None)
@@ -992,6 +1068,33 @@ def main():
                 torch.save(model.state_dict(), state_dict_path)
             print(f"New best {metric_name}: {best_acc:.4f}")
         print()
+
+        # Save checkpoint at specified frequency
+        if args.save_checkpoint and (epoch + 1) % args.checkpoint_freq == 0:
+            checkpoint_path = os.path.join(
+                checkpoint_dir,
+                f"checkpoint_epoch_{epoch+1:04d}_{args.dataset if not args.meta_moe else 'metamoe'}_{args.model_arch}.pth"
+            )
+            metrics = {
+                'train_losses': train_losses,
+                'test_losses': test_losses,
+                'train_accs': train_accs,
+                'test_accs': test_accs,
+                'train_balance_losses': train_balance_losses,
+                'test_balance_losses': test_balance_losses,
+                'train_gating_losses': train_gating_losses,
+                'test_gating_losses': test_gating_losses,
+                'train_gating_accs': train_gating_accs,
+                'test_gating_accs': test_gating_accs,
+                'test_gtsrb_accs': test_gtsrb_accs,
+                'test_cifar10_accs': test_cifar10_accs,
+                'test_mnist_accs': test_mnist_accs,
+                'best_acc': best_acc,
+                'best_train_acc': best_train_acc,
+                'total_training_time': total_training_time,
+                'test_inference_times': test_inference_times,
+            }
+            save_checkpoint(model, optimizer, scheduler, epoch, metrics, checkpoint_path)
 
         if (epoch + 1) % 5 == 0 or epoch == EPOCHS - 1:
             plot_metrics(
